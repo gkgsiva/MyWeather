@@ -1,4 +1,4 @@
-// Theme button in the top bar: Auto (follows the phone) → Dark → Light.
+// Theme button at the bottom of the ☰ menu: Auto (follows the phone) → Dark → Light.
 // index.html applies the saved choice before the page draws, to avoid a flash.
 const KEY = "myweather.theme";
 const ORDER = ["auto", "dark", "light"];

@@ -1,6 +1,6 @@
 # MyWeather
 
-A small static web app for Chennai weather watchers. A home page with a menu leads to:
+A small static web app for Chennai weather watchers. A home page and the ☰ menu in the header bar lead to:
 
 - **Radars** (`#radar`): the current India Meteorological Department (IMD) Doppler radar image.
   - Choose a **city** (36 IMD radar stations) and a **product** (MAX (Z), PPI, rainfall intensity, etc.).
@@ -40,7 +40,7 @@ A small static web app for Chennai weather watchers. A home page with a menu lea
 **Offline:** the last radar image for each city and product, the station readings, the cyclone list and the
 lake table are kept on the phone and shown, with the time they were saved, when the network drops.
 
-**Dark mode:** the theme follows the phone; the button in the top bar switches between Auto, Dark and Light.
+**Dark mode:** the theme follows the phone; the **Theme** button at the bottom of the menu (☰) switches between Auto, Dark and Light.
 
 The app is meant for the Android app on a phone. Wunderground pages can only be shown in a frame there:
 the app drops Wunderground's no-framing headers and blocks requests to common ad servers.

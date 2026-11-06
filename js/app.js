@@ -23,6 +23,24 @@ const VIEWS = {
   blog: { title: "MyWeather · Kea Blog", show: showBlog },
 };
 const started = new Set();
+
+// Hamburger menu: opens under the header bar; closes on a pick, a tap
+// outside, or Escape.
+const menuBtn = document.getElementById("menu-btn");
+const menuPanel = document.getElementById("menu-panel");
+const backdrop = document.getElementById("menu-backdrop");
+const viewName = document.getElementById("view-name");
+
+function setMenu(open) {
+  menuPanel.hidden = backdrop.hidden = !open;
+  menuBtn.setAttribute("aria-expanded", String(open));
+  menuBtn.setAttribute("aria-label", open ? "Close menu" : "Open menu");
+}
+menuBtn.addEventListener("click", () => setMenu(menuPanel.hidden));
+backdrop.addEventListener("click", () => setMenu(false));
+document.addEventListener("keydown", (e) => e.key === "Escape" && setMenu(false));
+// Picking the screen already shown fires no hashchange, so close here too.
+menuPanel.addEventListener("click", (e) => e.target.closest("a") && setMenu(false));
 let shown = "";
 
 function route() {
@@ -34,11 +52,12 @@ function route() {
     document.getElementById(`view-${key}`).hidden = key !== view;
   }
   for (const a of document.querySelectorAll(".menu a")) {
-    if (a.dataset.view === view) {
-      a.setAttribute("aria-current", "page");
-      a.scrollIntoView({ block: "nearest", inline: "nearest" });
-    } else a.removeAttribute("aria-current");
+    if (a.dataset.view === view) a.setAttribute("aria-current", "page");
+    else a.removeAttribute("aria-current");
   }
+  // Section name on the right of the header bar (none on Home).
+  viewName.textContent = view === "home" ? "" : menuPanel.querySelector(`[data-view="${view}"]`).textContent;
+  setMenu(false);
   document.title = VIEWS[view].title;
   if (!started.has(view)) {
     started.add(view);
