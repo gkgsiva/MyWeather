@@ -73,7 +73,7 @@ main {
   display: flex;
   align-items: center;
   gap: 8px;
-  min-height: 52px;
+  min-height: 56px;
   padding: 4px 12px 4px 4px;
   background: var(--header-bg);
   color: var(--header-fg);
@@ -82,8 +82,9 @@ main {
 .menu-btn {
   display: grid;
   place-items: center;
-  width: 44px;
-  height: 44px;
+  width: 48px;
+  height: 48px;
+  flex: none;
   padding: 0;
   border: 0;
   border-radius: 10px;
@@ -114,13 +115,13 @@ main {
 /* The menu drops down under the header bar. */
 .menu {
   position: fixed;
-  top: 52px;
+  top: 56px;
   left: 0;
   right: 0;
   z-index: 3;
   display: flex;
   flex-direction: column;
-  max-height: calc(100dvh - 52px);
+  max-height: calc(100dvh - 56px);
   overflow-y: auto;
   padding: 6px 0 10px;
   background: var(--card);
