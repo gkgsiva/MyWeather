@@ -26,7 +26,7 @@ A small static web app for Chennai weather watchers. A home page and the ☰ men
   the dashboard). History comes one day per request, so each finished day is kept on the phone and only
   today is fetched again; requests are spaced about 2 seconds apart to stay inside the key's limits.
 - **Lakes** (`#lakes`): storage in Chennai's reservoirs, read from Chennai Metro Water's
-  [lake-level page](https://cmwssb.tn.gov.in/lake-level) (percent full when the table has capacity and
+  [lake-level page](https://cmwssb.tn.gov.in/lakelevel) (percent full when the table has capacity and
   storage columns). **Open Metro Water page** shows the page itself under the menu.
 - **Wunderground** (`#wunderground`): a dashboard of current temperature, rain and wind for all saved
   stations, from `api.weather.com`. Picking a station shows its Wunderground page under the menu
