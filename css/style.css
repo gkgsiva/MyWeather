@@ -6,10 +6,15 @@
   --border: #d9dee4;
   --accent: #1565c0;
   --error: #b3261e;
-  color-scheme: light dark;
+  --bar: #1565c0;
+  --bar-partial: #90b4e0;
+  --grid: #e6e9ed;
+  --on-accent: #ffffff;
+  color-scheme: light;
 }
+/* Dark: follows the phone unless the app is set to Light or Dark (theme button). */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
     --bg: #12161b;
     --fg: #e6e9ed;
     --muted: #9aa4af;
@@ -17,7 +22,26 @@
     --border: #2d353f;
     --accent: #64a8ff;
     --error: #ff8a80;
+    --bar: #64a8ff;
+    --bar-partial: #355a86;
+    --grid: #262d36;
+  --on-accent: #0b1a2e;
+    color-scheme: dark;
   }
+}
+:root[data-theme="dark"] {
+  --bg: #12161b;
+  --fg: #e6e9ed;
+  --muted: #9aa4af;
+  --card: #1b2128;
+  --border: #2d353f;
+  --accent: #64a8ff;
+  --error: #ff8a80;
+  --bar: #64a8ff;
+  --bar-partial: #355a86;
+  --grid: #262d36;
+  --on-accent: #0b1a2e;
+  color-scheme: dark;
 }
 
 * { box-sizing: border-box; }
@@ -39,11 +63,11 @@ main {
   position: sticky;
   top: 0;
   z-index: 1;
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: 1fr auto;
   align-items: center;
-  gap: 4px 16px;
-  padding: 10px 16px;
+  gap: 4px 12px;
+  padding: 8px 16px 6px;
   background: var(--card);
   border-bottom: 1px solid var(--border);
 }
@@ -53,12 +77,23 @@ main {
   color: var(--fg);
   text-decoration: none;
 }
-.menu {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  max-width: 100%;
+.theme-btn {
+  padding: 2px 10px;
+  font-size: 0.85rem;
+  background: var(--card);
+  color: var(--accent);
 }
+/* One row of menu pills that scrolls sideways on a phone. */
+.menu {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: 4px;
+  margin: 0 -16px;
+  padding: 0 16px 2px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.menu::-webkit-scrollbar { display: none; }
 .menu a {
   padding: 4px 9px;
   border-radius: 999px;
@@ -69,7 +104,7 @@ main {
 }
 .menu a[aria-current="page"] {
   background: var(--accent);
-  color: #fff;
+  color: var(--on-accent);
 }
 
 h1 { margin: 0; font-size: 1.6rem; }
@@ -138,7 +173,7 @@ button, .button {
   text-align: center;
   background: var(--accent);
   border-color: var(--accent);
-  color: #fff;
+  color: var(--on-accent);
 }
 button.secondary {
   background: var(--card);
@@ -280,3 +315,56 @@ details.manage summary { cursor: pointer; font-weight: 600; color: var(--accent)
 }
 .frame-bar { margin: 12px 0 0; }
 .sticky-controls { margin-top: 12px; }
+
+.stack { display: grid; gap: 12px; }
+a.button.secondary-link { background: var(--card); color: var(--accent); }
+
+/* Rain history */
+.rain-table th, .rain-table td { padding: 6px 2px; }
+.rain-table th[scope="row"], .rain-table thead th:first-child { min-width: 5.5em; }
+.rain-table thead th { text-align: right; }
+.rain-table td.total { font-weight: 700; }
+.chart-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin: 16px 0 4px;
+}
+.month-nav { display: inline-flex; align-items: center; gap: 8px; font-variant-numeric: tabular-nums; }
+.month-nav span { min-width: 5.5em; text-align: center; }
+svg.chart {
+  display: block;
+  width: 100%;
+  height: auto;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  font: 10px system-ui, sans-serif;
+}
+.chart .grid { stroke: var(--grid); stroke-width: 1; }
+.chart .baseline { stroke: var(--muted); stroke-width: 1; }
+.chart .axis { fill: var(--muted); }
+.chart .peak { fill: var(--fg); font-weight: 600; }
+.chart .fill { fill: var(--bar); }
+.chart .fill.partial { fill: var(--bar-partial); }
+.chart .pending { fill: var(--border); }
+.chart .hit { fill: transparent; }
+.chart .bar { cursor: pointer; outline: none; }
+.chart .bar.on .hit { fill: var(--grid); }
+.readout { margin: 4px 0 0; min-height: 1.5em; font-size: 0.9rem; }
+
+/* Lakes */
+.lake-summary { list-style: none; padding: 0; margin: 0 0 12px; display: grid; gap: 8px; }
+.lake-summary li {
+  display: grid;
+  grid-template-columns: minmax(6em, 42%) 1fr 3em;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+}
+.lake-summary b { text-align: right; font-variant-numeric: tabular-nums; }
+.meter { height: 10px; background: var(--grid); border-radius: 999px; overflow: hidden; }
+.meter span { display: block; height: 100%; background: var(--bar); border-radius: 999px; }
+table.lakes th, table.lakes td { white-space: normal; }
+.lake-summary span:first-child { overflow-wrap: anywhere; }

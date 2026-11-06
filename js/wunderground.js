@@ -5,9 +5,11 @@
 import { DEFAULT_PWS, pwsUrl } from "./pws-stations.js";
 import { WEATHER_API_KEY } from "./config.js";
 import { routeParams, IN_APP } from "./route.js";
+import { when } from "./offline.js";
 
 const LIST_KEY = "myweather.pws.list";
 const API_KEY_KEY = "myweather.pws.apikey";
+const LAST_KEY = "myweather.pws.last"; // last readings, shown when offline
 const ID_RE = /^[A-Z0-9]{3,20}$/;
 const STALE_MS = 60 * 60 * 1000;
 
@@ -29,7 +31,7 @@ let stations = [];
 let readings = new Map(); // id -> observation | null (offline) | Error
 let loadedAt = 0;
 
-function load() {
+export function loadStations() {
   try {
     const saved = JSON.parse(localStorage.getItem(LIST_KEY));
     if (Array.isArray(saved)) return saved.filter((s) => s && s.name && ID_RE.test(s.id));
@@ -50,7 +52,7 @@ function savedKey() {
     return "";
   }
 }
-const apiKey = () => savedKey() || WEATHER_API_KEY;
+export const apiKey = () => savedKey() || WEATHER_API_KEY;
 
 function say(text, error = false) {
   status.textContent = text;
@@ -167,18 +169,36 @@ async function refreshDashboard() {
   renderTable();
   const ids = [...new Set(stations.map((s) => s.id))];
   let keyError = false;
+  let reached = false; // any answer from Wunderground at all
   await Promise.all(
     ids.map(async (id) => {
       try {
         readings.set(id, await fetchReading(id, key));
+        reached = true;
       } catch (e) {
         if (e.key) keyError = true;
+        if (e.key || e.message.startsWith("HTTP")) reached = true;
         readings.set(id, e);
       }
       renderTable();
     })
   );
   loadedAt = Date.now();
+  if (!reached) {
+    // No network: show the last readings kept on the phone.
+    const last = loadLast();
+    if (last) {
+      readings = new Map(Object.entries(last.readings));
+      renderTable();
+      dashStatus.textContent = `No connection. Showing readings saved at ${when(last.at)}.`;
+    } else {
+      dashStatus.textContent = "No connection, and no saved readings yet.";
+    }
+    dashStatus.className = "status error";
+    loadedAt = 0; // try again next time the screen opens
+    return;
+  }
+  saveLast();
   if (keyError) {
     dashStatus.textContent = "Wunderground didn't accept the API key. Check it under “Manage stations”.";
     dashStatus.className = "status error";
@@ -186,6 +206,25 @@ async function refreshDashboard() {
     dashStatus.textContent = `Updated ${new Date().toLocaleTimeString()}`;
     dashStatus.className = "status";
   }
+}
+
+function loadLast() {
+  try {
+    const last = JSON.parse(localStorage.getItem(LAST_KEY));
+    return last && last.at && last.readings ? last : null;
+  } catch {
+    return null;
+  }
+}
+
+// Keeps the latest good reading per station (an older one stays if a
+// station didn't answer this time).
+function saveLast() {
+  const kept = loadLast()?.readings || {};
+  for (const [id, r] of readings) if (r && !(r instanceof Error)) kept[id] = r;
+  try {
+    localStorage.setItem(LAST_KEY, JSON.stringify({ at: Date.now(), readings: kept }));
+  } catch {}
 }
 
 // ---- Station page ----
@@ -201,6 +240,8 @@ function render() {
   if (station) {
     dashboard.hidden = true;
     frame.hidden = false;
+    $("pws-rain-link").hidden = false;
+    $("pws-rain").href = `#rain?id=${encodeURIComponent(station.id)}`;
     const url = pwsUrl(station.id);
     if (frame.dataset.src !== url) {
       frame.dataset.src = url;
@@ -213,6 +254,7 @@ function render() {
   }
   frame.hidden = true;
   frameNote.hidden = true;
+  $("pws-rain-link").hidden = true;
   dashboard.hidden = false;
   // Reload readings when coming back after a few minutes; Refresh forces it.
   if (Date.now() - loadedAt > 5 * 60 * 1000) refreshDashboard();
@@ -227,7 +269,7 @@ function renderKeyNote() {
 }
 
 export function initWunderground() {
-  stations = load();
+  stations = loadStations();
   renderLists();
   renderKeyNote();
 

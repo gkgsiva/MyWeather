@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Phone in dark mode: a dark theme, which also tells the WebView to report
+     prefers-color-scheme: dark, so the page follows the phone (unless set to
+     Light or Dark with the theme button in the app). -->
+<resources>
+    <style name="AppTheme" parent="android:Theme.Material.NoActionBar">
+        <item name="android:colorPrimary">#0d47a1</item>
+        <item name="android:statusBarColor">#0b1220</item>
+        <item name="android:windowBackground">@color/background</item>
+    </style>
+    <color name="background">#12161b</color>
+</resources>

@@ -6,15 +6,26 @@
     <meta name="referrer" content="no-referrer" />
     <title>MyWeather</title>
     <link rel="stylesheet" href="css/style.css" />
+    <script>
+      // Saved theme (theme button), applied before the page draws.
+      try {
+        var t = localStorage.getItem("myweather.theme");
+        if (t === "light" || t === "dark") document.documentElement.dataset.theme = t;
+      } catch (e) {}
+    </script>
   </head>
   <body>
     <header class="topbar">
       <a class="brand" href="#home">MyWeather</a>
+      <button id="theme-btn" type="button" class="theme-btn" aria-label="Change theme">Theme: Auto</button>
       <nav class="menu" aria-label="Main menu">
         <a href="#home" data-view="home">Home</a>
         <a href="#radar" data-view="radar">Radars</a>
         <a href="#satellite" data-view="satellite">Satellite</a>
         <a href="#warnings" data-view="warnings">Warnings</a>
+        <a href="#cyclone" data-view="cyclone">Cyclones</a>
+        <a href="#rain" data-view="rain">Rain history</a>
+        <a href="#lakes" data-view="lakes">Lakes</a>
         <a href="#wunderground" data-view="wunderground">Wunderground</a>
         <a href="#blog" data-view="blog">Kea Blog</a>
       </nav>
@@ -78,6 +89,24 @@
             <a class="card" href="#warnings">
               <strong>Warnings</strong>
               <span>IMD nowcast and district warnings for Tamil Nadu</span>
+            </a>
+          </li>
+          <li>
+            <a class="card" href="#cyclone">
+              <strong>Cyclones</strong>
+              <span>IMD cyclone bulletins and track maps</span>
+            </a>
+          </li>
+          <li>
+            <a class="card" href="#rain">
+              <strong>Rain history</strong>
+              <span>Daily and monthly rain at your stations</span>
+            </a>
+          </li>
+          <li>
+            <a class="card" href="#lakes">
+              <strong>Lakes</strong>
+              <span>Chennai reservoir levels from Metro Water</span>
             </a>
           </li>
           <li>
@@ -174,6 +203,96 @@
         </p>
       </section>
 
+      <!-- Cyclones -->
+      <section id="view-cyclone" class="view" hidden>
+        <h2>Cyclones</h2>
+        <form class="controls" onsubmit="return false">
+          <button id="cyc-refresh" type="button">Refresh</button>
+        </form>
+        <p id="cyc-status" class="status" aria-live="polite"></p>
+        <h3>Bulletins</h3>
+        <ul id="cyc-bulletins" class="posts"></ul>
+        <p class="note">Bulletins are PDFs and open in the phone's browser or PDF viewer.</p>
+        <h3>Track and warning maps</h3>
+        <div id="cyc-maps" class="stack"></div>
+        <p class="note">
+          IMD updates these during a depression or cyclone; between systems they show the last one.
+          From IMD's
+          <a href="https://mausam.imd.gov.in/responsive/cycloneinformation.php" target="_blank" rel="noopener noreferrer">Cyclone Information</a>
+          page (RSMC New Delhi).
+        </p>
+      </section>
+
+      <!-- Rain history -->
+      <section id="view-rain" class="view" hidden>
+        <h2>Rain history</h2>
+        <form class="controls" onsubmit="return false">
+          <label>
+            Station
+            <select id="rain-station"></select>
+          </label>
+          <button id="rain-refresh" type="button">Refresh</button>
+        </form>
+        <p id="rain-status" class="status" aria-live="polite"></p>
+
+        <div id="rain-compare">
+          <div class="table-wrap">
+            <table id="rain-compare-table" class="readings rain-table">
+              <thead><tr></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <p class="note">Rain in mm per day; today is so far. Tap a station for its daily and monthly charts.</p>
+        </div>
+
+        <div id="rain-station-view" hidden>
+          <h3 id="rain-station-name"></h3>
+          <div class="chart-head">
+            <strong>Daily rain</strong>
+            <span class="month-nav">
+              <button id="rain-prev" type="button" class="secondary small" aria-label="Previous month">‹</button>
+              <span id="rain-month-label"></span>
+              <button id="rain-next" type="button" class="secondary small" aria-label="Next month">›</button>
+            </span>
+          </div>
+          <svg id="rain-daily" class="chart" role="group" aria-label="Rain per day"></svg>
+          <p id="rain-daily-readout" class="readout" aria-live="polite"></p>
+
+          <div class="chart-head"><strong>Monthly rain · last 12 months</strong></div>
+          <svg id="rain-monthly" class="chart" role="group" aria-label="Rain per month"></svg>
+          <p id="rain-monthly-readout" class="readout" aria-live="polite"></p>
+          <p><button id="rain-load-year" type="button" class="secondary">Load all 12 months</button></p>
+          <p id="rain-year-note" class="note"></p>
+          <p class="note">
+            From Wunderground, one request per day. Finished days are kept on the phone.
+            <a id="rain-open-pws">Open the station page</a>
+          </p>
+        </div>
+      </section>
+
+      <!-- Lakes -->
+      <section id="view-lakes" class="view" hidden>
+        <div id="lake-home">
+          <h2>Lakes · Chennai reservoirs</h2>
+          <form class="controls" onsubmit="return false">
+            <button id="lake-refresh" type="button">Refresh</button>
+            <a class="button secondary-link" href="#lakes?page=1">Open Metro Water page</a>
+          </form>
+          <p id="lake-status" class="status" aria-live="polite"></p>
+          <p id="lake-heading" class="note"></p>
+          <ul id="lake-summary" class="lake-summary" hidden></ul>
+          <div id="lake-table" class="table-wrap"></div>
+          <p class="note">
+            Daily storage of the reservoirs supplying Chennai, from
+            <a href="https://cmwssb.tn.gov.in/lake-level" target="_blank" rel="noopener noreferrer">Chennai Metro Water</a>.
+          </p>
+        </div>
+        <div id="lake-reader" hidden>
+          <p class="frame-bar"><a href="#lakes">← Lake levels</a></p>
+          <iframe id="lake-frame" class="site-frame" title="Chennai Metro Water lake levels"></iframe>
+        </div>
+      </section>
+
       <!-- Wunderground -->
       <section id="view-wunderground" class="view" hidden>
         <form class="controls sticky-controls" onsubmit="return false">
@@ -201,7 +320,10 @@
               <tbody></tbody>
             </table>
           </div>
-          <p class="note">Tap a station to open its Wunderground page. Times in grey italics are over an hour old.</p>
+          <p class="note">
+            Tap a station to open its Wunderground page. Times in grey italics are over an hour old.
+            <a href="#rain">Rain history for all stations</a>
+          </p>
 
           <details class="manage">
             <summary>Manage stations</summary>
@@ -246,6 +368,7 @@
           <p id="pws-status" class="status" aria-live="polite"></p>
         </div>
 
+        <p id="pws-rain-link" class="frame-bar" hidden><a id="pws-rain">Rain history for this station</a></p>
         <iframe id="pws-frame" class="site-frame" title="Wunderground station page" hidden></iframe>
         <p id="pws-frame-note" class="note" hidden>
           <a id="pws-open" target="_blank" rel="noopener noreferrer">Open on Wunderground</a>

@@ -23,8 +23,9 @@ import java.util.Map;
  *   Wunderground forbids framing (X-Frame-Options / CSP frame-ancestors), so
  *   those headers are dropped. The page also gets the ad-slot style and
  *   links set to open in the same frame.
- * - IMD's warning feed (reactjs.imd.gov.in), which sends no CORS header, gets
- *   Access-Control-Allow-Origin so the Warnings screen can read it.
+ * - Data the page reads with fetch() from sites that send no CORS header
+ *   (IMD's warning feed, radar images kept for offline use, the cyclone page,
+ *   Chennai Metro Water's lake levels) gets Access-Control-Allow-Origin.
  *
  * Runs on the WebView's background thread (shouldInterceptRequest).
  */
@@ -58,6 +59,7 @@ final class FrameProxy {
         try {
             Fetched f = fetch(request);
             f.headers.put("access-control-allow-origin", "*");
+            f.headers.put("access-control-expose-headers", "last-modified, date");
             return f.toResponse();
         } catch (IOException e) {
             return null;
