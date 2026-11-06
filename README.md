@@ -12,7 +12,7 @@ A small static web app for Chennai weather watchers. A home page with a menu lea
 - **Wunderground** (`#wunderground`): opens a personal weather station's Wunderground dashboard.
   The dropdown shows `Nickname (ID)`; add or remove any number of stations (saved on this device).
   The default list is in [`js/pws-stations.js`](js/pws-stations.js).
-- **KWS Blog** (`#blog`): the latest posts from [kwschennai.com/blog](https://kwschennai.com/blog/)
+- **Kea Blog** (`#blog`): the latest posts from [kwschennai.com/blog](https://kwschennai.com/blog/)
   (read from the site's WordPress feed), and a button to open the blog.
 
 Wunderground and the blog are third-party sites with ads. On the website they open in a new tab with

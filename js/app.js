@@ -8,7 +8,7 @@ const VIEWS = {
   home: { title: "MyWeather" },
   radar: { title: "MyWeather · Radars", show: showRadar },
   wunderground: { title: "MyWeather · Wunderground", init: initWunderground },
-  blog: { title: "MyWeather · KWS Blog", init: initBlog },
+  blog: { title: "MyWeather · Kea Blog", init: initBlog },
 };
 const started = new Set();
 

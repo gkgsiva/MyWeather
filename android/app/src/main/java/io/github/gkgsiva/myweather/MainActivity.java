@@ -21,7 +21,7 @@ import java.io.ByteArrayInputStream;
  * https://appassets.androidplatform.net/ so ES modules and localStorage work as
  * they do on the website.
  *
- * Wunderground and the KWS blog open inside the app (the Back button returns to
+ * Wunderground and the Kea blog open inside the app (the Back button returns to
  * MyWeather), with requests to common ad servers blocked and leftover ad slots
  * hidden. Links to any other site open in the browser.
  */

@@ -1,8 +1,8 @@
-// Lists the latest KWS blog posts. kwschennai.com looks like a WordPress site,
+// Lists the latest Kea Weather Blog posts. kwschennai.com/blog is a WordPress site,
 // whose REST API allows cross-site reads; if that fails, the "Open the blog"
 // button still works.
 const BLOG = "https://kwschennai.com";
-const API = `${BLOG}/wp-json/wp/v2/posts?per_page=15&_fields=link,title,date,excerpt`;
+const API = `${BLOG}/blog/wp-json/wp/v2/posts?per_page=15&_fields=link,title,date,excerpt`;
 
 const list = document.getElementById("blog-posts");
 const status = document.getElementById("blog-status");
