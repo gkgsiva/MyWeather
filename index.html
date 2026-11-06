@@ -13,6 +13,8 @@
       <nav class="menu" aria-label="Main menu">
         <a href="#home" data-view="home">Home</a>
         <a href="#radar" data-view="radar">Radars</a>
+        <a href="#satellite" data-view="satellite">Satellite</a>
+        <a href="#warnings" data-view="warnings">Warnings</a>
         <a href="#wunderground" data-view="wunderground">Wunderground</a>
         <a href="#blog" data-view="blog">Kea Blog</a>
       </nav>
@@ -67,6 +69,18 @@
             </a>
           </li>
           <li>
+            <a class="card" href="#satellite">
+              <strong>Satellite</strong>
+              <span>INSAT pictures and loops from IMD</span>
+            </a>
+          </li>
+          <li>
+            <a class="card" href="#warnings">
+              <strong>Warnings</strong>
+              <span>IMD nowcast and district warnings for Tamil Nadu</span>
+            </a>
+          </li>
+          <li>
             <a class="card" href="#wunderground">
               <strong>Wunderground</strong>
               <span>Personal weather stations, by nickname</span>
@@ -94,6 +108,7 @@
             <select id="product"></select>
           </label>
           <button id="refresh" type="button">Refresh</button>
+          <button id="animate" type="button" class="secondary" aria-pressed="false">Play last 3 hours</button>
           <button id="set-default" type="button" class="secondary">Set as default</button>
         </form>
 
@@ -112,49 +127,143 @@
         </p>
       </section>
 
-      <!-- Wunderground -->
-      <section id="view-wunderground" class="view" hidden>
-        <h2>Wunderground stations</h2>
+      <!-- Satellite -->
+      <section id="view-satellite" class="view" hidden>
+        <h2>Satellite</h2>
         <form class="controls" onsubmit="return false">
           <label>
-            Pick a station to open its page
+            Image
+            <select id="sat-image"></select>
+          </label>
+          <button id="sat-refresh" type="button">Refresh</button>
+        </form>
+        <p id="sat-status" class="status" aria-live="polite"></p>
+        <figure>
+          <img id="sat-img" alt="" />
+          <figcaption>
+            Direct image link:
+            <a id="sat-link" target="_blank" rel="noopener noreferrer"></a>
+          </figcaption>
+        </figure>
+        <p class="note">
+          INSAT-3D/3DR images © India Meteorological Department, from
+          <a href="https://mausam.imd.gov.in/responsive/satellite.php" target="_blank" rel="noopener noreferrer">mausam.imd.gov.in</a>.
+        </p>
+      </section>
+
+      <!-- Warnings -->
+      <section id="view-warnings" class="view" hidden>
+        <h2>Warnings · Tamil Nadu</h2>
+        <form class="controls" onsubmit="return false">
+          <label>
+            Show
+            <select id="warn-period"></select>
+          </label>
+          <button id="warn-refresh" type="button">Refresh</button>
+        </form>
+        <p id="warn-status" class="status" aria-live="polite"></p>
+        <figure>
+          <img id="warn-map" alt="" />
+          <figcaption id="warn-legend" class="legend"></figcaption>
+        </figure>
+        <h3>Districts</h3>
+        <ul id="warn-list" class="warn-list"></ul>
+        <p class="note">
+          District-wise nowcast and warnings © India Meteorological Department, from
+          <a id="warn-source" href="https://mausam.imd.gov.in/responsive/districtWiseNowcastGIS.php" target="_blank" rel="noopener noreferrer">mausam.imd.gov.in</a>.
+        </p>
+      </section>
+
+      <!-- Wunderground -->
+      <section id="view-wunderground" class="view" hidden>
+        <form class="controls sticky-controls" onsubmit="return false">
+          <label>
+            Station
             <select id="pws"></select>
           </label>
+          <button id="pws-refresh" type="button">Refresh</button>
         </form>
-        <p class="note">Use your phone's Back button to come back here.</p>
 
-        <h3>Your stations</h3>
-        <ul id="pws-list" class="pws-list"></ul>
+        <div id="pws-dashboard">
+          <p id="pws-dash-status" class="status" aria-live="polite"></p>
+          <div class="table-wrap">
+            <table id="pws-table" class="readings">
+              <thead>
+                <tr>
+                  <th scope="col">Station</th>
+                  <th scope="col">Temp<br /><small>°C</small></th>
+                  <th scope="col">Rain<br /><small>today mm</small></th>
+                  <th scope="col">Rate<br /><small>mm/h</small></th>
+                  <th scope="col">Wind<br /><small>/ gust km/h</small></th>
+                  <th scope="col">At</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <p class="note">Tap a station to open its Wunderground page. Times in grey italics are over an hour old.</p>
 
-        <h3>Add a station</h3>
-        <form id="pws-add" class="controls">
-          <label>
-            Nickname
-            <input id="pws-name" required maxlength="40" placeholder="e.g. Velachery" />
-          </label>
-          <label>
-            Station ID
-            <input id="pws-id" required maxlength="20" placeholder="e.g. ICHENN47"
-              autocapitalize="characters" spellcheck="false" />
-          </label>
-          <button type="submit">Add</button>
-        </form>
-        <p id="pws-status" class="status" aria-live="polite"></p>
-        <p class="note">
-          The station ID is the code at the end of the Wunderground address,
-          e.g. wunderground.com/dashboard/pws/<b>ICHENNAI1</b>.
-          <button id="pws-reset" type="button" class="link">Restore the default list</button>
+          <details class="manage">
+            <summary>Manage stations</summary>
+            <h3>Add a station</h3>
+            <form id="pws-add" class="controls">
+              <label>
+                Nickname
+                <input id="pws-name" required maxlength="40" placeholder="e.g. Velachery" />
+              </label>
+              <label>
+                Station ID
+                <input id="pws-id" required maxlength="20" placeholder="e.g. ICHENN47"
+                  autocapitalize="characters" spellcheck="false" />
+              </label>
+              <button type="submit">Add</button>
+            </form>
+            <p class="note">
+              The station ID is the code at the end of the Wunderground address,
+              e.g. wunderground.com/dashboard/pws/<b>ICHENNAI1</b>.
+            </p>
+
+            <h3>Remove a station</h3>
+            <form id="pws-remove" class="controls" onsubmit="return false">
+              <label>
+                Station
+                <select id="pws-remove-pick"></select>
+              </label>
+              <button id="pws-remove-btn" type="button" class="secondary">Remove</button>
+            </form>
+            <p><button id="pws-reset" type="button" class="link">Restore the default list</button></p>
+
+            <h3>Wunderground API key</h3>
+            <form id="pws-key-form" class="controls">
+              <label>
+                API key
+                <input id="pws-key" maxlength="64" spellcheck="false" autocomplete="off" />
+              </label>
+              <button type="submit">Save</button>
+            </form>
+            <p id="pws-key-note" class="note"></p>
+          </details>
+          <p id="pws-status" class="status" aria-live="polite"></p>
+        </div>
+
+        <iframe id="pws-frame" class="site-frame" title="Wunderground station page" hidden></iframe>
+        <p id="pws-frame-note" class="note" hidden>
+          <a id="pws-open" target="_blank" rel="noopener noreferrer">Open on Wunderground</a>
         </p>
       </section>
 
       <!-- Blog -->
       <section id="view-blog" class="view" hidden>
-        <h2>Kea Blog</h2>
-        <p>
-          <a class="button" href="https://kwschennai.com/blog/" target="_blank" rel="noopener noreferrer">Open the blog</a>
-        </p>
-        <p id="blog-status" class="status" aria-live="polite"></p>
-        <ul id="blog-posts" class="posts"></ul>
+        <div id="blog-home">
+          <h2>Kea Blog</h2>
+          <p><a class="button" href="#blog?post=https%3A%2F%2Fkwschennai.com%2Fblog%2F">Open the blog</a></p>
+          <p id="blog-status" class="status" aria-live="polite"></p>
+          <ul id="blog-posts" class="posts"></ul>
+        </div>
+        <div id="blog-reader" hidden>
+          <p class="frame-bar"><a href="#blog">← All posts</a></p>
+          <iframe id="blog-frame" class="site-frame" title="Kea Weather Blog"></iframe>
+        </div>
       </section>
     </main>
 

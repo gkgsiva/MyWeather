@@ -55,12 +55,12 @@ main {
 }
 .menu {
   display: flex;
+  flex-wrap: wrap;
   gap: 4px;
-  overflow-x: auto;
   max-width: 100%;
 }
 .menu a {
-  padding: 6px 10px;
+  padding: 4px 9px;
   border-radius: 999px;
   color: var(--muted);
   text-decoration: none;
@@ -204,3 +204,79 @@ a { color: var(--accent); }
   border-bottom: 1px solid var(--border);
 }
 button.small { padding: 4px 10px; font-size: 0.85rem; }
+
+.warn-list { list-style: none; padding: 0; margin: 0 0 16px; }
+.warn-list li {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2px;
+  padding: 8px 10px;
+  margin-bottom: 6px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-left: 6px solid var(--level);
+  border-radius: 8px;
+}
+.warn-list span { font-size: 0.9rem; }
+.warn-list small { color: var(--muted); font-size: 0.8rem; }
+.legend { display: flex; flex-wrap: wrap; gap: 4px 12px; }
+.legend span::before {
+  content: "";
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin-right: 4px;
+  border-radius: 2px;
+  background: var(--level);
+}
+
+/* Wunderground dashboard */
+.table-wrap { overflow-x: auto; margin: 0 -16px; padding: 0 16px; }
+table.readings {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+}
+.readings th, .readings td {
+  padding: 6px 3px;
+  border-bottom: 1px solid var(--border);
+  text-align: right;
+  white-space: nowrap;
+}
+.readings thead th { color: var(--muted); font-weight: 600; vertical-align: bottom; line-height: 1.2; }
+.readings th[scope="row"], .readings thead th:first-child {
+  text-align: left;
+  white-space: normal;
+  min-width: 6em;
+  font-weight: 600;
+}
+.readings tbody tr { cursor: pointer; }
+.readings tbody tr:active { background: var(--border); }
+.readings td.muted { text-align: left; color: var(--muted); }
+.readings td.stale { color: var(--muted); font-style: italic; }
+.readings td.raining { color: var(--accent); font-weight: 700; }
+
+details.manage {
+  margin-top: 16px;
+  padding: 8px 12px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+details.manage summary { cursor: pointer; font-weight: 600; color: var(--accent); }
+
+/* Sites shown inside the app, under the menu */
+.site-frame {
+  display: block;
+  width: calc(100% + 32px);
+  margin: 12px -16px 0;
+  height: calc(100vh - 150px);
+  height: calc(100dvh - 150px);
+  min-height: 360px;
+  border: 0;
+  border-top: 1px solid var(--border);
+  background: #fff;
+}
+.frame-bar { margin: 12px 0 0; }
+.sticky-controls { margin-top: 12px; }

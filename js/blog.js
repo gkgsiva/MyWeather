@@ -4,7 +4,12 @@
 const BLOG = "https://kwschennai.com";
 const API = `${BLOG}/blog/wp-json/wp/v2/posts?per_page=15&_fields=link,title,date,excerpt`;
 
+import { routeParams } from "./route.js";
+
 const list = document.getElementById("blog-posts");
+const home = document.getElementById("blog-home");
+const reader = document.getElementById("blog-reader");
+const frame = document.getElementById("blog-frame");
 const status = document.getElementById("blog-status");
 
 // Titles and excerpts come as HTML; keep only their text.
@@ -12,7 +17,39 @@ function text(html) {
   return new DOMParser().parseFromString(html || "", "text/html").body.textContent.trim();
 }
 
-export async function initBlog() {
+// Posts open in a frame under the menu: #blog?post=<url>.
+const postRoute = (url) => `#blog?post=${encodeURIComponent(url)}`;
+const isBlogUrl = (url) => {
+  try {
+    const u = new URL(url);
+    return u.protocol === "https:" && (u.hostname === "kwschennai.com" || u.hostname.endsWith(".kwschennai.com"));
+  } catch {
+    return false;
+  }
+};
+
+let loaded = false;
+
+export function showBlog() {
+  const post = routeParams().get("post");
+  if (post && isBlogUrl(post)) {
+    home.hidden = true;
+    reader.hidden = false;
+    if (frame.dataset.src !== post) {
+      frame.dataset.src = post;
+      frame.src = post;
+    }
+    return;
+  }
+  reader.hidden = true;
+  home.hidden = false;
+  if (!loaded) {
+    loaded = true;
+    loadPosts();
+  }
+}
+
+async function loadPosts() {
   status.textContent = "Loading latest posts…";
   try {
     const ctrl = new AbortController();
@@ -27,9 +64,7 @@ export async function initBlog() {
       ...posts.map((p) => {
         const li = document.createElement("li");
         const a = document.createElement("a");
-        a.href = p.link;
-        a.target = "_blank";
-        a.rel = "noopener noreferrer";
+        a.href = postRoute(p.link);
         a.textContent = text(p.title?.rendered) || p.link;
         const meta = document.createElement("small");
         meta.textContent = new Date(p.date).toLocaleDateString(undefined, {
@@ -46,5 +81,6 @@ export async function initBlog() {
     status.textContent = "";
   } catch {
     status.textContent = "Couldn't load the post list here. Use “Open the blog” above.";
+    loaded = false; // try again next time
   }
 }
