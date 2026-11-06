@@ -41,7 +41,7 @@ and live in [`js/stations.js`](js/stations.js). The image URL pattern is
 (the web files are copied into the APK at build time). Each GitHub release gets a
 `MyWeather-<version>.apk` attached by the [Android APK workflow](.github/workflows/android-apk.yml):
 
-- Publishing a release builds and attaches the APK automatically.
+- Publishing a release, or pushing a version tag such as `v1.1` (which creates the release), builds and attaches the APK automatically.
 - For a release that already exists, open **Actions → Android APK → Run workflow**
   and enter its tag (e.g. `v1.0`).
 
