@@ -6,6 +6,8 @@ name: Android APK
 # - Publishing a release builds the APK from the release tag and attaches it.
 # - "Run workflow" (Actions tab) builds from the chosen branch and attaches the
 #   APK to an existing release, e.g. a release published before this workflow.
+# - Pushing a version tag (e.g. git push origin v1.1) creates that release with
+#   generated notes if it doesn't exist yet, then attaches the APK.
 # - Pull requests and pushes to main build the APK and keep it as a workflow
 #   artifact, so a broken Android build shows up before release.
 #
@@ -29,6 +31,7 @@ on:
     paths: ["android/**", "index.html", "css/**", "js/**", ".github/workflows/android-apk.yml"]
   push:
     branches: [main]
+    tags: ["v*"]
     paths: ["android/**", "index.html", "css/**", "js/**", ".github/workflows/android-apk.yml"]
 
 permissions:
@@ -38,7 +41,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     env:
-      TAG: ${{ github.event.release.tag_name || inputs.tag }}
+      TAG: ${{ github.event.release.tag_name || inputs.tag || (github.ref_type == 'tag' && github.ref_name) || '' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -92,6 +95,15 @@ jobs:
         with:
           name: MyWeather-${{ steps.version.outputs.name }}-apk
           path: ${{ runner.temp }}/out/*.apk
+
+      - name: Create release for a pushed tag
+        if: github.event_name == 'push' && github.ref_type == 'tag'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1 ||
+            gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --verify-tag \
+              --title "MyWeather $TAG" --generate-notes
 
       - name: Attach APK to release
         if: env.TAG != ''

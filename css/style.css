@@ -29,15 +29,86 @@ body {
   color: var(--fg);
 }
 
-header, main, footer {
+main {
   max-width: 900px;
   margin: 0 auto;
-  padding: 0 16px;
+  padding: 0 16px 32px;
 }
 
-header { padding-top: 24px; }
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 16px;
+  padding: 10px 16px;
+  background: var(--card);
+  border-bottom: 1px solid var(--border);
+}
+.brand {
+  font-weight: 700;
+  font-size: 1.15rem;
+  color: var(--fg);
+  text-decoration: none;
+}
+.menu {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  max-width: 100%;
+}
+.menu a {
+  padding: 6px 10px;
+  border-radius: 999px;
+  color: var(--muted);
+  text-decoration: none;
+  white-space: nowrap;
+  font-size: 0.95rem;
+}
+.menu a[aria-current="page"] {
+  background: var(--accent);
+  color: #fff;
+}
+
 h1 { margin: 0; font-size: 1.6rem; }
-.sub { margin: 4px 0 16px; color: var(--muted); }
+h2 { margin: 20px 0 12px; font-size: 1.35rem; }
+h3 { margin: 24px 0 8px; font-size: 1.05rem; }
+
+.hero {
+  position: relative;
+  margin-top: 16px;
+  border-radius: 16px;
+  overflow: hidden;
+}
+.hero-art { display: block; width: 100%; height: auto; }
+.hero { background: var(--card); border: 1px solid var(--border); }
+.hero-text { padding: 12px 16px 16px; }
+.hero-text p { margin: 4px 0 0; color: var(--muted); }
+
+.cards {
+  list-style: none;
+  padding: 0;
+  margin: 16px 0 0;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  height: 100%;
+  padding: 16px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  color: var(--fg);
+  text-decoration: none;
+}
+.card strong { color: var(--accent); font-size: 1.1rem; }
+.card span { color: var(--muted); font-size: 0.9rem; }
 
 .controls {
   display: flex;
@@ -53,7 +124,7 @@ h1 { margin: 0; font-size: 1.6rem; }
   color: var(--muted);
   flex: 1 1 200px;
 }
-select, button {
+select, button, input, .button {
   font: inherit;
   padding: 8px 10px;
   border-radius: 8px;
@@ -61,14 +132,32 @@ select, button {
   background: var(--card);
   color: var(--fg);
 }
-button {
+button, .button {
   cursor: pointer;
+  text-decoration: none;
+  text-align: center;
   background: var(--accent);
   border-color: var(--accent);
   color: #fff;
 }
+button.secondary {
+  background: var(--card);
+  color: var(--accent);
+}
+button.link {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent);
+  text-decoration: underline;
+  font-size: inherit;
+}
+button:disabled, .button.disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
 
-.status { min-height: 1.5em; color: var(--muted); font-size: 0.9rem; }
+.status { min-height: 1.5em; overflow-wrap: anywhere; color: var(--muted); font-size: 0.9rem; }
 .status.error { color: var(--error); }
 
 figure {
@@ -94,9 +183,13 @@ figcaption {
 }
 a { color: var(--accent); }
 
-footer {
-  padding-top: 24px;
-  padding-bottom: 24px;
-  font-size: 0.8rem;
-  color: var(--muted);
+.note { font-size: 0.85rem; color: var(--muted); }
+
+.posts { list-style: none; padding: 0; margin: 0; }
+.posts li {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
 }
+.posts a { font-weight: 600; }
+.posts small { display: block; color: var(--muted); }
+.posts p { margin: 4px 0 0; font-size: 0.9rem; }

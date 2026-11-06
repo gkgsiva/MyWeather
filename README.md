@@ -1,13 +1,22 @@
 # MyWeather
 
-A small static web app that shows the current India Meteorological Department (IMD)
-Doppler weather radar image for a city you pick.
+A small static web app for Chennai weather watchers. A home page with a menu leads to:
 
-- Choose a **city** (36 IMD radar stations) and a **product** (MAX (Z), PPI, rainfall intensity, etc.).
-- The image loads straight from IMD, e.g. `https://mausam.imd.gov.in/Radar/caz_cni.gif` for Chennai,
-  and the direct link is shown under it.
-- The image refreshes every 10 minutes, or on demand with **Refresh**.
-- Your choice is kept in the URL (`?city=cni&product=caz`), so it can be bookmarked or shared.
+- **Radars** (`#radar`): the current India Meteorological Department (IMD) Doppler radar image.
+  - Choose a **city** (36 IMD radar stations) and a **product** (MAX (Z), PPI, rainfall intensity, etc.).
+  - The image loads straight from IMD, e.g. `https://mausam.imd.gov.in/Radar/caz_cni.gif` for Chennai,
+    and the direct link is shown under it.
+  - There is no auto-refresh; press **Refresh** for the latest image.
+  - Chennai is selected by default. **Set as default** saves the current city and product on this device.
+  - The choice is kept in the URL (`?city=cni&product=caz#radar`), so it can be bookmarked or shared.
+- **Wunderground** (`#wunderground`): opens a personal weather station's Wunderground dashboard.
+  The dropdown shows `Nickname (ID)`; add or remove any number of stations (saved on this device).
+  The default list is in [`js/pws-stations.js`](js/pws-stations.js).
+- **Kea Blog** (`#blog`): the latest posts from [kwschennai.com/blog](https://kwschennai.com/blog/)
+  (read from the site's WordPress feed), and a button to open the blog.
+
+Wunderground and the blog are third-party sites with ads. On the website they open in a new tab with
+their ads. In the Android app they open inside the app, with requests to common ad servers blocked.
 
 ## Run locally
 
@@ -32,7 +41,7 @@ and live in [`js/stations.js`](js/stations.js). The image URL pattern is
 (the web files are copied into the APK at build time). Each GitHub release gets a
 `MyWeather-<version>.apk` attached by the [Android APK workflow](.github/workflows/android-apk.yml):
 
-- Publishing a release builds and attaches the APK automatically.
+- Publishing a release, or pushing a version tag such as `v1.1` (which creates the release), builds and attaches the APK automatically.
 - For a release that already exists, open **Actions → Android APK → Run workflow**
   and enter its tag (e.g. `v1.0`).
 
