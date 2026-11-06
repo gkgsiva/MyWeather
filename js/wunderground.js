@@ -82,7 +82,7 @@ const fmt = (v, digits = 1) => (typeof v === "number" ? v.toFixed(digits) : "–
 const COMPASS = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
 const compass = (deg) => (typeof deg === "number" ? COMPASS[Math.round(deg / 45) % 8] : "");
 
-async function fetchReading(id, key) {
+export async function fetchReading(id, key) {
   const qs = new URLSearchParams({
     stationId: id,
     format: "json",
@@ -208,7 +208,7 @@ async function refreshDashboard() {
   }
 }
 
-function loadLast() {
+export function loadLast() {
   try {
     const last = JSON.parse(localStorage.getItem(LAST_KEY));
     return last && last.at && last.readings ? last : null;

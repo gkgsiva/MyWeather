@@ -2,6 +2,9 @@
 
 A small static web app for Chennai weather watchers. A home page and the ☰ menu in the header bar lead to:
 
+- **Forecast** (`#forecast`): Chennai's weather now, the chance of rain for each of the next 24 hours, and
+  7 days ahead (high/low, rain chance, expected mm, wind). From [Open-Meteo](https://open-meteo.com/)
+  (`api.open-meteo.com`, no key), which blends ECMWF, GFS and other models.
 - **Radars** (`#radar`): the current India Meteorological Department (IMD) Doppler radar image.
   - Choose a **city** (36 IMD radar stations) and a **product** (MAX (Z), PPI, rainfall intensity, etc.).
   - The image loads straight from IMD, e.g. `https://mausam.imd.gov.in/Radar/caz_cni.gif` for Chennai,
@@ -20,14 +23,38 @@ A small static web app for Chennai weather watchers. A home page and the ☰ men
   bulletins, as PDFs) and the track, wind and storm-surge maps, read from IMD's
   [Cyclone Information](https://mausam.imd.gov.in/responsive/cycloneinformation.php) page. The app adds the
   missing CORS header.
+- **Monsoon** (`#monsoon`): rain against normal for Chennai, Tamil Nadu, the Tamil Nadu–Puducherry
+  subdivision, the districts around Chennai and every Tamil Nadu district, for the season so far (from
+  1 October, IMD's cumulative figure), this month, the last week or yesterday. Read from IMD's
+  [rainfall information](https://mausam.imd.gov.in/responsive/rainfallinformation.php) pages (district, state
+  and subdivision, `?msg=C|M|W|D`), whose map data carries actual, normal and departure for each area. The app
+  adds the missing CORS header.
 - **Rain history** (`#rain`): every saved station's rain for the last 7 days side by side, and per station
   (`#rain?id=ICHENN47&month=2026-11`) a daily chart for a month and a monthly chart for the last 12 months.
   The data is Wunderground's (`api.weather.com` `dailysummary/7day` and `history/daily`, with the same key as
   the dashboard). History comes one day per request, so each finished day is kept on the phone and only
   today is fetched again; requests are spaced about 2 seconds apart to stay inside the key's limits.
+- **Compare stations** (`#compare?ids=ICHENN47,ICHENNAI1&day=2026-11-05` or `&month=2026-10`): two or three
+  stations' rain as running totals through a day (every reading of the day, `history/all` or
+  `observations/all/1day`, one request per station) or a month (the daily totals Rain history keeps on the
+  phone, fetching only missing days).
+- **Station map** (`#map`): every saved station on an OpenStreetMap map, marked and coloured by rain today
+  (IMD's daily bands), rain rate or temperature; tap one for its readings and links. Positions come with the
+  readings and are kept on the phone. [Leaflet](https://leafletjs.com/) 1.9.4 is bundled in `js/vendor/leaflet`
+  (BSD-2 licence). The Android app fetches the tiles with its own User-Agent, as OpenStreetMap's tile policy asks.
 - **Lakes** (`#lakes`): storage in Chennai's reservoirs, read from Chennai Metro Water's
   [lake-level page](https://cmwssb.tn.gov.in/lakelevel) (percent full when the table has capacity and
   storage columns). **Open Metro Water page** shows the page itself under the menu.
+- **Air quality** (`#air`): Chennai's AQI on India's National AQI scale (CPCB bands and breakpoints), now and
+  every 3 hours for the next few days, with each pollutant's sub-index. Worked out from the Copernicus (CAMS)
+  pollution forecast via Open-Meteo (`air-quality-api.open-meteo.com`): 24-hour means for PM2.5, PM10, NO₂ and
+  SO₂, 8-hour means for CO and ozone. CAMS is a ~40 km model, so it is one figure for the city; **CPCB readings
+  by area** opens CPCB's own [AQI page](https://airquality.cpcb.gov.in/AQI_India/) under the menu for the
+  measured values at each Chennai station (CPCB has no public feed for apps).
+- **Sea & tides** (`#sea`): high and low tide times and heights, the sea level curve, waves, swell and sea
+  temperature off Marina Beach for 3 days, from Open-Meteo's marine forecast (`marine-api.open-meteo.com`). Tide
+  times are the turning points of the forecast sea level (which includes the tide), so they are a guide
+  (about ±30 minutes), not for navigation.
 - **Wunderground** (`#wunderground`): a dashboard of current temperature, rain and wind for all saved
   stations, from `api.weather.com`. Picking a station shows its Wunderground page under the menu
   (`#wunderground?id=ICHENN47`). Stations are added and removed under **Manage stations** (saved on the phone).
@@ -37,8 +64,8 @@ A small static web app for Chennai weather watchers. A home page and the ☰ men
 - **Kea Blog** (`#blog`): the latest posts from [kwschennai.com/blog](https://kwschennai.com/blog/)
   (read from the site's WordPress feed); a post opens under the menu.
 
-**Offline:** the last radar image for each city and product, the station readings, the cyclone list and the
-lake table are kept on the phone and shown, with the time they were saved, when the network drops.
+**Offline:** the last radar image for each city and product, the station readings and positions, the cyclone
+list, the lake table, and the last forecast, monsoon figures, air quality and sea forecast are kept on the phone and shown, with the time they were saved, when the network drops.
 
 **Dark mode:** the theme follows the phone; the **Theme** button at the bottom of the menu (☰) switches between Auto, Dark and Light.
 
