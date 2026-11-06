@@ -20,6 +20,9 @@ name: Android APK
 #   ANDROID_KEYSTORE_PASSWORD
 #   ANDROID_KEY_ALIAS
 #   ANDROID_KEY_PASSWORD
+#
+# Optional: WEATHER_API_KEY, the Wunderground (api.weather.com) key for the
+# station dashboard, built into js/config.js of the APK.
 
 on:
   release:
@@ -94,6 +97,18 @@ jobs:
           fi
           echo "ANDROID_KEYSTORE_PATH=$RUNNER_TEMP/release.keystore" >> "$GITHUB_ENV"
           echo "Signing with the release key from secrets."
+
+      # Builds the Wunderground API key into the app (js/config.js) when the
+      # WEATHER_API_KEY repository secret is set. The key is never committed.
+      - name: Add Wunderground API key
+        env:
+          WEATHER_API_KEY: ${{ secrets.WEATHER_API_KEY }}
+        run: |
+          if [ -z "$WEATHER_API_KEY" ]; then
+            echo "::notice::No WEATHER_API_KEY secret; the app will ask for a key on the Wunderground screen."
+            exit 0
+          fi
+          printf 'export const WEATHER_API_KEY = "%s";\n' "$WEATHER_API_KEY" > js/config.js
 
       - name: Build APK
         working-directory: android

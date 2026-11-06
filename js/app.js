@@ -1,14 +1,18 @@
-// Single-page menu: #home, #radar, #wunderground, #blog. Each view is set up
-// the first time it is shown.
+// Single-page menu: #home, #radar, #satellite, #warnings, #wunderground, #blog.
+// Each view's init runs the first time it is shown, and show every time.
 import { showRadar } from "./radar.js";
-import { initWunderground } from "./wunderground.js";
-import { initBlog } from "./blog.js";
+import { showSatellite } from "./satellite.js";
+import { showWarnings } from "./warnings.js";
+import { initWunderground, showWunderground } from "./wunderground.js";
+import { showBlog } from "./blog.js";
 
 const VIEWS = {
   home: { title: "MyWeather" },
   radar: { title: "MyWeather · Radars", show: showRadar },
-  wunderground: { title: "MyWeather · Wunderground", init: initWunderground },
-  blog: { title: "MyWeather · Kea Blog", init: initBlog },
+  satellite: { title: "MyWeather · Satellite", show: showSatellite },
+  warnings: { title: "MyWeather · Warnings", show: showWarnings },
+  wunderground: { title: "MyWeather · Wunderground", init: initWunderground, show: showWunderground },
+  blog: { title: "MyWeather · Kea Blog", show: showBlog },
 };
 const started = new Set();
 

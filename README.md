@@ -9,14 +9,24 @@ A small static web app for Chennai weather watchers. A home page with a menu lea
   - There is no auto-refresh; press **Refresh** for the latest image.
   - Chennai is selected by default. **Set as default** saves the current city and product on this device.
   - The choice is kept in the URL (`?city=cni&product=caz#radar`), so it can be bookmarked or shared.
-- **Wunderground** (`#wunderground`): picking a station opens its Wunderground dashboard right away (Back returns).
-  The dropdown shows `Nickname (ID)`; add or remove any number of stations (saved on this device).
+  - **Play last 3 hours** swaps in IMD's radar loop (MAX (Z) and Surface Rainfall Intensity only),
+    e.g. `https://mausam.imd.gov.in/Radar/animation/Converted/CNI_MAXZ.gif`; kept in the URL as `&anim=1`.
+- **Satellite** (`#satellite`): IMD's INSAT pictures (Asia sector, full disc) and loops, from
+  `https://mausam.imd.gov.in/Satellite/`.
+- **Warnings** (`#warnings`): IMD's district-wise nowcast (next 3 hours) and 5-day warnings for Tamil Nadu and
+  Puducherry, as a map and a district list (Chennai first). Both come from IMD's GeoServer at
+  `reactjs.imd.gov.in`; the list needs the Android app, which adds the missing CORS header.
+- **Wunderground** (`#wunderground`): a dashboard of current temperature, rain and wind for all saved
+  stations, from `api.weather.com`. Picking a station shows its Wunderground page under the menu
+  (`#wunderground?id=ICHENN47`). Stations are added and removed under **Manage stations** (saved on the phone).
   The default list is in [`js/pws-stations.js`](js/pws-stations.js).
+  The readings need a Wunderground API key: set the `WEATHER_API_KEY` repository secret to build it into the
+  APK, or enter one under **Manage stations**. Never commit the key.
 - **Kea Blog** (`#blog`): the latest posts from [kwschennai.com/blog](https://kwschennai.com/blog/)
-  (read from the site's WordPress feed), and a button to open the blog.
+  (read from the site's WordPress feed); a post opens under the menu.
 
-Wunderground and the blog are third-party sites with ads. On the website they open in a new tab with
-their ads. In the Android app they open inside the app, with requests to common ad servers blocked.
+The app is meant for the Android app on a phone. Wunderground pages can only be shown in a frame there:
+the app drops Wunderground's no-framing headers and blocks requests to common ad servers.
 
 ## Run locally
 

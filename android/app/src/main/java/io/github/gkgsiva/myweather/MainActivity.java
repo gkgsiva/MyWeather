@@ -21,9 +21,9 @@ import java.io.ByteArrayInputStream;
  * https://appassets.androidplatform.net/ so ES modules and localStorage work as
  * they do on the website.
  *
- * Wunderground and the Kea blog open inside the app (the Back button returns to
- * MyWeather), with requests to common ad servers blocked and leftover ad slots
- * hidden. Links to any other site open in the browser.
+ * Wunderground and the Kea blog open inside the app, in a frame under the
+ * MyWeather menu (see FrameProxy), with requests to common ad servers blocked
+ * and leftover ad slots hidden. Links to any other site open in the browser.
  */
 public class MainActivity extends Activity {
     private static final String APP_HOST = WebViewAssetLoader.DEFAULT_DOMAIN;
@@ -50,16 +50,22 @@ public class MainActivity extends Activity {
             "mediavine.com", "adthrive.com", "pubfig.com", "confiant-integrations.net",
     };
 
-    /** Hides ad slots that remain empty once their ad requests are blocked. */
+    /** CSS hiding ad slots that remain empty once their ad requests are blocked. */
+    private static final String HIDE_ADS_CSS = "ins.adsbygoogle,[id^='google_ads'],[id^='div-gpt-ad'],"
+            + "[data-google-query-id],iframe[src*='doubleclick'],"
+            + ".ad-mrec,.adsbygoogle,[class*='taboola'],"
+            + "ad-slot,.ad-slot-frame,.house-ad,.house-ad-fallback,.bottom-ads"
+            + "{display:none!important}";
+
+    /** Adds HIDE_ADS_CSS to a page opened full screen. */
     private static final String HIDE_ADS_JS = "(function(){"
             + "if(document.getElementById('myweather-noads'))return;"
             + "var s=document.createElement('style');s.id='myweather-noads';"
-            + "s.textContent='ins.adsbygoogle,[id^=\\'google_ads\\'],[id^=\\'div-gpt-ad\\'],"
-            + "[data-google-query-id],iframe[src*=\\'doubleclick\\'],"
-            + ".ad-mrec,.adsbygoogle,[class*=\\'taboola\\'],"
-            + "ad-slot,.ad-slot-frame,.house-ad,.house-ad-fallback,.bottom-ads"
-            + "{display:none!important}';"
+            + "s.textContent=\"" + HIDE_ADS_CSS + "\";"
             + "(document.head||document.documentElement).appendChild(s);})();";
+
+    /** IMD's warning feed, read by the Warnings screen; it sends no CORS header. */
+    private static final String IMD_GEOSERVER_HOST = "reactjs.imd.gov.in";
 
     private WebView webView;
 
@@ -67,6 +73,14 @@ public class MainActivity extends Activity {
         if (host == null) return false;
         for (String d : domains) {
             if (host.equals(d) || host.endsWith("." + d)) return true;
+        }
+        return false;
+    }
+
+    /** A page (not a script, image or data request), judged by the Accept header. */
+    private static boolean isDocument(WebResourceRequest request) {
+        for (java.util.Map.Entry<String, String> h : request.getRequestHeaders().entrySet()) {
+            if ("accept".equalsIgnoreCase(h.getKey())) return h.getValue().contains("text/html");
         }
         return false;
     }
@@ -92,9 +106,21 @@ public class MainActivity extends Activity {
         webView.setWebViewClient(new WebViewClient() {
             @Override
             public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
-                if (hostMatches(request.getUrl().getHost(), AD_HOSTS)) {
+                String host = request.getUrl().getHost();
+                if (hostMatches(host, AD_HOSTS)) {
                     return new WebResourceResponse("text/plain", "utf-8",
                             new ByteArrayInputStream(new byte[0]));
+                }
+                boolean get = "GET".equalsIgnoreCase(request.getMethod());
+                if (get && IMD_GEOSERVER_HOST.equals(host)
+                        && request.getUrl().getPath() != null
+                        && request.getUrl().getPath().contains("/ows")) {
+                    return FrameProxy.withCors(request);
+                }
+                // Wunderground or the blog in a frame under the app's menu.
+                if (get && !request.isForMainFrame() && hostMatches(host, IN_APP_HOSTS)
+                        && isDocument(request)) {
+                    return FrameProxy.frameDocument(request, HIDE_ADS_CSS);
                 }
                 return assetLoader.shouldInterceptRequest(request.getUrl());
             }
@@ -109,6 +135,10 @@ public class MainActivity extends Activity {
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
                 Uri uri = request.getUrl();
+                // Links inside a framed page stay in the frame.
+                if (!request.isForMainFrame() && hostMatches(uri.getHost(), IN_APP_HOSTS)) {
+                    return false;
+                }
                 if (APP_HOST.equals(uri.getHost()) || hostMatches(uri.getHost(), IN_APP_HOSTS)) {
                     return false;
                 }

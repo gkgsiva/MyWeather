@@ -1,4 +1,4 @@
-import { STATIONS, PRODUCTS, radarImageUrl } from "./stations.js";
+import { STATIONS, PRODUCTS, radarImageUrl, radarAnimationUrl, hasAnimation } from "./stations.js";
 
 const DEFAULT_KEY = "myweather.radar.default";
 const FALLBACK = { city: "cni", product: "caz" }; // Chennai, MAX (Z)
@@ -8,6 +8,11 @@ const productSelect = document.getElementById("product");
 const img = document.getElementById("radar-img");
 const link = document.getElementById("radar-link");
 const status = document.getElementById("status");
+const animateBtn = document.getElementById("animate");
+
+// Showing IMD's 3-hour loop instead of the latest image (MAX (Z) and rainfall
+// intensity only). Kept in the URL as &anim=1.
+let animate = false;
 
 const pick = (value, list, fallback) =>
   list.some((x) => x.code === value) ? value : fallback;
@@ -35,14 +40,20 @@ function init() {
   const def = loadDefault();
   citySelect.value = pick(params.get("city"), STATIONS, def.city);
   productSelect.value = pick(params.get("product"), PRODUCTS, def.product);
+  animate = params.get("anim") === "1";
 
   citySelect.addEventListener("change", render);
   productSelect.addEventListener("change", render);
   document.getElementById("refresh").addEventListener("click", render);
   document.getElementById("set-default").addEventListener("click", setDefault);
+  animateBtn.addEventListener("click", () => {
+    animate = !animate;
+    render();
+  });
 
   img.addEventListener("load", () => {
-    status.textContent = `Updated ${new Date().toLocaleTimeString()}`;
+    const what = img.dataset.anim ? "Playing the last 3 hours, loaded" : "Updated";
+    status.textContent = `${what} ${new Date().toLocaleTimeString()}`;
     status.className = "status";
   });
   img.addEventListener("error", () => {
@@ -56,18 +67,27 @@ function init() {
 function render() {
   const city = citySelect.value;
   const product = productSelect.value;
-  const url = radarImageUrl(city, product);
+  const canAnimate = hasAnimation(product);
+  const playing = animate && canAnimate;
+  const url = playing ? radarAnimationUrl(city, product) : radarImageUrl(city, product);
+
+  animateBtn.disabled = !canAnimate;
+  animateBtn.textContent = playing ? "Show latest image" : "Play last 3 hours";
+  animateBtn.setAttribute("aria-pressed", String(playing));
+  animateBtn.title = canAnimate ? "" : "IMD animates only MAX (Z) and Surface Rainfall Intensity";
 
   link.href = url;
   link.textContent = url;
-  status.textContent = "Loading…";
+  status.textContent = playing ? "Loading the 3-hour loop (a few MB)…" : "Loading…";
   status.className = "status";
   // Cache-buster so the browser fetches the latest frame; the link stays clean.
   img.src = `${url}?t=${Date.now()}`;
-  img.alt = `${nameOf(PRODUCTS, product)} radar for ${nameOf(STATIONS, city)}`;
+  img.dataset.anim = playing ? "1" : "";
+  img.alt = `${nameOf(PRODUCTS, product)} radar ${playing ? "loop" : "image"} for ${nameOf(STATIONS, city)}`;
 
   // Keep the choice in the URL so it can be bookmarked or shared.
   const qs = new URLSearchParams({ city, product });
+  if (playing) qs.set("anim", "1");
   history.replaceState(null, "", `?${qs}#radar`);
 }
 

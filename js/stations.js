@@ -61,3 +61,17 @@ export const PRODUCTS = [
 export function radarImageUrl(stationCode, productCode = "caz") {
   return `${IMD_RADAR_BASE}${productCode}_${stationCode}.gif`;
 }
+
+// IMD's 3-hour radar loops, from https://mausam.imd.gov.in/responsive/radar_animation.php?id=<City>.
+// Only MAX (Z) and Surface Rainfall Intensity are animated, e.g.
+//   https://mausam.imd.gov.in/Radar/animation/Converted/CNI_MAXZ.gif
+const ANIMATED = { caz: "MAXZ", sri: "SRI" };
+
+export function hasAnimation(productCode) {
+  return productCode in ANIMATED;
+}
+
+export function radarAnimationUrl(stationCode, productCode = "caz") {
+  const kind = ANIMATED[productCode];
+  return kind ? `${IMD_RADAR_BASE}animation/Converted/${stationCode.toUpperCase()}_${kind}.gif` : null;
+}
