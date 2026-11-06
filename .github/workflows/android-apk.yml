@@ -6,14 +6,16 @@ name: Android APK
 # - Publishing a release builds the APK from the release tag and attaches it.
 # - "Run workflow" (Actions tab) builds from the chosen branch and attaches the
 #   APK to an existing release, e.g. a release published before this workflow.
+#   Leave the tag empty to only build (the APK is kept as a workflow artifact).
 # - Pushing a version tag (e.g. git push origin v1.1) creates that release with
 #   generated notes if it doesn't exist yet, then attaches the APK.
 # - Pull requests and pushes to main build the APK and keep it as a workflow
 #   artifact, so a broken Android build shows up before release.
 #
-# Optional signing secrets (without them the APK is signed with a throwaway
-# debug key, which installs fine but cannot be updated in place by a later
-# build signed with a different key):
+# Signing secrets (see README "Signing with your own key"). Without them the
+# APK is signed with a throwaway debug key, which installs fine but cannot be
+# updated in place by a later build signed with a different key. If the
+# keystore secret is set, the other three must be too, or the build fails.
 #   ANDROID_KEYSTORE_BASE64   base64 of the .jks/.keystore file
 #   ANDROID_KEYSTORE_PASSWORD
 #   ANDROID_KEY_ALIAS
@@ -25,8 +27,8 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: "Release tag to attach the APK to (e.g. v1.0)"
-        required: true
+        description: "Release tag to attach the APK to (e.g. v1.0); leave empty to only build"
+        required: false
   pull_request:
     paths: ["android/**", "index.html", "css/**", "js/**", ".github/workflows/android-apk.yml"]
   push:
@@ -67,14 +69,31 @@ jobs:
       - name: Set up signing key
         env:
           KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
-          if [ -n "$KEYSTORE_BASE64" ]; then
-            echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.keystore"
-            echo "ANDROID_KEYSTORE_PATH=$RUNNER_TEMP/release.keystore" >> "$GITHUB_ENV"
-            echo "Signing with the release key from secrets."
-          else
-            echo "::warning::No ANDROID_KEYSTORE_BASE64 secret; signing with a debug key."
+          if [ -z "$KEYSTORE_BASE64" ]; then
+            echo "::warning::No ANDROID_KEYSTORE_BASE64 secret; signing with a debug key. This APK will not install over one signed with your own key."
+            exit 0
           fi
+          missing=""
+          for v in ANDROID_KEYSTORE_PASSWORD ANDROID_KEY_ALIAS ANDROID_KEY_PASSWORD; do
+            [ -n "${!v}" ] || missing="$missing $v"
+          done
+          if [ -n "$missing" ]; then
+            echo "::error::ANDROID_KEYSTORE_BASE64 is set but these secrets are missing:$missing"
+            exit 1
+          fi
+          # Tolerate line breaks or spaces pasted into the secret.
+          echo "$KEYSTORE_BASE64" | tr -d ' \r\n' | base64 -d > "$RUNNER_TEMP/release.keystore"
+          if ! keytool -list -keystore "$RUNNER_TEMP/release.keystore" \
+                -storepass "$ANDROID_KEYSTORE_PASSWORD" -alias "$ANDROID_KEY_ALIAS" >/dev/null; then
+            echo "::error::Could not open the keystore with ANDROID_KEYSTORE_PASSWORD, or it has no key named ANDROID_KEY_ALIAS."
+            exit 1
+          fi
+          echo "ANDROID_KEYSTORE_PATH=$RUNNER_TEMP/release.keystore" >> "$GITHUB_ENV"
+          echo "Signing with the release key from secrets."
 
       - name: Build APK
         working-directory: android
@@ -90,6 +109,17 @@ jobs:
           mkdir -p "$RUNNER_TEMP/out"
           cp app/build/outputs/apk/release/app-release.apk \
             "$RUNNER_TEMP/out/MyWeather-${{ steps.version.outputs.name }}.apk"
+
+      - name: Show signing certificate
+        run: |
+          apksigner="$(ls -d "$ANDROID_HOME"/build-tools/*/ | sort -V | tail -1)apksigner"
+          "$apksigner" verify --print-certs "$RUNNER_TEMP"/out/*.apk | tee "$RUNNER_TEMP/certs.txt"
+          {
+            echo "### APK signing certificate"
+            echo '```'
+            grep -E "certificate (DN|SHA-256)" "$RUNNER_TEMP/certs.txt"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - uses: actions/upload-artifact@v4
         with:

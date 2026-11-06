@@ -29,6 +29,9 @@ public class MainActivity extends Activity {
     private static final String APP_HOST = WebViewAssetLoader.DEFAULT_DOMAIN;
     private static final String START_URL = "https://" + APP_HOST + "/assets/www/index.html";
 
+    /** Optional query/hash to open, e.g. "?city=cni&product=caz#radar" from the radar widget. */
+    static final String EXTRA_ROUTE = "io.github.gkgsiva.myweather.ROUTE";
+
     /** Sites shown inside the app rather than in the browser. */
     private static final String[] IN_APP_HOSTS = {"wunderground.com", "kwschennai.com"};
 
@@ -118,11 +121,22 @@ public class MainActivity extends Activity {
             }
         });
 
-        if (savedInstanceState != null) {
+        String route = getIntent().getStringExtra(EXTRA_ROUTE);
+        if (route != null) {
+            webView.loadUrl(START_URL + route);
+        } else if (savedInstanceState != null) {
             webView.restoreState(savedInstanceState);
         } else {
             webView.loadUrl(START_URL);
         }
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        String route = intent.getStringExtra(EXTRA_ROUTE);
+        if (route != null) webView.loadUrl(START_URL + route);
     }
 
     @Override

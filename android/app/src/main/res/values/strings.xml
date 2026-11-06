@@ -1,4 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">MyWeather</string>
+    <string name="widget_description">Latest IMD Chennai radar image</string>
+    <string name="widget_loading">Chennai radar · loading…</string>
+    <string name="widget_caption">Chennai radar · %1$s</string>
+    <string name="widget_failed">Chennai radar · couldn\'t load, tap ↻</string>
+    <string name="widget_refresh">Refresh radar</string>
 </resources>

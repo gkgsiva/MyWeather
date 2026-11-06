@@ -48,7 +48,53 @@ and live in [`js/stations.js`](js/stations.js). The image URL pattern is
 To install, download the APK on the phone and allow installs from that source.
 Build locally with `cd android && ./gradlew assembleRelease` (needs the Android SDK).
 
-Without signing secrets the APK is signed with a throwaway debug key, so a newer
-APK may need the old one uninstalled first. To sign with your own key, add the
-repository secrets `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`,
-`ANDROID_KEY_ALIAS` and `ANDROID_KEY_PASSWORD`.
+### Radar widget
+
+The app adds a **MyWeather** home-screen widget with the latest IMD Chennai radar image
+(MAX (Z), `caz_cni.gif`) and the time IMD updated it. Long-press the home screen →
+**Widgets** → **MyWeather** to add it; it can be resized. Android refreshes it about every
+30 minutes, **↻** fetches it right away, and tapping the image opens the Chennai radar in the app.
+
+### Signing with your own key
+
+Without signing secrets the APK is signed with a throwaway debug key, so a newer APK
+needs the old one uninstalled first. Signing every release with the same key of your
+own lets new versions install over old ones. One-time setup:
+
+1. **Make a keystore** on your computer. `keytool` comes with Java or Android Studio
+   (on Windows it is in `C:\Program Files\Android\Android Studio\jbr\bin`):
+
+   ```sh
+   keytool -genkeypair -v -keystore myweather.jks -alias myweather \
+     -keyalg RSA -keysize 2048 -validity 10000
+   ```
+
+   Pick a password, and press Enter at "key password" to reuse it. Name and
+   organisation can be anything.
+   **Back up `myweather.jks` and the password** (e.g. in a password manager). If either
+   is lost, future versions can't update the installed app. Never commit the file.
+
+2. **Turn it into base64 text:**
+   - Linux: `base64 -w0 myweather.jks > myweather.jks.b64`
+   - macOS: `base64 -i myweather.jks -o myweather.jks.b64`
+   - Windows (PowerShell):
+     `[Convert]::ToBase64String([IO.File]::ReadAllBytes("myweather.jks")) | Set-Content myweather.jks.b64`
+
+3. **Add four repository secrets** under **Settings → Secrets and variables → Actions →
+   New repository secret**:
+
+   | Name | Value |
+   | --- | --- |
+   | `ANDROID_KEYSTORE_BASE64` | the whole contents of `myweather.jks.b64` |
+   | `ANDROID_KEYSTORE_PASSWORD` | the keystore password |
+   | `ANDROID_KEY_ALIAS` | `myweather` |
+   | `ANDROID_KEY_PASSWORD` | the key password (same as the keystore password if you pressed Enter) |
+
+   Then delete `myweather.jks.b64`.
+
+4. **Check it:** open **Actions → Android APK → Run workflow** on `main` and leave the tag empty.
+   The run fails with a clear message if a secret is missing or the password is wrong,
+   and its summary shows the signing certificate. It should no longer say `CN=Android Debug`.
+
+The first APK signed with your key can't install over one signed with the debug key:
+uninstall MyWeather once and install the new APK. From then on updates install in place.
