@@ -5,7 +5,7 @@
 <resources>
     <style name="AppTheme" parent="android:Theme.Material.NoActionBar">
         <item name="android:colorPrimary">#0d47a1</item>
-        <item name="android:statusBarColor">#0b1220</item>
+        <item name="android:statusBarColor">#0f2a4d</item>
         <item name="android:windowBackground">@color/background</item>
     </style>
     <color name="background">#12161b</color>

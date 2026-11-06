@@ -16,20 +16,28 @@
   </head>
   <body>
     <header class="topbar">
+      <button id="menu-btn" type="button" class="menu-btn" aria-label="Open menu" aria-expanded="false"
+        aria-controls="menu-panel">
+        <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true">
+          <path d="M3 6h18M3 12h18M3 18h18" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" />
+        </svg>
+      </button>
       <a class="brand" href="#home">MyWeather</a>
-      <button id="theme-btn" type="button" class="theme-btn" aria-label="Change theme">Theme: Auto</button>
-      <nav class="menu" aria-label="Main menu">
-        <a href="#home" data-view="home">Home</a>
-        <a href="#radar" data-view="radar">Radars</a>
-        <a href="#satellite" data-view="satellite">Satellite</a>
-        <a href="#warnings" data-view="warnings">Warnings</a>
-        <a href="#cyclone" data-view="cyclone">Cyclones</a>
-        <a href="#rain" data-view="rain">Rain history</a>
-        <a href="#lakes" data-view="lakes">Lakes</a>
-        <a href="#wunderground" data-view="wunderground">Wunderground</a>
-        <a href="#blog" data-view="blog">Kea Blog</a>
-      </nav>
+      <span id="view-name" class="view-name"></span>
     </header>
+    <div id="menu-backdrop" class="menu-backdrop" hidden></div>
+    <nav id="menu-panel" class="menu" aria-label="Main menu" hidden>
+      <a href="#home" data-view="home">Home</a>
+      <a href="#radar" data-view="radar">Radars</a>
+      <a href="#satellite" data-view="satellite">Satellite</a>
+      <a href="#warnings" data-view="warnings">Warnings</a>
+      <a href="#cyclone" data-view="cyclone">Cyclones</a>
+      <a href="#rain" data-view="rain">Rain history</a>
+      <a href="#lakes" data-view="lakes">Lakes</a>
+      <a href="#wunderground" data-view="wunderground">Wunderground</a>
+      <a href="#blog" data-view="blog">Kea Blog</a>
+      <button id="theme-btn" type="button" class="theme-btn">Theme: Auto</button>
+    </nav>
 
     <main>
       <!-- Home -->
