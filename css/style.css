@@ -599,3 +599,64 @@ table.lakes th, table.lakes td { white-space: normal; }
 .station-map.dark-tiles .leaflet-tile-pane { filter: invert(1) hue-rotate(180deg) brightness(0.9) contrast(0.85); }
 .month-nav[hidden] { display: none; }
 .controls label[hidden] { display: none; }
+
+/* Lightning */
+.lt-summary { flex-direction: column; align-items: stretch; gap: 8px; }
+.lt-summary small { color: var(--muted); font-size: 0.85rem; }
+.lt-headline { font-size: 1.05rem; }
+.lt-rings { list-style: none; padding: 0; margin: 0; }
+.lt-rings li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 4px 0;
+  border-top: 1px solid var(--border);
+  font-size: 0.9rem;
+}
+.lt-rings li span { color: var(--muted); }
+.lt-rings li b { font-weight: 600; text-align: right; }
+.lt-rings li[data-age="10"] b { color: #e53935; }
+.lt-near {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 8px;
+  background: var(--bg);
+}
+.lt-legend { display: flex; flex-wrap: wrap; gap: 4px 14px; }
+.lt-10 { color: #e53935; }
+.lt-20 { color: #2e9d3a; }
+.lt-30 { color: #7e3ff2; }
+figure[hidden] { display: none; }
+
+/* Pull to refresh */
+body { overscroll-behavior-y: contain; }
+.ptr {
+  position: fixed;
+  top: 56px;
+  left: 50%;
+  z-index: 2; /* slides out from under the header */
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--card);
+  color: var(--muted);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  transform: translate(-50%, -52px);
+  opacity: 0;
+  pointer-events: none;
+}
+.ptr.ready, .ptr.spin { color: var(--accent); }
+.ptr.settle { transition: transform 0.2s ease, opacity 0.2s ease; }
+.ptr.spin svg { animation: ptr-spin 0.8s linear infinite; }
+@keyframes ptr-spin { to { transform: rotate(360deg); } }
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}

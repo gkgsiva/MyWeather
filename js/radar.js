@@ -1,5 +1,6 @@
 import { STATIONS, PRODUCTS, radarImageUrl, radarAnimationUrl, hasAnimation } from "./stations.js";
 import { saveImage, loadImage, when } from "./offline.js";
+import { shareButton, shareName } from "./share.js";
 
 const DEFAULT_KEY = "myweather.radar.default";
 const FALLBACK = { city: "cni", product: "caz" }; // Chennai, MAX (Z)
@@ -16,6 +17,8 @@ const animateBtn = document.getElementById("animate");
 let animate = false;
 let loadSeq = 0; // ignores answers for an earlier pick
 let objectUrl = "";
+// The picture on screen and IMD's time for it, for the Share button.
+let shown = null;
 
 const pick = (value, list, fallback) =>
   list.some((x) => x.code === value) ? value : fallback;
@@ -49,6 +52,7 @@ function init() {
   productSelect.addEventListener("change", render);
   document.getElementById("refresh").addEventListener("click", render);
   document.getElementById("set-default").addEventListener("click", setDefault);
+  shareButton(document.getElementById("radar-share"), shareRadar, say);
   animateBtn.addEventListener("click", () => {
     animate = !animate;
     render();
@@ -98,7 +102,8 @@ function say(text, error = false) {
   status.className = error ? "status error" : "status";
 }
 
-function showBlob(blob) {
+function showBlob(blob, imdTime) {
+  shown = { blob, imdTime };
   if (objectUrl) URL.revokeObjectURL(objectUrl);
   objectUrl = URL.createObjectURL(blob);
   img.dataset.mode = "blob";
@@ -127,7 +132,7 @@ async function loadRadar(url, playing) {
     }
     if (seq !== loadSeq) return;
     const entry = { blob, savedAt: Date.now(), imdTime: res.headers.get("last-modified") || "" };
-    showBlob(blob);
+    showBlob(blob, entry.imdTime);
     const what = playing ? "Playing the last 3 hours, loaded" : "Updated";
     say(`${what} ${new Date().toLocaleTimeString()}${imdTimeText(entry.imdTime)}`);
     saveImage(url, entry);
@@ -136,20 +141,36 @@ async function loadRadar(url, playing) {
     const saved = await loadImage(url);
     if (seq !== loadSeq) return;
     if (saved) {
-      showBlob(saved.blob);
+      showBlob(saved.blob, saved.imdTime);
       const why = httpError ? "IMD isn't serving this image right now" : "No connection";
       say(`${why}. Showing the copy saved at ${when(saved.savedAt)}${imdTimeText(saved.imdTime)}.`, true);
     } else if (httpError) {
+      shown = null;
       img.dataset.mode = "";
       img.removeAttribute("src");
       say("Image not available right now. This radar may be offline; try another city or product.", true);
     } else {
       // Can't fetch it here (no network, or a browser without the app's CORS
       // header): let the image load straight from IMD.
+      shown = null;
       img.dataset.mode = "direct";
       img.src = `${url}?t=${Date.now()}`;
     }
   }
+}
+
+function shareRadar() {
+  if (!shown) return null;
+  const city = nameOf(STATIONS, citySelect.value);
+  const product = nameOf(PRODUCTS, productSelect.value);
+  const loop = img.dataset.anim ? " · last 3 hours" : "";
+  const t = Date.parse(shown.imdTime);
+  const time = isNaN(t) ? "" : ` · ${when(t)}`;
+  return {
+    blob: shown.blob,
+    name: shareName(`radar-${citySelect.value}`, shown.blob.type),
+    text: `${city} radar, ${product}${loop}${time} (IMD). Shared from MyWeather.`,
+  };
 }
 
 function setDefault() {

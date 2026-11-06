@@ -31,6 +31,7 @@
       <a href="#forecast" data-view="forecast">Forecast</a>
       <a href="#radar" data-view="radar">Radars</a>
       <a href="#satellite" data-view="satellite">Satellite</a>
+      <a href="#lightning" data-view="lightning">Lightning</a>
       <a href="#warnings" data-view="warnings">Warnings</a>
       <a href="#cyclone" data-view="cyclone">Cyclones</a>
       <a href="#monsoon" data-view="monsoon">Monsoon</a>
@@ -103,6 +104,12 @@
             <a class="card" href="#satellite">
               <strong>Satellite</strong>
               <span>INSAT pictures and loops from IMD</span>
+            </a>
+          </li>
+          <li>
+            <a class="card" href="#lightning">
+              <strong>Lightning</strong>
+              <span>How close the last 30 minutes' lightning is to Chennai</span>
             </a>
           </li>
           <li>
@@ -209,6 +216,7 @@
           <button id="refresh" type="button">Refresh</button>
           <button id="animate" type="button" class="secondary" aria-pressed="false">Play last 3 hours</button>
           <button id="set-default" type="button" class="secondary">Set as default</button>
+          <button id="radar-share" type="button" class="secondary share-btn">Share</button>
         </form>
 
         <p id="status" class="status" aria-live="polite"></p>
@@ -235,6 +243,7 @@
             <select id="sat-image"></select>
           </label>
           <button id="sat-refresh" type="button">Refresh</button>
+          <button id="sat-share" type="button" class="secondary share-btn">Share</button>
         </form>
         <p id="sat-status" class="status" aria-live="polite"></p>
         <figure>
@@ -247,6 +256,43 @@
         <p class="note">
           INSAT-3D/3DR images © India Meteorological Department, from
           <a href="https://mausam.imd.gov.in/responsive/satellite.php" target="_blank" rel="noopener noreferrer">mausam.imd.gov.in</a>.
+        </p>
+      </section>
+
+      <!-- Lightning -->
+      <section id="view-lightning" class="view" hidden>
+        <h2>Lightning</h2>
+        <form class="controls" onsubmit="return false">
+          <label>
+            Show
+            <select id="lt-show">
+              <option value="near">Near Chennai</option>
+              <option value="india">All India · last 30 min, animated</option>
+            </select>
+          </label>
+          <button id="lt-refresh" type="button">Refresh</button>
+          <button id="lt-share" type="button" class="secondary share-btn">Share</button>
+        </form>
+        <p id="lt-status" class="status" aria-live="polite"></p>
+        <div id="lt-summary" class="now-card lt-summary" aria-live="polite"></div>
+        <figure id="lt-near-box" hidden>
+          <canvas id="lt-near" class="lt-near" role="img" aria-label="Lightning within about 300 km of Chennai, with 50, 100 and 200 km rings"></canvas>
+          <figcaption class="lt-legend">
+            <span class="lt-10">★ last 10 min</span>
+            <span class="lt-20">◆ 10–20 min</span>
+            <span class="lt-30">● 20–30 min</span>
+          </figcaption>
+        </figure>
+        <figure id="lt-india-box">
+          <img id="lt-img" alt="IMD lightning over India in the last 30 minutes on an INSAT cloud picture" />
+          <figcaption>Plays the last 10, 20 and 30 minutes in turn. Pinch to zoom.</figcaption>
+        </figure>
+        <p class="note">
+          Lightning detected by IITM's lightning network on an INSAT-3D/3DR cloud-top
+          picture, © India Meteorological Department, from
+          <a href="https://mausam.imd.gov.in/" target="_blank" rel="noopener noreferrer">mausam.imd.gov.in</a>.
+          IMD redraws it every few minutes. Distances are read off IMD's map, so they are
+          good to about 10 km, and lightning that strikes close together counts as one spot.
         </p>
       </section>
 
