@@ -117,15 +117,14 @@
         <h2>Wunderground stations</h2>
         <form class="controls" onsubmit="return false">
           <label>
-            Station
+            Pick a station to open its page
             <select id="pws"></select>
           </label>
-          <a id="pws-open" class="button" target="_blank" rel="noopener noreferrer">Open</a>
-          <button id="pws-remove" type="button" class="secondary">Remove</button>
         </form>
-        <p class="status">
-          Page: <a id="pws-link" target="_blank" rel="noopener noreferrer"></a>
-        </p>
+        <p class="note">Use your phone's Back button to come back here.</p>
+
+        <h3>Your stations</h3>
+        <ul id="pws-list" class="pws-list"></ul>
 
         <h3>Add a station</h3>
         <form id="pws-add" class="controls">

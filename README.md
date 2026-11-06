@@ -9,7 +9,7 @@ A small static web app for Chennai weather watchers. A home page with a menu lea
   - There is no auto-refresh; press **Refresh** for the latest image.
   - Chennai is selected by default. **Set as default** saves the current city and product on this device.
   - The choice is kept in the URL (`?city=cni&product=caz#radar`), so it can be bookmarked or shared.
-- **Wunderground** (`#wunderground`): opens a personal weather station's Wunderground dashboard.
+- **Wunderground** (`#wunderground`): picking a station opens its Wunderground dashboard right away (Back returns).
   The dropdown shows `Nickname (ID)`; add or remove any number of stations (saved on this device).
   The default list is in [`js/pws-stations.js`](js/pws-stations.js).
 - **Kea Blog** (`#blog`): the latest posts from [kwschennai.com/blog](https://kwschennai.com/blog/)
