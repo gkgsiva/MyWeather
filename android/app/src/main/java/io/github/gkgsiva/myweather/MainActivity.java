@@ -53,7 +53,8 @@ public class MainActivity extends Activity {
             + "var s=document.createElement('style');s.id='myweather-noads';"
             + "s.textContent='ins.adsbygoogle,[id^=\\'google_ads\\'],[id^=\\'div-gpt-ad\\'],"
             + "[data-google-query-id],iframe[src*=\\'doubleclick\\'],"
-            + ".ad-mrec,.adsbygoogle,[class*=\\'taboola\\']"
+            + ".ad-mrec,.adsbygoogle,[class*=\\'taboola\\'],"
+            + "ad-slot,.ad-slot-frame,.house-ad,.house-ad-fallback,.bottom-ads"
             + "{display:none!important}';"
             + "(document.head||document.documentElement).appendChild(s);})();";
 
