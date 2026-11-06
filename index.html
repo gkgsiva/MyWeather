@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="referrer" content="no-referrer" />
+    <title>MyWeather · Radar</title>
+    <link rel="stylesheet" href="css/style.css" />
+  </head>
+  <body>
+    <header>
+      <h1>MyWeather</h1>
+      <p class="sub">Current IMD Doppler weather radar</p>
+    </header>
+
+    <main>
+      <form class="controls" onsubmit="return false">
+        <label>
+          City
+          <select id="city"></select>
+        </label>
+        <label>
+          Product
+          <select id="product"></select>
+        </label>
+        <button id="refresh" type="button">Refresh</button>
+      </form>
+
+      <p id="status" class="status" aria-live="polite"></p>
+
+      <figure>
+        <img id="radar-img" alt="" />
+        <figcaption>
+          Direct image link:
+          <a id="radar-link" target="_blank" rel="noopener noreferrer"></a>
+        </figcaption>
+      </figure>
+    </main>
+
+    <footer>
+      Images © India Meteorological Department, from
+      <a href="https://mausam.imd.gov.in/responsive/radar.php" target="_blank" rel="noopener noreferrer">mausam.imd.gov.in</a>.
+    </footer>
+
+    <script type="module" src="js/app.js"></script>
+  </body>
+</html>
