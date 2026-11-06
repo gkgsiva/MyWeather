@@ -5,7 +5,12 @@ import android.app.Activity;
 import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
+import android.view.View;
+import android.view.ViewGroup;
+import android.view.WindowInsets;
+import android.widget.FrameLayout;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebResourceResponse;
 import android.webkit.WebSettings;
@@ -115,6 +120,45 @@ public class MainActivity extends Activity {
         return false;
     }
 
+    /**
+     * Android 15 draws apps edge to edge, under the status bar and the
+     * navigation bar, so the header's menu button ended up under the clock.
+     * This keeps the WebView between the two bars and paints the strip behind
+     * the status bar in the header colour (statusBarColor in styles.xml).
+     */
+    private View fitBelowSystemBars(View content) {
+        final FrameLayout root = new FrameLayout(this);
+        final View statusBarBg = new View(this);
+        // Read from the theme: on Android 15 the window reports a transparent status bar.
+        android.content.res.TypedArray a = obtainStyledAttributes(new int[]{android.R.attr.statusBarColor});
+        statusBarBg.setBackgroundColor(a.getColor(0, 0xff1565c0));
+        a.recycle();
+        root.addView(content, new FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        root.addView(statusBarBg, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0));
+        root.setOnApplyWindowInsetsListener((v, insets) -> {
+            int left, top, right, bottom;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                android.graphics.Insets bars = insets.getInsets(
+                        WindowInsets.Type.systemBars() | WindowInsets.Type.displayCutout());
+                left = bars.left; top = bars.top; right = bars.right; bottom = bars.bottom;
+            } else {
+                left = insets.getSystemWindowInsetLeft();
+                top = insets.getSystemWindowInsetTop();
+                right = insets.getSystemWindowInsetRight();
+                bottom = insets.getSystemWindowInsetBottom();
+            }
+            FrameLayout.LayoutParams lp = (FrameLayout.LayoutParams) content.getLayoutParams();
+            lp.setMargins(left, top, right, bottom);
+            content.setLayoutParams(lp);
+            ViewGroup.LayoutParams sb = statusBarBg.getLayoutParams();
+            sb.height = top;
+            statusBarBg.setLayoutParams(sb);
+            return insets;
+        });
+        return root;
+    }
+
     @SuppressLint("SetJavaScriptEnabled")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -125,7 +169,7 @@ public class MainActivity extends Activity {
                 .build();
 
         webView = new WebView(this);
-        setContentView(webView);
+        setContentView(fitBelowSystemBars(webView));
 
         WebSettings settings = webView.getSettings();
         settings.setJavaScriptEnabled(true);
