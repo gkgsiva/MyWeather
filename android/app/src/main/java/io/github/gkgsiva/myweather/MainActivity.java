@@ -34,7 +34,8 @@ public class MainActivity extends Activity {
 
     /** Sites shown inside the app rather than in the browser. */
     private static final String[] IN_APP_HOSTS = {
-            "wunderground.com", "kwschennai.com", "cmwssb.tn.gov.in", "chennaimetrowater.tn.gov.in"};
+            "wunderground.com", "kwschennai.com", "cmwssb.tn.gov.in", "chennaimetrowater.tn.gov.in",
+            "airquality.cpcb.gov.in"};
 
     /** Ad and ad-tracking servers whose requests get an empty response. */
     private static final String[] AD_HOSTS = {
@@ -68,7 +69,10 @@ public class MainActivity extends Activity {
     /** IMD's warning feed, read by the Warnings screen; it sends no CORS header. */
     private static final String IMD_GEOSERVER_HOST = "reactjs.imd.gov.in";
 
-    /** IMD's main site: radar images (kept on the phone for offline use) and the cyclone page. */
+    /**
+     * IMD's main site: radar images (kept on the phone for offline use), the
+     * cyclone page and the rainfall pages the Monsoon screen reads.
+     */
     private static final String IMD_HOST = "mausam.imd.gov.in";
 
     /** Chennai Metro Water, whose lake-level page the Lakes screen reads. */
@@ -80,10 +84,18 @@ public class MainActivity extends Activity {
         String path = url.getPath() == null ? "" : url.getPath();
         if (IMD_GEOSERVER_HOST.equals(host)) return path.contains("/ows");
         if (IMD_HOST.equals(host)) {
-            return path.startsWith("/Radar/") || path.equals("/responsive/cycloneinformation.php");
+            return path.startsWith("/Radar/") || path.equals("/responsive/cycloneinformation.php")
+                    || path.startsWith("/responsive/rainfallinformation");
         }
         return hostMatches(host, LAKE_HOSTS);
     }
+
+    /** OpenStreetMap's tile server, used by the station map. */
+    private static final String OSM_TILE_HOST = "tile.openstreetmap.org";
+
+    /** How the app names itself to OpenStreetMap (its tile policy asks apps to). */
+    private static final String MAP_USER_AGENT =
+            "MyWeather-Android/1 (https://github.com/gkgsiva/myweather)";
 
     private WebView webView;
 
@@ -130,6 +142,10 @@ public class MainActivity extends Activity {
                             new ByteArrayInputStream(new byte[0]));
                 }
                 boolean get = "GET".equalsIgnoreCase(request.getMethod());
+                // Station map tiles, with the app's own User-Agent.
+                if (get && OSM_TILE_HOST.equals(host)) {
+                    return FrameProxy.withUserAgent(request, MAP_USER_AGENT);
+                }
                 // Data the page reads itself; isDocument() is false for fetch().
                 if (get && needsCors(request.getUrl()) && !isDocument(request)) {
                     return FrameProxy.withCors(request);

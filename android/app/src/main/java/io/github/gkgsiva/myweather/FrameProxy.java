@@ -26,6 +26,9 @@ import java.util.Map;
  * - Data the page reads with fetch() from sites that send no CORS header
  *   (IMD's warning feed, radar images kept for offline use, the cyclone page,
  *   Chennai Metro Water's lake levels) gets Access-Control-Allow-Origin.
+ * - OpenStreetMap tiles for the station map are fetched with a User-Agent
+ *   naming the app, as OpenStreetMap's tile usage policy asks; it blocks the
+ *   WebView's generic browser one.
  *
  * Runs on the WebView's background thread (shouldInterceptRequest).
  */
@@ -66,6 +69,16 @@ final class FrameProxy {
         }
     }
 
+    /** A map tile, fetched with the given User-Agent and no Referer. */
+    static WebResourceResponse withUserAgent(WebResourceRequest request, String userAgent) {
+        try {
+            Fetched f = fetch(request, userAgent);
+            return f.toResponse();
+        } catch (IOException e) {
+            return null;
+        }
+    }
+
     private static int indexOfIgnoreCase(String s, String needle) {
         return s.toLowerCase(Locale.ROOT).indexOf(needle);
     }
@@ -89,14 +102,23 @@ final class FrameProxy {
     }
 
     private static Fetched fetch(WebResourceRequest request) throws IOException {
+        return fetch(request, null);
+    }
+
+    private static Fetched fetch(WebResourceRequest request, String userAgent) throws IOException {
         String url = request.getUrl().toString();
         HttpURLConnection conn = (HttpURLConnection) new URL(url).openConnection();
         conn.setConnectTimeout(TIMEOUT_MS);
         conn.setReadTimeout(TIMEOUT_MS);
         conn.setInstanceFollowRedirects(true);
         for (Map.Entry<String, String> h : request.getRequestHeaders().entrySet()) {
+            if (userAgent != null && (h.getKey().equalsIgnoreCase("user-agent")
+                    || h.getKey().equalsIgnoreCase("referer"))) {
+                continue;
+            }
             conn.setRequestProperty(h.getKey(), h.getValue());
         }
+        if (userAgent != null) conn.setRequestProperty("User-Agent", userAgent);
         CookieManager cookies = CookieManager.getInstance();
         String cookie = cookies.getCookie(url);
         if (cookie != null) conn.setRequestProperty("Cookie", cookie);

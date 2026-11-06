@@ -1,24 +1,36 @@
-// Single-page menu: #home, #radar, #satellite, #warnings, #cyclone, #rain,
-// #lakes, #wunderground, #blog. Each view's init runs the first time it is
+// Single-page menu: #home, #forecast, #radar, #satellite, #warnings, #cyclone,
+// #monsoon, #rain, #compare, #map, #lakes, #air, #sea, #wunderground, #blog. Each view's init runs the first time it is
 // shown, show every time, and hide when another view is opened.
+import { initForecast, showForecast } from "./forecast.js";
 import { showRadar } from "./radar.js";
 import { showSatellite } from "./satellite.js";
 import { showWarnings } from "./warnings.js";
 import { initCyclone, showCyclone } from "./cyclone.js";
+import { initMonsoon, showMonsoon } from "./monsoon.js";
 import { initRain, showRain, hideRain } from "./rain.js";
+import { initCompare, showCompare, hideCompare } from "./compare.js";
+import { initMap, showMap } from "./stationmap.js";
 import { initLakes, showLakes } from "./lakes.js";
+import { initAir, showAir } from "./air.js";
+import { initSea, showSea } from "./sea.js";
 import { initWunderground, showWunderground } from "./wunderground.js";
 import { showBlog } from "./blog.js";
 import { initTheme } from "./theme.js";
 
 const VIEWS = {
   home: { title: "MyWeather" },
+  forecast: { title: "MyWeather · Forecast", init: initForecast, show: showForecast },
   radar: { title: "MyWeather · Radars", show: showRadar },
   satellite: { title: "MyWeather · Satellite", show: showSatellite },
   warnings: { title: "MyWeather · Warnings", show: showWarnings },
   cyclone: { title: "MyWeather · Cyclones", init: initCyclone, show: showCyclone },
+  monsoon: { title: "MyWeather · Monsoon", init: initMonsoon, show: showMonsoon },
   rain: { title: "MyWeather · Rain history", init: initRain, show: showRain, hide: hideRain },
+  compare: { title: "MyWeather · Compare stations", init: initCompare, show: showCompare, hide: hideCompare },
+  map: { title: "MyWeather · Station map", init: initMap, show: showMap },
   lakes: { title: "MyWeather · Lakes", init: initLakes, show: showLakes },
+  air: { title: "MyWeather · Air quality", init: initAir, show: showAir },
+  sea: { title: "MyWeather · Sea & tides", init: initSea, show: showSea },
   wunderground: { title: "MyWeather · Wunderground", init: initWunderground, show: showWunderground },
   blog: { title: "MyWeather · Kea Blog", show: showBlog },
 };

@@ -28,12 +28,18 @@
     <div id="menu-backdrop" class="menu-backdrop" hidden></div>
     <nav id="menu-panel" class="menu" aria-label="Main menu" hidden>
       <a href="#home" data-view="home">Home</a>
+      <a href="#forecast" data-view="forecast">Forecast</a>
       <a href="#radar" data-view="radar">Radars</a>
       <a href="#satellite" data-view="satellite">Satellite</a>
       <a href="#warnings" data-view="warnings">Warnings</a>
       <a href="#cyclone" data-view="cyclone">Cyclones</a>
+      <a href="#monsoon" data-view="monsoon">Monsoon</a>
       <a href="#rain" data-view="rain">Rain history</a>
+      <a href="#compare" data-view="compare">Compare stations</a>
+      <a href="#map" data-view="map">Station map</a>
       <a href="#lakes" data-view="lakes">Lakes</a>
+      <a href="#air" data-view="air">Air quality</a>
+      <a href="#sea" data-view="sea">Sea &amp; tides</a>
       <a href="#wunderground" data-view="wunderground">Wunderground</a>
       <a href="#blog" data-view="blog">Kea Blog</a>
       <button id="theme-btn" type="button" class="theme-btn">Theme: Auto</button>
@@ -76,11 +82,17 @@
           </svg>
           <div class="hero-text">
             <h1>MyWeather</h1>
-            <p>Radar, local weather stations and the Kea blog in one place.</p>
+            <p>Forecast, radar, local weather stations and the Kea blog in one place.</p>
           </div>
         </div>
 
         <ul class="cards">
+          <li>
+            <a class="card" href="#forecast">
+              <strong>Forecast</strong>
+              <span>Chennai's next 7 days and today's rain chance by hour</span>
+            </a>
+          </li>
           <li>
             <a class="card" href="#radar">
               <strong>Radars</strong>
@@ -106,15 +118,45 @@
             </a>
           </li>
           <li>
+            <a class="card" href="#monsoon">
+              <strong>Monsoon</strong>
+              <span>Northeast monsoon rain against normal, from IMD</span>
+            </a>
+          </li>
+          <li>
             <a class="card" href="#rain">
               <strong>Rain history</strong>
               <span>Daily and monthly rain at your stations</span>
             </a>
           </li>
           <li>
+            <a class="card" href="#compare">
+              <strong>Compare stations</strong>
+              <span>Two or three stations' rain through a day or month</span>
+            </a>
+          </li>
+          <li>
+            <a class="card" href="#map">
+              <strong>Station map</strong>
+              <span>Your stations on a map, by rain or temperature</span>
+            </a>
+          </li>
+          <li>
             <a class="card" href="#lakes">
               <strong>Lakes</strong>
               <span>Chennai reservoir levels from Metro Water</span>
+            </a>
+          </li>
+          <li>
+            <a class="card" href="#air">
+              <strong>Air quality</strong>
+              <span>Chennai AQI now and the next few days</span>
+            </a>
+          </li>
+          <li>
+            <a class="card" href="#sea">
+              <strong>Sea &amp; tides</strong>
+              <span>Tide times and waves off the Chennai coast</span>
             </a>
           </li>
           <li>
@@ -130,6 +172,26 @@
             </a>
           </li>
         </ul>
+      </section>
+
+      <!-- Forecast -->
+      <section id="view-forecast" class="view" hidden>
+        <h2>Forecast · Chennai</h2>
+        <form class="controls" onsubmit="return false">
+          <button id="fc-refresh" type="button">Refresh</button>
+        </form>
+        <p id="fc-status" class="status" aria-live="polite"></p>
+        <div id="fc-now" class="now-card"></div>
+        <div class="chart-head"><strong>Chance of rain · next 24 hours</strong></div>
+        <svg id="fc-hourly" class="chart" role="group" aria-label="Chance of rain by hour"></svg>
+        <p id="fc-hourly-readout" class="readout" aria-live="polite"></p>
+        <h3>Next 7 days</h3>
+        <ul id="fc-days" class="fc-days"></ul>
+        <p class="note">
+          Rain chance is the highest for the day; mm is the expected total. From
+          <a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer">Open-Meteo</a>
+          (ECMWF, GFS and other models). For official warnings see <a href="#warnings">Warnings</a>.
+        </p>
       </section>
 
       <!-- Radars -->
@@ -231,6 +293,31 @@
         </p>
       </section>
 
+      <!-- Monsoon -->
+      <section id="view-monsoon" class="view" hidden>
+        <h2>Monsoon · rain against normal</h2>
+        <form class="controls" onsubmit="return false">
+          <label>
+            Period
+            <select id="mon-period"></select>
+          </label>
+          <button id="mon-refresh" type="button">Refresh</button>
+        </form>
+        <p id="mon-status" class="status" aria-live="polite"></p>
+        <p id="mon-heading" class="note"></p>
+        <ul id="mon-cards" class="mon-cards"></ul>
+        <h3>Around Chennai</h3>
+        <ul id="mon-near" class="mon-list"></ul>
+        <h3>All districts · wettest against normal first</h3>
+        <ul id="mon-districts" class="mon-list"></ul>
+        <p class="note">
+          IMD's categories: Large excess (60% or more above normal), Excess (20–59%), Normal (within 19%),
+          Deficient (20–59% below), Large deficient (60–99% below), No rain. From IMD's
+          <a href="https://mausam.imd.gov.in/responsive/rainfallinformation.php" target="_blank" rel="noopener noreferrer">rainfall information</a>
+          pages (district, state and subdivision); days run 08:30 to 08:30.
+        </p>
+      </section>
+
       <!-- Rain history -->
       <section id="view-rain" class="view" hidden>
         <h2>Rain history</h2>
@@ -250,7 +337,10 @@
               <tbody></tbody>
             </table>
           </div>
-          <p class="note">Rain in mm per day; today is so far. Tap a station for its daily and monthly charts.</p>
+          <p class="note">
+            Rain in mm per day; today is so far. Tap a station for its daily and monthly charts.
+            <a href="#compare">Compare stations through a day or month</a> · <a href="#map">Station map</a>
+          </p>
         </div>
 
         <div id="rain-station-view" hidden>
@@ -278,6 +368,73 @@
         </div>
       </section>
 
+      <!-- Compare stations -->
+      <section id="view-compare" class="view" hidden>
+        <h2>Compare stations</h2>
+        <form class="controls" onsubmit="return false">
+          <label>
+            Station 1
+            <select id="cmp-s1"></select>
+          </label>
+          <label>
+            Station 2
+            <select id="cmp-s2"></select>
+          </label>
+          <label>
+            Station 3
+            <select id="cmp-s3"></select>
+          </label>
+        </form>
+        <form class="controls cmp-when" onsubmit="return false">
+          <label>
+            Show
+            <select id="cmp-mode">
+              <option value="day">One day</option>
+              <option value="month">One month</option>
+            </select>
+          </label>
+          <label class="cmp-date">
+            Day
+            <input id="cmp-day" type="date" />
+          </label>
+          <span id="cmp-month-nav" class="month-nav" hidden>
+            <button id="cmp-prev" type="button" class="secondary small" aria-label="Previous month">‹</button>
+            <span id="cmp-month-label"></span>
+            <button id="cmp-next" type="button" class="secondary small" aria-label="Next month">›</button>
+          </span>
+          <button id="cmp-refresh" type="button">Refresh</button>
+        </form>
+        <p id="cmp-status" class="status" aria-live="polite"></p>
+        <svg id="cmp-chart" class="chart" role="group" aria-label="Rain at the chosen stations"></svg>
+        <p id="cmp-readout" class="readout" aria-live="polite"></p>
+        <div class="table-wrap">
+          <table id="cmp-totals" class="readings cmp-table">
+            <thead><tr></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <p class="note">
+          From Wunderground. A day uses every reading the stations sent; a month uses daily totals, which are kept on
+          the phone and shared with <a href="#rain">Rain history</a>. Tap a station for its charts.
+        </p>
+      </section>
+
+      <!-- Station map -->
+      <section id="view-map" class="view" hidden>
+        <form class="controls sticky-controls" onsubmit="return false">
+          <label>
+            Show
+            <select id="map-show"></select>
+          </label>
+          <button id="map-refresh" type="button">Refresh</button>
+          <button id="map-fit" type="button" class="secondary">All stations</button>
+        </form>
+        <p id="map-status" class="status" aria-live="polite"></p>
+        <div id="map-box" class="station-map"></div>
+        <p id="map-legend" class="legend map-legend"></p>
+        <p class="note">Rain bands follow IMD's daily categories. Faded markers haven't reported for over an hour.</p>
+      </section>
+
       <!-- Lakes -->
       <section id="view-lakes" class="view" hidden>
         <div id="lake-home">
@@ -299,6 +456,68 @@
           <p class="frame-bar"><a href="#lakes">← Lake levels</a></p>
           <iframe id="lake-frame" class="site-frame" title="Chennai Metro Water lake levels"></iframe>
         </div>
+      </section>
+
+      <!-- Air quality -->
+      <section id="view-air" class="view" hidden>
+        <div id="air-home">
+          <h2>Air quality · Chennai</h2>
+          <form class="controls" onsubmit="return false">
+            <button id="air-refresh" type="button">Refresh</button>
+            <a class="button secondary-link" href="#air?page=1">CPCB readings by area</a>
+          </form>
+          <p id="air-status" class="status" aria-live="polite"></p>
+          <div id="air-now" class="air-now" hidden>
+            <div class="air-badge"><b class="air-aqi"></b><small>AQI</small></div>
+            <div class="now-desc">
+              <strong class="air-level"></strong>
+              <span class="air-main"></span>
+              <small class="air-advice"></small>
+            </div>
+          </div>
+          <h3>Pollutants · sub-index</h3>
+          <ul id="air-parts" class="air-parts"></ul>
+          <div class="chart-head"><strong>AQI · next few days</strong></div>
+          <svg id="air-chart" class="chart" role="group" aria-label="AQI forecast"></svg>
+          <p id="air-readout" class="readout" aria-live="polite"></p>
+          <p class="note">
+            India's National AQI (CPCB scale: Good 0–50, Satisfactory –100, Moderate –200, Poor –300, Very poor –400,
+            Severe), worked out from the
+            <a href="https://atmosphere.copernicus.eu/" target="_blank" rel="noopener noreferrer">Copernicus (CAMS)</a>
+            pollution forecast via <a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer">Open-Meteo</a>.
+            It is one model figure for the whole city; <b>CPCB readings by area</b> shows the measured values at
+            CPCB's Chennai stations.
+          </p>
+        </div>
+        <div id="air-reader" hidden>
+          <p class="frame-bar"><a href="#air">← Air quality</a></p>
+          <iframe id="air-frame" class="site-frame" title="CPCB air quality"></iframe>
+          <p id="air-frame-note" class="note" hidden>
+            <a href="https://airquality.cpcb.gov.in/AQI_India/" target="_blank" rel="noopener noreferrer">Open CPCB's AQI page</a>
+          </p>
+        </div>
+      </section>
+
+      <!-- Sea and tides -->
+      <section id="view-sea" class="view" hidden>
+        <h2>Sea &amp; tides · Chennai coast</h2>
+        <form class="controls" onsubmit="return false">
+          <button id="sea-refresh" type="button">Refresh</button>
+        </form>
+        <p id="sea-status" class="status" aria-live="polite"></p>
+        <div id="sea-now" class="now-card"></div>
+        <h3>Tides</h3>
+        <ul id="sea-tides" class="tide-list"></ul>
+        <div class="chart-head"><strong>Sea level · next 3 days</strong></div>
+        <svg id="sea-chart" class="chart" role="group" aria-label="Sea level"></svg>
+        <p id="sea-readout" class="readout" aria-live="polite"></p>
+        <ul id="sea-days" class="plain-list"></ul>
+        <p class="note">
+          Off Marina Beach, from <a href="https://open-meteo.com/en/docs/marine-weather-api" target="_blank" rel="noopener noreferrer">Open-Meteo's marine forecast</a>.
+          Tide times are worked out from the forecast sea level and are a guide (about ±30 minutes), not for
+          navigation. Sea state uses the Douglas scale on wave height. Fishermen's warnings are under
+          <a href="#warnings">Warnings</a> and <a href="#cyclone">Cyclones</a>.
+        </p>
       </section>
 
       <!-- Wunderground -->

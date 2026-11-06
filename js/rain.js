@@ -11,6 +11,7 @@
 // (about 30 a minute and 1,500 a day for a station owner's key).
 import { loadStations, apiKey } from "./wunderground.js";
 import { routeParams } from "./route.js";
+import { drawBars } from "./chart.js";
 
 const API = "https://api.weather.com/v2/pws";
 const CACHE_PREFIX = "myweather.rain.";
@@ -38,20 +39,20 @@ let run = 0; // bumps to cancel the request queue on navigation
 // ---- Dates (phone time, IST for Chennai) ----
 
 const pad = (n) => String(n).padStart(2, "0");
-const dayKey = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-const todayKey = () => dayKey(new Date());
-const monthKey = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}`;
-const parseMonth = (m) => {
+export const dayKey = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+export const todayKey = () => dayKey(new Date());
+export const monthKey = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}`;
+export const parseMonth = (m) => {
   const [y, mo] = (m || "").split("-").map(Number);
   return y > 2000 && mo >= 1 && mo <= 12 ? new Date(y, mo - 1, 1) : null;
 };
-const addMonths = (d, n) => new Date(d.getFullYear(), d.getMonth() + n, 1);
-const daysIn = (d) => new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
-const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-const monthName = (d) => `${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
+export const addMonths = (d, n) => new Date(d.getFullYear(), d.getMonth() + n, 1);
+export const daysIn = (d) => new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+export const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+export const monthName = (d) => `${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
 
 // Days of a month up to today, as "YYYY-MM-DD".
-function monthDays(m) {
+export function monthDays(m) {
   const out = [];
   const now = todayKey();
   for (let i = 1; i <= daysIn(m); i++) {
@@ -85,17 +86,17 @@ function cachePut(id, values) {
 }
 
 // Rain for a day: a number, null (station sent nothing), or undefined (not loaded).
-function rainOn(id, k) {
+export function rainOn(id, k) {
   if (k === todayKey()) return today[id]?.[k];
   return cacheGet(id)[k];
 }
 
 // ---- Requests ----
 
-class KeyError extends Error {}
-class LimitError extends Error {}
+export class KeyError extends Error {}
+export class LimitError extends Error {}
 
-async function get(path, params) {
+export async function get(path, params) {
   const key = apiKey();
   if (!key) throw new KeyError("no key");
   const qs = new URLSearchParams({ ...params, format: "json", units: "m", numericPrecision: "decimal", apiKey: key });
@@ -116,7 +117,7 @@ async function get(path, params) {
 const localDate = (s) => (typeof s === "string" ? s.slice(0, 10) : "");
 
 // Last 7 days (today included) in one request.
-async function fetch7Days(id) {
+export async function fetch7Days(id) {
   const body = await get("dailysummary/7day", { stationId: id });
   const values = {};
   for (const d of body?.summaries || []) {
@@ -138,12 +139,14 @@ async function fetchDay(id, k) {
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-// Fetches the given days one by one, newest first, calling onDay after each.
-// Stops when the screen changes (run bumps). Returns a reason it stopped, or "".
-async function fetchDays(id, keys, myRun, onDay) {
-  let left = keys.filter((k) => rainOn(id, k) === undefined).sort().reverse();
+// Fetches the given days one by one, newest first (or oldest first), calling onDay after each.
+// Stops when cancelled() turns true (the screen changed). Returns a reason it
+// stopped, or "". onWait is told when the per-minute limit makes it pause.
+export async function loadDays(id, keys, cancelled, onDay, onWait, oldestFirst = false) {
+  let left = keys.filter((k) => rainOn(id, k) === undefined).sort();
+  if (!oldestFirst) left.reverse();
   while (left.length) {
-    if (myRun !== run) return "cancelled";
+    if (cancelled()) return "cancelled";
     const k = left[0];
     try {
       await fetchDay(id, k);
@@ -152,7 +155,7 @@ async function fetchDays(id, keys, myRun, onDay) {
     } catch (e) {
       if (e instanceof KeyError) return "key";
       if (e instanceof LimitError) {
-        say("Wunderground's per-minute limit was reached; carrying on in a minute…");
+        onWait?.();
         await sleep(60000);
         continue;
       }
@@ -162,6 +165,11 @@ async function fetchDays(id, keys, myRun, onDay) {
   }
   return "";
 }
+
+const fetchDays = (id, keys, myRun, onDay) =>
+  loadDays(id, keys, () => myRun !== run, onDay, () =>
+    say("Wunderground's per-minute limit was reached; carrying on in a minute…")
+  );
 
 function say(text, error = false) {
   status.textContent = text;
@@ -176,85 +184,6 @@ function sayStop(reason) {
 const fmt = (v) => (typeof v === "number" ? v.toFixed(1) : "–");
 // Narrow table cells: "0", "4.2", "35".
 const short = (v) => (typeof v !== "number" ? "–" : v === 0 ? "0" : v < 10 ? v.toFixed(1) : String(Math.round(v)));
-
-// ---- Bar chart (SVG) ----
-
-const NS = "http://www.w3.org/2000/svg";
-function el(name, attrs = {}, text) {
-  const e = document.createElementNS(NS, name);
-  for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v);
-  if (text != null) e.textContent = text;
-  return e;
-}
-
-// Rounds the top of the axis up to 1, 2, 2.5 or 5 × 10^n.
-function niceMax(v) {
-  if (!(v > 0)) return 10;
-  const p = 10 ** Math.floor(Math.log10(v));
-  return [1, 2, 2.5, 5, 10].map((m) => m * p).find((m) => m >= v);
-}
-
-// bars: [{ label, tick, value (number|null|undefined), partial, text }]
-function drawBars(svg, readout, bars, emptyText) {
-  const W = 360;
-  const H = 190;
-  const L = 34;
-  const R = 6;
-  const T = 14;
-  const B = 22;
-  const max = niceMax(Math.max(0, ...bars.map((b) => b.value || 0)));
-  const step = (W - L - R) / bars.length;
-  const bw = Math.max(2, Math.min(22, step - 2));
-  const y = (v) => T + (H - T - B) * (1 - v / max);
-  svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
-  svg.replaceChildren();
-
-  for (let i = 0; i <= 4; i++) {
-    const v = (max / 4) * i;
-    svg.append(el("line", { x1: L, x2: W - R, y1: y(v), y2: y(v), class: "grid" }));
-    svg.append(el("text", { x: L - 4, y: y(v) + 3, class: "axis", "text-anchor": "end" }, String(+v.toFixed(1))));
-  }
-  svg.append(el("text", { x: 2, y: 9, class: "axis" }, "mm"));
-
-  let top = -1;
-  bars.forEach((b, i) => {
-    if (typeof b.value === "number" && (top < 0 || b.value > bars[top].value)) top = i;
-  });
-
-  bars.forEach((b, i) => {
-    const cx = L + step * i + step / 2;
-    if (b.tick) svg.append(el("text", { x: cx, y: H - 6, class: "axis", "text-anchor": "middle" }, b.tick));
-    const g = el("g", { class: "bar", tabindex: "0", role: "img", "aria-label": b.text });
-    // Hit target: the whole column.
-    g.append(el("rect", { x: cx - step / 2, y: T, width: step, height: H - T - B, class: "hit" }));
-    if (typeof b.value === "number" && b.value > 0) {
-      const h = Math.max(1, y(0) - y(b.value));
-      const r = Math.min(4, bw / 2, h);
-      // Rounded top, square base on the axis.
-      const x0 = cx - bw / 2;
-      const y0 = y(0);
-      const d = `M${x0},${y0}V${y0 - h + r}Q${x0},${y0 - h} ${x0 + r},${y0 - h}H${x0 + bw - r}Q${x0 + bw},${y0 - h} ${x0 + bw},${y0 - h + r}V${y0}Z`;
-      g.append(el("path", { d, class: b.partial ? "fill partial" : "fill" }));
-    } else if (b.value === undefined) {
-      g.append(el("rect", { x: cx - bw / 2, y: y(0) - 2, width: bw, height: 2, class: "pending" }));
-    }
-    const show = () => {
-      readout.textContent = b.text;
-      for (const s of svg.querySelectorAll(".bar.on")) s.classList.remove("on");
-      g.classList.add("on");
-    };
-    g.addEventListener("click", show);
-    g.addEventListener("focus", show);
-    svg.append(g);
-  });
-  svg.append(el("line", { x1: L, x2: W - R, y1: y(0), y2: y(0), class: "baseline" }));
-
-  if (top >= 0 && bars[top].value > 0) {
-    const cx = L + step * top + step / 2;
-    svg.append(el("text", { x: cx, y: y(bars[top].value) - 4, class: "peak", "text-anchor": "middle" }, fmt(bars[top].value)));
-  }
-  readout.textContent = emptyText;
-}
 
 // ---- All stations, last 7 days ----
 
