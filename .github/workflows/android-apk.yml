@@ -1,0 +1,100 @@
+name: Android APK
+
+# Builds the Android app (android/) and attaches MyWeather-<version>.apk to a
+# GitHub release.
+#
+# - Publishing a release builds the APK from the release tag and attaches it.
+# - "Run workflow" (Actions tab) builds from the chosen branch and attaches the
+#   APK to an existing release, e.g. a release published before this workflow.
+# - Pull requests and pushes to main build the APK and keep it as a workflow
+#   artifact, so a broken Android build shows up before release.
+#
+# Optional signing secrets (without them the APK is signed with a throwaway
+# debug key, which installs fine but cannot be updated in place by a later
+# build signed with a different key):
+#   ANDROID_KEYSTORE_BASE64   base64 of the .jks/.keystore file
+#   ANDROID_KEYSTORE_PASSWORD
+#   ANDROID_KEY_ALIAS
+#   ANDROID_KEY_PASSWORD
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag to attach the APK to (e.g. v1.0)"
+        required: true
+  pull_request:
+    paths: ["android/**", "index.html", "css/**", "js/**", ".github/workflows/android-apk.yml"]
+  push:
+    branches: [main]
+    paths: ["android/**", "index.html", "css/**", "js/**", ".github/workflows/android-apk.yml"]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      TAG: ${{ github.event.release.tag_name || inputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: android-actions/setup-android@v3
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Work out version
+        id: version
+        run: |
+          if [ -n "$TAG" ]; then
+            name="${TAG#v}"
+          else
+            name="0.0.${GITHUB_RUN_NUMBER}-dev"
+          fi
+          echo "name=$name" >> "$GITHUB_OUTPUT"
+
+      - name: Set up signing key
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          if [ -n "$KEYSTORE_BASE64" ]; then
+            echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.keystore"
+            echo "ANDROID_KEYSTORE_PATH=$RUNNER_TEMP/release.keystore" >> "$GITHUB_ENV"
+            echo "Signing with the release key from secrets."
+          else
+            echo "::warning::No ANDROID_KEYSTORE_BASE64 secret; signing with a debug key."
+          fi
+
+      - name: Build APK
+        working-directory: android
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          chmod +x gradlew
+          ./gradlew --no-daemon assembleRelease \
+            -PversionName="${{ steps.version.outputs.name }}" \
+            -PversionCode="${GITHUB_RUN_NUMBER}"
+          mkdir -p "$RUNNER_TEMP/out"
+          cp app/build/outputs/apk/release/app-release.apk \
+            "$RUNNER_TEMP/out/MyWeather-${{ steps.version.outputs.name }}.apk"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: MyWeather-${{ steps.version.outputs.name }}-apk
+          path: ${{ runner.temp }}/out/*.apk
+
+      - name: Attach APK to release
+        if: env.TAG != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "$TAG" "$RUNNER_TEMP"/out/*.apk --clobber --repo "$GITHUB_REPOSITORY"
