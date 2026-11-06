@@ -3,23 +3,37 @@ package io.github.gkgsiva.myweather;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.ActivityNotFoundException;
+import android.content.ClipData;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.util.Base64;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowInsets;
 import android.widget.FrameLayout;
+import android.widget.Toast;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebResourceResponse;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 
+import androidx.core.content.FileProvider;
+import androidx.webkit.WebMessageCompat;
 import androidx.webkit.WebViewAssetLoader;
+import androidx.webkit.WebViewCompat;
+import androidx.webkit.WebViewFeature;
+
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.util.Collections;
 
 /**
  * Hosts the MyWeather web app in a WebView. The bundled files are served from
@@ -75,7 +89,8 @@ public class MainActivity extends Activity {
     private static final String IMD_GEOSERVER_HOST = "reactjs.imd.gov.in";
 
     /**
-     * IMD's main site: radar images (kept on the phone for offline use), the
+     * IMD's main site: radar and lightning images (kept on the phone for
+     * offline use), satellite pictures (read again for sharing), the
      * cyclone page and the rainfall pages the Monsoon screen reads.
      */
     private static final String IMD_HOST = "mausam.imd.gov.in";
@@ -89,7 +104,8 @@ public class MainActivity extends Activity {
         String path = url.getPath() == null ? "" : url.getPath();
         if (IMD_GEOSERVER_HOST.equals(host)) return path.contains("/ows");
         if (IMD_HOST.equals(host)) {
-            return path.startsWith("/Radar/") || path.equals("/responsive/cycloneinformation.php")
+            return path.startsWith("/Radar/") || path.startsWith("/lightning/") || path.startsWith("/Satellite/")
+                    || path.equals("/responsive/cycloneinformation.php")
                     || path.startsWith("/responsive/rainfallinformation");
         }
         return hostMatches(host, LAKE_HOSTS);
@@ -101,6 +117,15 @@ public class MainActivity extends Activity {
     /** How the app names itself to OpenStreetMap (its tile policy asks apps to). */
     private static final String MAP_USER_AGENT =
             "MyWeather-Android/1 (https://github.com/gkgsiva/myweather)";
+
+    /** Picture types the Share buttons may send, with their file extensions. */
+    private static final java.util.Map<String, String> SHARE_TYPES = new java.util.HashMap<>();
+    static {
+        SHARE_TYPES.put("image/gif", ".gif");
+        SHARE_TYPES.put("image/png", ".png");
+        SHARE_TYPES.put("image/jpeg", ".jpg");
+        SHARE_TYPES.put("image/webp", ".webp");
+    }
 
     private WebView webView;
 
@@ -228,6 +253,8 @@ public class MainActivity extends Activity {
             }
         });
 
+        listenToPage();
+
         String route = getIntent().getStringExtra(EXTRA_ROUTE);
         if (route != null) {
             webView.loadUrl(START_URL + route);
@@ -235,6 +262,75 @@ public class MainActivity extends Activity {
             webView.restoreState(savedInstanceState);
         } else {
             webView.loadUrl(START_URL);
+        }
+    }
+
+    /**
+     * Messages from the MyWeather page (window.MyWeatherAndroid.postMessage),
+     * accepted only from the app's own origin and top frame, so Wunderground
+     * or the blog in their frames can't use them. Used by the Share buttons
+     * (js/share.js).
+     */
+    private void listenToPage() {
+        if (!WebViewFeature.isFeatureSupported(WebViewFeature.WEB_MESSAGE_LISTENER)) return;
+        WebViewCompat.addWebMessageListener(webView, "MyWeatherAndroid",
+                Collections.singleton("https://" + APP_HOST),
+                (view, message, sourceOrigin, isMainFrame, reply) -> {
+                    if (!isMainFrame || message.getType() != WebMessageCompat.TYPE_STRING) return;
+                    String json = message.getData();
+                    if (json == null) return;
+                    try {
+                        JSONObject msg = new JSONObject(json);
+                        if ("shareImage".equals(msg.optString("action"))) {
+                            new Thread(() -> shareImage(msg), "share").start();
+                        }
+                    } catch (JSONException ignored) {
+                        // Not a message for us.
+                    }
+                });
+    }
+
+    /**
+     * Saves a picture from the page to the app's cache and opens Android's
+     * share sheet with it (WhatsApp, Telegram, Gmail...). Runs off the UI thread.
+     */
+    private void shareImage(JSONObject msg) {
+        String type = msg.optString("type");
+        String ext = SHARE_TYPES.get(type);
+        if (ext == null) return;
+        try {
+            byte[] bytes = Base64.decode(msg.optString("data"), Base64.DEFAULT);
+            if (bytes.length == 0) return;
+            File dir = new File(getCacheDir(), "shared");
+            if (!dir.isDirectory() && !dir.mkdirs()) throw new IOException("no cache folder");
+            // Only the latest shared picture is kept.
+            File[] old = dir.listFiles();
+            if (old != null) for (File f : old) f.delete();
+            String name = msg.optString("name").replaceAll("[^A-Za-z0-9._-]", "_");
+            if (name.isEmpty()) name = "MyWeather";
+            if (!name.endsWith(ext)) name += ext;
+            File file = new File(dir, name);
+            try (FileOutputStream out = new FileOutputStream(file)) {
+                out.write(bytes);
+            }
+            Uri uri = FileProvider.getUriForFile(this, getPackageName() + ".files", file);
+            Intent send = new Intent(Intent.ACTION_SEND)
+                    .setType(type)
+                    .putExtra(Intent.EXTRA_STREAM, uri)
+                    .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            String text = msg.optString("text");
+            if (!text.isEmpty()) send.putExtra(Intent.EXTRA_TEXT, text);
+            send.setClipData(ClipData.newRawUri("", uri));
+            Intent chooser = Intent.createChooser(send, "Share picture");
+            runOnUiThread(() -> {
+                try {
+                    startActivity(chooser);
+                } catch (ActivityNotFoundException e) {
+                    Toast.makeText(this, "No app to share with", Toast.LENGTH_SHORT).show();
+                }
+            });
+        } catch (IOException | IllegalArgumentException e) {
+            runOnUiThread(() -> Toast.makeText(this, "Couldn't share the picture", Toast.LENGTH_SHORT).show());
         }
     }
 

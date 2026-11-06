@@ -22,7 +22,8 @@ import java.util.Map;
  * - Wunderground and Kea blog pages shown in a frame under the app's menu.
  *   Wunderground forbids framing (X-Frame-Options / CSP frame-ancestors), so
  *   those headers are dropped. The page also gets the ad-slot style and
- *   links set to open in the same frame.
+ *   links set to open in the same frame, and a script that passes pull to
+ *   refresh gestures to the app's page.
  * - Data the page reads with fetch() from sites that send no CORS header
  *   (IMD's warning feed, radar images kept for offline use, the cyclone page,
  *   Chennai Metro Water's lake levels) gets Access-Control-Allow-Origin.
@@ -37,13 +38,28 @@ final class FrameProxy {
 
     private FrameProxy() {}
 
+    /**
+     * Tells the MyWeather page about touches at the top of a framed page, so
+     * pull to refresh works there too (see js/pull.js). It only reports
+     * positions and the page's address; it can't reach the app itself.
+     */
+    private static final String PULL_JS = "<script>(function(){if(window.parent===window)return;"
+            + "var on=false;function s(p,y){window.parent.postMessage({myweather:'pull',phase:p,y:y,href:location.href},'*');}"
+            + "addEventListener('touchstart',function(e){on=e.touches.length===1&&window.scrollY<=0;"
+            + "if(on)s('start',e.touches[0].clientY);},{passive:true});"
+            + "addEventListener('touchmove',function(e){if(on)s('move',e.touches[0].clientY);},{passive:true});"
+            + "addEventListener('touchend',function(){if(on){on=false;s('end',0);}},{passive:true});"
+            + "addEventListener('touchcancel',function(){if(on){on=false;s('cancel',0);}},{passive:true});"
+            + "})();</script>";
+
     /** A frame document from an in-app site, with framing allowed and ads hidden. */
     static WebResourceResponse frameDocument(WebResourceRequest request, String hideAdsCss) {
         try {
             Fetched f = fetch(request);
             if (f.mime.equals("text/html")) {
                 String html = new String(f.body, f.charset);
-                String inject = "<base target=\"_self\"><style id=\"myweather-noads\">" + hideAdsCss + "</style>";
+                String inject = "<base target=\"_self\"><style id=\"myweather-noads\">" + hideAdsCss + "</style>"
+                        + PULL_JS;
                 int head = indexOfIgnoreCase(html, "<head");
                 int at = head < 0 ? -1 : html.indexOf('>', head);
                 html = at < 0 ? inject + html : html.substring(0, at + 1) + inject + html.substring(at + 1);

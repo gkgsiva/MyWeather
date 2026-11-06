@@ -16,6 +16,14 @@ A small static web app for Chennai weather watchers. A home page and the ☰ men
     e.g. `https://mausam.imd.gov.in/Radar/animation/Converted/CNI_MAXZ.gif`; kept in the URL as `&anim=1`.
 - **Satellite** (`#satellite`): IMD's INSAT pictures (Asia sector, full disc) and loops, from
   `https://mausam.imd.gov.in/Satellite/`.
+- **Lightning** (`#lightning`): how close the lightning of the last 30 minutes is to Chennai, from IMD's
+  satellite lightning map (`https://mausam.imd.gov.in/lightning/Converted/BT.gif`, IITM's lightning network on an
+  INSAT cloud-top picture, redrawn every few minutes). The app reads the marker colours off the map's last frame
+  (red: last 10 min, green: 10–20 min, purple: 20–30 min) and shows the nearest lightning's distance and
+  direction, the spots within 50, 100 and 200 km, and a close-up around Chennai with those rings. **All India**
+  shows IMD's animation. Distances are good to about 10 km (one map pixel is about 7 km). The map's position on
+  the picture was fitted to its coastline (`MAP` in `js/lightning.js`); if IMD changes the picture's size the app
+  says so and shows only the map. Needs the Android app for the CORS header.
 - **Warnings** (`#warnings`): IMD's district-wise nowcast (next 3 hours) and 5-day warnings for Tamil Nadu and
   Puducherry, as a map and a district list (Chennai first). Both come from IMD's GeoServer at
   `reactjs.imd.gov.in`; the list needs the Android app, which adds the missing CORS header.
@@ -64,7 +72,17 @@ A small static web app for Chennai weather watchers. A home page and the ☰ men
 - **Kea Blog** (`#blog`): the latest posts from [kwschennai.com/blog](https://kwschennai.com/blog/)
   (read from the site's WordPress feed); a post opens under the menu.
 
-**Offline:** the last radar image for each city and product, the station readings and positions, the cyclone
+**Share:** Radars, Satellite and Lightning have a **Share** button that sends the picture on screen, with a
+one-line caption, to WhatsApp or any other app through Android's share sheet (the Lightning close-up is shared
+with its distance rings). The page hands the picture to the app over a message channel that only the app's own
+page can use; the app saves it in its cache and shares it through a `FileProvider`. In a browser it uses the Web
+Share API, or downloads the picture.
+
+**Pull to refresh:** at the top of any screen, pull down and let go to reload it (the screen's own **Refresh**,
+or the page shown under the menu). It works on Wunderground and blog pages too: the app adds a few lines to
+those pages that pass the gesture to MyWeather. The station map is left out, since dragging it moves the map.
+
+**Offline:** the last radar image for each city and product, the lightning map, the station readings and positions, the cyclone
 list, the lake table, and the last forecast, monsoon figures, air quality and sea forecast are kept on the phone and shown, with the time they were saved, when the network drops.
 
 **Dark mode:** the theme follows the phone; the **Theme** button at the bottom of the menu (☰) switches between Auto, Dark and Light.

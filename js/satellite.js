@@ -1,5 +1,7 @@
 // IMD INSAT-3D/3DR satellite pictures, as listed on
 // https://mausam.imd.gov.in/responsive/satellite.php
+import { shareButton, shareName } from "./share.js";
+
 const BASE = "https://mausam.imd.gov.in/Satellite/";
 const KEY = "myweather.satellite";
 
@@ -39,6 +41,10 @@ function init() {
     render();
   });
   document.getElementById("sat-refresh").addEventListener("click", render);
+  shareButton(document.getElementById("sat-share"), shareSatellite, (text, error) => {
+    status.textContent = text;
+    status.className = error ? "status error" : "status";
+  });
   img.addEventListener("load", () => {
     status.textContent = `Updated ${new Date().toLocaleTimeString()}. Pinch to zoom.`;
     status.className = "status";
@@ -59,6 +65,22 @@ function render() {
   status.className = "status";
   img.src = `${url}?t=${Date.now()}`;
   img.alt = `INSAT satellite: ${item.name}`;
+}
+
+// Fetches the picture on screen again (the browser cache usually has it) so
+// it can be handed to the share sheet. The app adds the CORS header IMD
+// doesn't send.
+async function shareSatellite() {
+  if (!img.complete || !img.naturalWidth) return null;
+  const item = SAT_IMAGES.find((s) => s.code === select.value);
+  const res = await fetch(img.src);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const blob = await res.blob();
+  return {
+    blob,
+    name: shareName("satellite", blob.type),
+    text: `INSAT satellite, ${item.name} (IMD). Shared from MyWeather.`,
+  };
 }
 
 // Loads the latest picture each time the Satellite menu is opened.

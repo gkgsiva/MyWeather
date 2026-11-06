@@ -1,9 +1,10 @@
-// Single-page menu: #home, #forecast, #radar, #satellite, #warnings, #cyclone,
+// Single-page menu: #home, #forecast, #radar, #satellite, #lightning, #warnings, #cyclone,
 // #monsoon, #rain, #compare, #map, #lakes, #air, #sea, #wunderground, #blog. Each view's init runs the first time it is
 // shown, show every time, and hide when another view is opened.
 import { initForecast, showForecast } from "./forecast.js";
 import { showRadar } from "./radar.js";
 import { showSatellite } from "./satellite.js";
+import { initLightning, showLightning } from "./lightning.js";
 import { showWarnings } from "./warnings.js";
 import { initCyclone, showCyclone } from "./cyclone.js";
 import { initMonsoon, showMonsoon } from "./monsoon.js";
@@ -16,12 +17,14 @@ import { initSea, showSea } from "./sea.js";
 import { initWunderground, showWunderground } from "./wunderground.js";
 import { showBlog } from "./blog.js";
 import { initTheme } from "./theme.js";
+import { initPullToRefresh } from "./pull.js";
 
 const VIEWS = {
   home: { title: "MyWeather" },
   forecast: { title: "MyWeather · Forecast", init: initForecast, show: showForecast },
   radar: { title: "MyWeather · Radars", show: showRadar },
   satellite: { title: "MyWeather · Satellite", show: showSatellite },
+  lightning: { title: "MyWeather · Lightning", init: initLightning, show: showLightning },
   warnings: { title: "MyWeather · Warnings", show: showWarnings },
   cyclone: { title: "MyWeather · Cyclones", init: initCyclone, show: showCyclone },
   monsoon: { title: "MyWeather · Monsoon", init: initMonsoon, show: showMonsoon },
@@ -84,6 +87,24 @@ if (!location.hash && new URLSearchParams(location.search).has("city")) {
   history.replaceState(null, "", `${location.search}#radar`);
 }
 
+// Pull to refresh reloads what the screen shows: a page in a frame is
+// reloaded where it is, otherwise the screen's own Refresh button is pressed.
+function refreshView({ href } = {}) {
+  const section = document.getElementById(`view-${shown}`);
+  const visible = (el) => el.offsetParent !== null;
+  const frame = [...section.querySelectorAll("iframe")].find((f) => visible(f) && f.src);
+  if (frame) {
+    frame.src = /^https:\/\//.test(href || "") ? href : frame.src;
+    return;
+  }
+  const button = [...section.querySelectorAll('button[id$="refresh"]')].find((b) => visible(b) && !b.disabled);
+  button?.click();
+}
+
 initTheme();
+initPullToRefresh(refreshView, {
+  // Not while the menu is open, and not on the map (dragging pans it).
+  canStart: (target) => menuPanel.hidden && !target.closest?.(".leaflet-container"),
+});
 window.addEventListener("hashchange", route);
 route();
