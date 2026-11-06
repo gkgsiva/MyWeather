@@ -16,6 +16,18 @@ A small static web app for Chennai weather watchers. A home page with a menu lea
 - **Warnings** (`#warnings`): IMD's district-wise nowcast (next 3 hours) and 5-day warnings for Tamil Nadu and
   Puducherry, as a map and a district list (Chennai first). Both come from IMD's GeoServer at
   `reactjs.imd.gov.in`; the list needs the Android app, which adds the missing CORS header.
+- **Cyclones** (`#cyclone`): IMD's current cyclone bulletins (Tropical Weather Outlook, National and Hourly
+  bulletins, as PDFs) and the track, wind and storm-surge maps, read from IMD's
+  [Cyclone Information](https://mausam.imd.gov.in/responsive/cycloneinformation.php) page. The app adds the
+  missing CORS header.
+- **Rain history** (`#rain`): every saved station's rain for the last 7 days side by side, and per station
+  (`#rain?id=ICHENN47&month=2026-11`) a daily chart for a month and a monthly chart for the last 12 months.
+  The data is Wunderground's (`api.weather.com` `dailysummary/7day` and `history/daily`, with the same key as
+  the dashboard). History comes one day per request, so each finished day is kept on the phone and only
+  today is fetched again; requests are spaced about 2 seconds apart to stay inside the key's limits.
+- **Lakes** (`#lakes`): storage in Chennai's reservoirs, read from Chennai Metro Water's
+  [lake-level page](https://cmwssb.tn.gov.in/lake-level) (percent full when the table has capacity and
+  storage columns). **Open Metro Water page** shows the page itself under the menu.
 - **Wunderground** (`#wunderground`): a dashboard of current temperature, rain and wind for all saved
   stations, from `api.weather.com`. Picking a station shows its Wunderground page under the menu
   (`#wunderground?id=ICHENN47`). Stations are added and removed under **Manage stations** (saved on the phone).
@@ -24,6 +36,11 @@ A small static web app for Chennai weather watchers. A home page with a menu lea
   APK, or enter one under **Manage stations**. Never commit the key.
 - **Kea Blog** (`#blog`): the latest posts from [kwschennai.com/blog](https://kwschennai.com/blog/)
   (read from the site's WordPress feed); a post opens under the menu.
+
+**Offline:** the last radar image for each city and product, the station readings, the cyclone list and the
+lake table are kept on the phone and shown, with the time they were saved, when the network drops.
+
+**Dark mode:** the theme follows the phone; the button in the top bar switches between Auto, Dark and Light.
 
 The app is meant for the Android app on a phone. Wunderground pages can only be shown in a frame there:
 the app drops Wunderground's no-framing headers and blocks requests to common ad servers.

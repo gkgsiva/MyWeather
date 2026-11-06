@@ -33,7 +33,8 @@ public class MainActivity extends Activity {
     static final String EXTRA_ROUTE = "io.github.gkgsiva.myweather.ROUTE";
 
     /** Sites shown inside the app rather than in the browser. */
-    private static final String[] IN_APP_HOSTS = {"wunderground.com", "kwschennai.com"};
+    private static final String[] IN_APP_HOSTS = {
+            "wunderground.com", "kwschennai.com", "cmwssb.tn.gov.in", "chennaimetrowater.tn.gov.in"};
 
     /** Ad and ad-tracking servers whose requests get an empty response. */
     private static final String[] AD_HOSTS = {
@@ -66,6 +67,23 @@ public class MainActivity extends Activity {
 
     /** IMD's warning feed, read by the Warnings screen; it sends no CORS header. */
     private static final String IMD_GEOSERVER_HOST = "reactjs.imd.gov.in";
+
+    /** IMD's main site: radar images (kept on the phone for offline use) and the cyclone page. */
+    private static final String IMD_HOST = "mausam.imd.gov.in";
+
+    /** Chennai Metro Water, whose lake-level page the Lakes screen reads. */
+    private static final String[] LAKE_HOSTS = {"cmwssb.tn.gov.in", "chennaimetrowater.tn.gov.in"};
+
+    /** Requests the page reads with fetch(), which need a CORS header added. */
+    private static boolean needsCors(Uri url) {
+        String host = url.getHost();
+        String path = url.getPath() == null ? "" : url.getPath();
+        if (IMD_GEOSERVER_HOST.equals(host)) return path.contains("/ows");
+        if (IMD_HOST.equals(host)) {
+            return path.startsWith("/Radar/") || path.equals("/responsive/cycloneinformation.php");
+        }
+        return hostMatches(host, LAKE_HOSTS);
+    }
 
     private WebView webView;
 
@@ -112,9 +130,8 @@ public class MainActivity extends Activity {
                             new ByteArrayInputStream(new byte[0]));
                 }
                 boolean get = "GET".equalsIgnoreCase(request.getMethod());
-                if (get && IMD_GEOSERVER_HOST.equals(host)
-                        && request.getUrl().getPath() != null
-                        && request.getUrl().getPath().contains("/ows")) {
+                // Data the page reads itself; isDocument() is false for fetch().
+                if (get && needsCors(request.getUrl()) && !isDocument(request)) {
                     return FrameProxy.withCors(request);
                 }
                 // Wunderground or the blog in a frame under the app's menu.

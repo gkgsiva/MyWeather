@@ -1,4 +1,5 @@
 import { STATIONS, PRODUCTS, radarImageUrl, radarAnimationUrl, hasAnimation } from "./stations.js";
+import { saveImage, loadImage, when } from "./offline.js";
 
 const DEFAULT_KEY = "myweather.radar.default";
 const FALLBACK = { city: "cni", product: "caz" }; // Chennai, MAX (Z)
@@ -13,6 +14,8 @@ const animateBtn = document.getElementById("animate");
 // Showing IMD's 3-hour loop instead of the latest image (MAX (Z) and rainfall
 // intensity only). Kept in the URL as &anim=1.
 let animate = false;
+let loadSeq = 0; // ignores answers for an earlier pick
+let objectUrl = "";
 
 const pick = (value, list, fallback) =>
   list.some((x) => x.code === value) ? value : fallback;
@@ -51,15 +54,16 @@ function init() {
     render();
   });
 
+  // Only used when the image can't be fetched (an ordinary browser without
+  // the app's CORS header) and is shown straight from IMD instead.
   img.addEventListener("load", () => {
+    if (img.dataset.mode !== "direct") return;
     const what = img.dataset.anim ? "Playing the last 3 hours, loaded" : "Updated";
-    status.textContent = `${what} ${new Date().toLocaleTimeString()}`;
-    status.className = "status";
+    say(`${what} ${new Date().toLocaleTimeString()}`);
   });
   img.addEventListener("error", () => {
-    status.textContent =
-      "Image not available right now. This radar may be offline; try another city or product.";
-    status.className = "status error";
+    if (img.dataset.mode !== "direct") return;
+    say("Image not available right now. This radar may be offline; try another city or product.", true);
   });
   ready = true;
 }
@@ -78,17 +82,74 @@ function render() {
 
   link.href = url;
   link.textContent = url;
-  status.textContent = playing ? "Loading the 3-hour loop (a few MB)…" : "Loading…";
-  status.className = "status";
-  // Cache-buster so the browser fetches the latest frame; the link stays clean.
-  img.src = `${url}?t=${Date.now()}`;
+  say(playing ? "Loading the 3-hour loop (a few MB)…" : "Loading…");
   img.dataset.anim = playing ? "1" : "";
+  loadRadar(url, playing);
   img.alt = `${nameOf(PRODUCTS, product)} radar ${playing ? "loop" : "image"} for ${nameOf(STATIONS, city)}`;
 
   // Keep the choice in the URL so it can be bookmarked or shared.
   const qs = new URLSearchParams({ city, product });
   if (playing) qs.set("anim", "1");
   history.replaceState(null, "", `?${qs}#radar`);
+}
+
+function say(text, error = false) {
+  status.textContent = text;
+  status.className = error ? "status error" : "status";
+}
+
+function showBlob(blob) {
+  if (objectUrl) URL.revokeObjectURL(objectUrl);
+  objectUrl = URL.createObjectURL(blob);
+  img.dataset.mode = "blob";
+  img.src = objectUrl;
+}
+
+const imdTimeText = (lastModified) =>
+  lastModified && !isNaN(Date.parse(lastModified)) ? ` · IMD image of ${when(Date.parse(lastModified))}` : "";
+
+// Fetches the image so a copy can be kept on the phone; with no network the
+// last saved copy is shown instead.
+async function loadRadar(url, playing) {
+  const seq = ++loadSeq;
+  let httpError = false;
+  try {
+    // Cache-buster so the latest frame is fetched; the link stays clean.
+    const res = await fetch(`${url}?t=${Date.now()}`, { cache: "no-store" });
+    if (!res.ok) {
+      httpError = true;
+      throw new Error(`HTTP ${res.status}`);
+    }
+    const blob = await res.blob();
+    if (!blob.type.startsWith("image/")) {
+      httpError = true;
+      throw new Error("not an image");
+    }
+    if (seq !== loadSeq) return;
+    const entry = { blob, savedAt: Date.now(), imdTime: res.headers.get("last-modified") || "" };
+    showBlob(blob);
+    const what = playing ? "Playing the last 3 hours, loaded" : "Updated";
+    say(`${what} ${new Date().toLocaleTimeString()}${imdTimeText(entry.imdTime)}`);
+    saveImage(url, entry);
+  } catch {
+    if (seq !== loadSeq) return;
+    const saved = await loadImage(url);
+    if (seq !== loadSeq) return;
+    if (saved) {
+      showBlob(saved.blob);
+      const why = httpError ? "IMD isn't serving this image right now" : "No connection";
+      say(`${why}. Showing the copy saved at ${when(saved.savedAt)}${imdTimeText(saved.imdTime)}.`, true);
+    } else if (httpError) {
+      img.dataset.mode = "";
+      img.removeAttribute("src");
+      say("Image not available right now. This radar may be offline; try another city or product.", true);
+    } else {
+      // Can't fetch it here (no network, or a browser without the app's CORS
+      // header): let the image load straight from IMD.
+      img.dataset.mode = "direct";
+      img.src = `${url}?t=${Date.now()}`;
+    }
+  }
 }
 
 function setDefault() {
