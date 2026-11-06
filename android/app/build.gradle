@@ -1,0 +1,68 @@
+plugins {
+    id "com.android.application"
+}
+
+// The web app (index.html, css/, js/ at the repo root) is copied into the APK's
+// assets at build time, so the Android app always ships the same code as the site.
+def webRoot = rootProject.file("..")
+def webAssetsDir = layout.buildDirectory.dir("generated/webassets")
+def copyWebApp = tasks.register("copyWebApp", Copy) {
+    from(webRoot) {
+        include "index.html", "css/**", "js/**"
+    }
+    into webAssetsDir.map { it.dir("www") }
+}
+
+// Release signing comes from environment variables when they are set (see
+// .github/workflows/android-apk.yml). Without them the release build is signed
+// with the debug key so it still installs.
+def keystorePath = System.getenv("ANDROID_KEYSTORE_PATH")
+def hasReleaseKey = keystorePath != null && !keystorePath.isEmpty() && file(keystorePath).exists()
+
+android {
+    namespace "io.github.gkgsiva.myweather"
+    compileSdk 35
+
+    defaultConfig {
+        applicationId "io.github.gkgsiva.myweather"
+        minSdk 26
+        targetSdk 35
+        versionCode((project.findProperty("versionCode") ?: "1") as int)
+        versionName((project.findProperty("versionName") ?: "1.0") as String)
+    }
+
+    signingConfigs {
+        release {
+            if (hasReleaseKey) {
+                storeFile file(keystorePath)
+                storePassword System.getenv("ANDROID_KEYSTORE_PASSWORD")
+                keyAlias System.getenv("ANDROID_KEY_ALIAS")
+                keyPassword System.getenv("ANDROID_KEY_PASSWORD")
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            signingConfig hasReleaseKey ? signingConfigs.release : signingConfigs.debug
+        }
+    }
+
+    sourceSets {
+        main {
+            assets.srcDir(webAssetsDir)
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+tasks.named("preBuild") { dependsOn copyWebApp }
+
+dependencies {
+    implementation "androidx.webkit:webkit:1.12.1"
+}
