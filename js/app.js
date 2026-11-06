@@ -1,63 +1,40 @@
-import { STATIONS, PRODUCTS, radarImageUrl } from "./stations.js";
+// Single-page menu: #home, #radar, #wunderground, #blog. Each view is set up
+// the first time it is shown.
+import { showRadar } from "./radar.js";
+import { initWunderground } from "./wunderground.js";
+import { initBlog } from "./blog.js";
 
-const REFRESH_MS = 10 * 60 * 1000; // IMD updates radar roughly every 10 minutes
-const STORAGE_KEY = "myweather.radar";
+const VIEWS = {
+  home: { title: "MyWeather" },
+  radar: { title: "MyWeather · Radars", show: showRadar },
+  wunderground: { title: "MyWeather · Wunderground", init: initWunderground },
+  blog: { title: "MyWeather · KWS Blog", init: initBlog },
+};
+const started = new Set();
 
-const citySelect = document.getElementById("city");
-const productSelect = document.getElementById("product");
-const img = document.getElementById("radar-img");
-const link = document.getElementById("radar-link");
-const status = document.getElementById("status");
-const refreshBtn = document.getElementById("refresh");
-
-for (const s of STATIONS) citySelect.add(new Option(s.name, s.code));
-for (const p of PRODUCTS) productSelect.add(new Option(p.name, p.code));
-
-// Initial selection: URL (?city=cni&product=caz) > last choice > Chennai.
-const params = new URLSearchParams(location.search);
-let saved = {};
-try {
-  saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
-} catch {}
-const pick = (value, list, fallback) =>
-  list.some((x) => x.code === value) ? value : fallback;
-citySelect.value = pick(params.get("city") ?? saved.city, STATIONS, "cni");
-productSelect.value = pick(params.get("product") ?? saved.product, PRODUCTS, "caz");
-
-function render() {
-  const city = citySelect.value;
-  const product = productSelect.value;
-  const url = radarImageUrl(city, product);
-
-  link.href = url;
-  link.textContent = url;
-  status.textContent = "Loading…";
-  status.className = "status";
-  // Cache-buster so the browser fetches the latest frame; the link stays clean.
-  img.src = `${url}?t=${Date.now()}`;
-  img.alt = `${PRODUCTS.find((p) => p.code === product).name} radar for ${
-    STATIONS.find((s) => s.code === city).name
-  }`;
-
-  const qs = new URLSearchParams({ city, product });
-  history.replaceState(null, "", `?${qs}`);
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ city, product }));
-  } catch {}
+function route() {
+  const name = location.hash.slice(1).split("?")[0];
+  const view = VIEWS[name] ? name : "home";
+  for (const key of Object.keys(VIEWS)) {
+    document.getElementById(`view-${key}`).hidden = key !== view;
+  }
+  for (const a of document.querySelectorAll(".menu a")) {
+    if (a.dataset.view === view) a.setAttribute("aria-current", "page");
+    else a.removeAttribute("aria-current");
+  }
+  document.title = VIEWS[view].title;
+  if (!started.has(view)) {
+    started.add(view);
+    VIEWS[view].init?.();
+  }
+  VIEWS[view].show?.();
+  window.scrollTo(0, 0);
 }
 
-img.addEventListener("load", () => {
-  status.textContent = `Updated ${new Date().toLocaleTimeString()}`;
-});
-img.addEventListener("error", () => {
-  status.textContent =
-    "Image not available right now. This radar may be offline; try another city or product.";
-  status.className = "status error";
-});
+// Old links like ?city=cni&product=caz (no hash) open the radar.
+if (!location.hash && new URLSearchParams(location.search).has("city")) {
+  history.replaceState(null, "", `${location.search}#radar`);
+}
 
-citySelect.addEventListener("change", render);
-productSelect.addEventListener("change", render);
-refreshBtn.addEventListener("click", render);
-setInterval(render, REFRESH_MS);
-
-render();
+window.addEventListener("hashchange", route);
+route();
