@@ -56,6 +56,12 @@ public class MainActivity extends Activity {
             "wunderground.com", "kwschennai.com", "cmwssb.tn.gov.in", "chennaimetrowater.tn.gov.in",
             "airquality.cpcb.gov.in"};
 
+    /**
+     * Maps made to be embedded (Windy, on the Wind & storms screen): shown in
+     * their frame as they are, without FrameProxy.
+     */
+    private static final String[] EMBED_HOSTS = {"windy.com"};
+
     /** Ad and ad-tracking servers whose requests get an empty response. */
     private static final String[] AD_HOSTS = {
             "doubleclick.net", "googlesyndication.com", "googleadservices.com",
@@ -238,7 +244,8 @@ public class MainActivity extends Activity {
             public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
                 Uri uri = request.getUrl();
                 // Links inside a framed page stay in the frame.
-                if (!request.isForMainFrame() && hostMatches(uri.getHost(), IN_APP_HOSTS)) {
+                if (!request.isForMainFrame()
+                        && (hostMatches(uri.getHost(), IN_APP_HOSTS) || hostMatches(uri.getHost(), EMBED_HOSTS))) {
                     return false;
                 }
                 if (APP_HOST.equals(uri.getHost()) || hostMatches(uri.getHost(), IN_APP_HOSTS)) {

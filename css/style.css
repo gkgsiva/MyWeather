@@ -738,3 +738,164 @@ body { overscroll-behavior-y: contain; }
 .tg-day label { flex: 1 1 auto; min-width: 0; }
 .tg-day input { padding: 6px 8px; }
 .tg-day button { padding: 6px 12px; }
+
+/* Home: station strip, sun and moon, favourites */
+.strip, .sky-card {
+  margin-top: 12px;
+  padding: 10px 12px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+.strip-head { display: flex; gap: 8px; align-items: center; }
+.strip-pick { flex: 1; min-width: 0; }
+.strip-pick select { width: 100%; font-weight: 600; color: var(--accent); }
+.strip-body {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(58px, 1fr));
+  gap: 6px;
+  margin-top: 8px;
+  color: var(--fg);
+  text-decoration: none;
+}
+.strip-stat { display: flex; flex-direction: column; align-items: center; text-align: center; }
+.strip-stat b { font-size: 1.2rem; font-variant-numeric: tabular-nums; line-height: 1.2; }
+.strip-stat small { color: var(--muted); font-size: 0.72rem; line-height: 1.2; }
+.strip-body.wet .strip-stat:nth-child(3) b { color: var(--accent); }
+.strip-status { display: block; margin-top: 6px; color: var(--muted); font-size: 0.78rem; }
+.strip-status.error { color: var(--error); }
+.sky-row { display: flex; align-items: center; gap: 10px; padding: 4px 0; }
+.sky-row + .sky-row { border-top: 1px solid var(--border); }
+.sky-icon { font-size: 1.6rem; width: 2rem; text-align: center; flex: none; }
+.sky-times { flex: 1; display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
+.sky-times span { display: flex; flex-direction: column; }
+.sky-times small { color: var(--muted); font-size: 0.72rem; line-height: 1.2; }
+.sky-times b { font-variant-numeric: tabular-nums; font-size: 1rem; }
+.sky-note { display: block; margin-top: 4px; color: var(--muted); font-size: 0.75rem; }
+.cards > li { position: relative; }
+.cards .card { padding-right: 48px; }
+.fav-btn {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  font-size: 1.4rem;
+  line-height: 1;
+}
+.fav-btn[aria-pressed="true"] { color: #f9a825; }
+.fav-cards .card { border-color: var(--accent); }
+.fav-cards[hidden], #fav-hint[hidden] { display: none; }
+
+/* Rain season */
+.season-summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 10px; }
+.season-summary span {
+  display: flex;
+  flex-direction: column;
+  padding: 8px 10px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  min-width: 0;
+}
+.season-summary small { color: var(--muted); font-size: 0.75rem; }
+.season-summary b { font-size: 1.2rem; color: var(--accent); }
+.season-summary em { font-style: normal; font-size: 0.75rem; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.season-summary[hidden] { display: none; }
+.season-list { list-style: none; padding: 0; margin: 0; }
+.season-list li {
+  display: grid;
+  grid-template-columns: 1.6em 1fr auto;
+  gap: 2px 8px;
+  align-items: baseline;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+}
+.season-list .rank { color: var(--muted); font-variant-numeric: tabular-nums; }
+.season-list .name { min-width: 0; overflow-wrap: anywhere; }
+.season-list .mm { font-variant-numeric: tabular-nums; }
+.season-list .meter { grid-column: 2 / -1; height: 8px; }
+.season-list small { grid-column: 2 / -1; color: var(--muted); font-size: 0.78rem; }
+.season-list li.partial .meter span { background: var(--bar-partial); }
+.season-list li.partial .mm { color: var(--muted); }
+
+/* Maps with something drawn over them */
+.map-wrap { position: relative; margin: 0 -16px; }
+.map-wrap .station-map { margin: 0; }
+.flood-map { height: calc(100dvh - 260px); min-height: 300px; }
+.map-cross {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 500;
+  transform: translate(-50%, -50%);
+  font: 300 28px/1 system-ui, sans-serif;
+  color: var(--fg);
+  text-shadow: 0 0 3px var(--card);
+  pointer-events: none;
+}
+
+/* Flood spots */
+.spot {
+  display: inline-grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  transform: translate(-50%, -50%);
+  border: 1.5px solid rgba(0, 0, 0, 0.45);
+  border-radius: 4px;
+  background: var(--spot);
+  color: #111;
+  font: 800 12px/1 system-ui, sans-serif;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+}
+.spot-subway { border-radius: 50%; }
+.spot-high { --spot: #e53935; color: #fff; }
+.spot-watch { --spot: #fb8c00; }
+.spot-low { --spot: #ffd54f; }
+.spot-unknown { --spot: #bdbdbd; }
+.spot-mine { outline: 2px solid var(--accent); }
+.flood-legend { margin-top: 8px; font-size: 0.8rem; color: var(--muted); align-items: center; gap: 8px 6px; }
+.flood-legend .spot { transform: none; width: 16px; height: 16px; font-size: 10px; margin-left: 6px; }
+.flood-legend span::before { display: none; }
+.pin.small-pin { font-size: 10px; padding: 0 4px; opacity: 0.85; }
+.flood-list { list-style: none; padding: 0; margin: 0; }
+.flood-list li {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0 8px;
+  padding: 8px 0 8px 10px;
+  border-bottom: 1px solid var(--border);
+  border-left: 4px solid var(--spot, var(--border));
+  cursor: pointer;
+}
+.flood-list small { grid-column: 1 / -1; color: var(--muted); font-size: 0.78rem; }
+.flood-list b { font-variant-numeric: tabular-nums; }
+.flood-list .risk-high { --spot: #e53935; }
+.flood-list .risk-high b { color: #e53935; }
+.flood-list .risk-watch { --spot: #fb8c00; }
+.flood-list .risk-low { --spot: #ffd54f; }
+
+/* Wind and storms */
+.wind-map { height: calc(100dvh - 300px); min-height: 300px; }
+.station-map.wind-map .leaflet-tile-pane { filter: invert(1) hue-rotate(180deg) brightness(0.75) contrast(0.9); }
+.wind-canvas { position: absolute; top: 0; left: 0; z-index: 450; pointer-events: none; }
+.wind-slider { display: flex; flex-direction: column; gap: 4px; margin-top: 10px; font-size: 0.9rem; }
+.wind-slider input { width: 100%; padding: 0; accent-color: var(--accent); }
+.wind-summary p { margin: 6px 0; font-size: 0.9rem; }
+.wind-chip { display: inline-block; width: 10px; height: 10px; margin-right: 6px; border-radius: 2px; background: var(--c); }
+.low-mark {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  transform: translate(-50%, -50%);
+  color: #ff5252;
+  font: 900 22px/1 system-ui, sans-serif;
+  text-shadow: 0 0 3px #000;
+}
+.low-mark small { font-size: 11px; font-weight: 700; }
