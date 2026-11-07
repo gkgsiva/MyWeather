@@ -86,6 +86,7 @@ function render() {
 
   link.href = url;
   link.textContent = url;
+  document.getElementById("radar-floods").hidden = city !== "cni";
   say(playing ? "Loading the 3-hour loop (a few MB)…" : "Loading…");
   img.dataset.anim = playing ? "1" : "";
   loadRadar(url, playing);

@@ -23,7 +23,6 @@ const box = $("map-box");
 
 let L = null;
 let map = null;
-let tiles = null;
 let layer = null;
 let readings = new Map(); // id -> observation | null | Error
 let loadedAt = 0;
@@ -38,7 +37,7 @@ function say(text, error = false) {
 // ---- Colour scales ----
 
 // Rain in mm, on IMD's daily bands (very light, light, moderate, heavy, very heavy, extremely heavy).
-const RAIN = [
+export const RAIN = [
   [0.01, "#9aa4af", "None"],
   [2.5, "#9fd3ff", "< 2.5"],
   [15.6, "#4aa3ff", "2.5–15.5"],
@@ -67,9 +66,9 @@ const MODES = {
   rate: { label: "Rain rate now", unit: "mm/h", scale: RATE, value: (m) => m.precipRate },
   temp: { label: "Temperature", unit: "°C", scale: TEMP, value: (m) => m.temp },
 };
-const colour = (scale, v) => (typeof v === "number" ? scale.find(([max]) => v < max)[1] : "#9aa4af");
+export const colour = (scale, v) => (typeof v === "number" ? scale.find(([max]) => v < max)[1] : "#9aa4af");
 // Dark text on light pills.
-const LIGHT = new Set(["#9fd3ff", "#9ccc65", "#ffca28", "#9aa4af", "#26a69a", "#4aa3ff", "#fb8c00"]);
+export const LIGHT = new Set(["#9fd3ff", "#9ccc65", "#ffca28", "#9aa4af", "#26a69a", "#4aa3ff", "#fb8c00"]);
 const fmt = (v) => (typeof v === "number" ? (Math.abs(v) < 10 && v % 1 ? v.toFixed(1) : String(Math.round(v * 10) / 10)) : "–");
 
 function renderLegend(mode) {
@@ -87,7 +86,7 @@ function renderLegend(mode) {
 
 // ---- Positions kept on the phone ----
 
-function loadCoords() {
+export function loadCoords() {
   try {
     return JSON.parse(localStorage.getItem(COORDS_KEY)) || {};
   } catch {
@@ -103,7 +102,7 @@ function saveCoords(found) {
 
 // ---- Leaflet, loaded the first time the map opens ----
 
-function loadLeaflet() {
+export function loadLeaflet() {
   if (window.L) return Promise.resolve(window.L);
   return new Promise((resolve, reject) => {
     const css = document.createElement("link");
@@ -118,30 +117,31 @@ function loadLeaflet() {
   });
 }
 
-const isDark = () => {
+export const isDark = () => {
   const t = document.documentElement.dataset.theme;
   return t ? t === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
 };
 
 // OpenStreetMap's standard tiles. The Android app fetches them with its own
 // User-Agent, as OpenStreetMap's tile policy asks. Dark mode inverts them.
-function setTiles() {
-  box.classList.toggle("dark-tiles", isDark());
-  if (tiles) return;
-  tiles = L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+// Used by the flood and wind maps too.
+export function addTiles(L, map, box) {
+  L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
     maxZoom: 19,
     attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
   }).addTo(map);
+  const theme = () => box.classList.toggle("dark-tiles", isDark());
+  theme();
+  // Theme button or phone theme changes.
+  new MutationObserver(theme).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+  matchMedia("(prefers-color-scheme: dark)").addEventListener?.("change", theme);
 }
 
 function ensureMap() {
   if (map) return;
   map = L.map(box, { zoomControl: true, attributionControl: true }).setView(CHENNAI, 10);
   layer = L.layerGroup().addTo(map);
-  setTiles();
-  // Theme button or phone theme changes.
-  new MutationObserver(setTiles).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
-  matchMedia("(prefers-color-scheme: dark)").addEventListener?.("change", setTiles);
+  addTiles(L, map, box);
 }
 
 // ---- Markers ----
@@ -204,15 +204,8 @@ function draw() {
   return missing;
 }
 
-async function refresh() {
-  const key = apiKey();
-  if (!key) {
-    readings = new Map();
-    draw();
-    say("Add your Wunderground API key under Wunderground → Manage stations to see the stations.", true);
-    return;
-  }
-  say("Loading readings…");
+// Current readings for every saved station; positions are kept on the phone.
+export async function fetchAll(key) {
   const ids = [...new Set(loadStations().map((s) => s.id))];
   const fresh = new Map();
   let reached = false;
@@ -229,6 +222,22 @@ async function refresh() {
       }
     })
   );
+  const found = {};
+  for (const [id, r] of fresh) if (r && !(r instanceof Error) && typeof r.lat === "number") found[id] = [r.lat, r.lon];
+  saveCoords(found);
+  return { fresh, reached, keyError };
+}
+
+async function refresh() {
+  const key = apiKey();
+  if (!key) {
+    readings = new Map();
+    draw();
+    say("Add your Wunderground API key under Wunderground → Manage stations to see the stations.", true);
+    return;
+  }
+  say("Loading readings…");
+  const { fresh, reached, keyError } = await fetchAll(key);
   if (!reached) {
     const last = loadLast();
     readings = last ? new Map(Object.entries(last.readings)) : new Map();
@@ -237,9 +246,6 @@ async function refresh() {
     return;
   }
   readings = fresh;
-  const found = {};
-  for (const [id, r] of readings) if (r && !(r instanceof Error) && typeof r.lat === "number") found[id] = [r.lat, r.lon];
-  saveCoords(found);
   loadedAt = Date.now();
   const missing = draw();
   if (keyError) say("Wunderground didn't accept the API key. Check it under Wunderground → Manage stations.", true);

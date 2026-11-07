@@ -1,16 +1,20 @@
-// Single-page menu: #home, #forecast, #radar, #satellite, #lightning, #warnings, #cyclone,
-// #monsoon, #rain, #compare, #map, #lakes, #air, #sea, #wunderground, #blog. Each view's init runs the first time it is
+// Single-page menu: #home, #forecast, #radar, #satellite, #lightning, #warnings, #wind, #cyclone,
+// #monsoon, #rain, #season, #compare, #map, #floods, #lakes, #air, #sea, #wunderground, #blog. Each view's init runs the first time it is
 // shown, show every time, and hide when another view is opened.
+import { initHome, showHome } from "./home.js";
 import { initForecast, showForecast } from "./forecast.js";
 import { showRadar } from "./radar.js";
 import { showSatellite } from "./satellite.js";
 import { initLightning, showLightning } from "./lightning.js";
 import { showWarnings } from "./warnings.js";
+import { initWind, showWind, hideWind } from "./wind.js";
 import { initCyclone, showCyclone } from "./cyclone.js";
 import { initMonsoon, showMonsoon } from "./monsoon.js";
 import { initRain, showRain, hideRain } from "./rain.js";
+import { initSeason, showSeason, hideSeason } from "./season.js";
 import { initCompare, showCompare, hideCompare } from "./compare.js";
 import { initMap, showMap } from "./stationmap.js";
+import { initFloods, showFloods } from "./floods.js";
 import { initLakes, showLakes } from "./lakes.js";
 import { initAir, showAir } from "./air.js";
 import { initSea, showSea } from "./sea.js";
@@ -20,17 +24,20 @@ import { initTheme } from "./theme.js";
 import { initPullToRefresh } from "./pull.js";
 
 const VIEWS = {
-  home: { title: "MyWeather" },
+  home: { title: "MyWeather", init: initHome, show: showHome },
   forecast: { title: "MyWeather · Forecast", init: initForecast, show: showForecast },
   radar: { title: "MyWeather · Radars", show: showRadar },
   satellite: { title: "MyWeather · Satellite", show: showSatellite },
   lightning: { title: "MyWeather · Lightning", init: initLightning, show: showLightning },
   warnings: { title: "MyWeather · Warnings", show: showWarnings },
+  wind: { title: "MyWeather · Wind & storms", init: initWind, show: showWind, hide: hideWind },
   cyclone: { title: "MyWeather · Cyclones", init: initCyclone, show: showCyclone },
   monsoon: { title: "MyWeather · Monsoon", init: initMonsoon, show: showMonsoon },
   rain: { title: "MyWeather · Rain history", init: initRain, show: showRain, hide: hideRain },
+  season: { title: "MyWeather · Rain season", init: initSeason, show: showSeason, hide: hideSeason },
   compare: { title: "MyWeather · Compare stations", init: initCompare, show: showCompare, hide: hideCompare },
   map: { title: "MyWeather · Station map", init: initMap, show: showMap },
+  floods: { title: "MyWeather · Flood spots", init: initFloods, show: showFloods },
   lakes: { title: "MyWeather · Lakes", init: initLakes, show: showLakes },
   air: { title: "MyWeather · Air quality", init: initAir, show: showAir },
   sea: { title: "MyWeather · Sea & tides", init: initSea, show: showSea },
