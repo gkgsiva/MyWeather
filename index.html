@@ -30,6 +30,7 @@
       <a href="#home" data-view="home">Home</a>
       <a href="#forecast" data-view="forecast">Forecast</a>
       <a href="#radar" data-view="radar">Radars</a>
+      <a href="#radarmap" data-view="radarmap">Radar map</a>
       <a href="#satellite" data-view="satellite">Satellite</a>
       <a href="#lightning" data-view="lightning">Lightning</a>
       <a href="#warnings" data-view="warnings">Warnings</a>
@@ -40,6 +41,7 @@
       <a href="#season" data-view="season">Rain season</a>
       <a href="#compare" data-view="compare">Compare stations</a>
       <a href="#map" data-view="map">Station map</a>
+      <a href="#gauges" data-view="gauges">TN rain gauges</a>
       <a href="#floods" data-view="floods">Flood spots</a>
       <a href="#lakes" data-view="lakes">Lakes</a>
       <a href="#air" data-view="air">Air quality</a>
@@ -125,6 +127,12 @@
             </a>
           </li>
           <li>
+            <a class="card" href="#radarmap">
+              <strong>Radar map</strong>
+              <span>Chennai radar echoes on a map, with a loop and storm movement</span>
+            </a>
+          </li>
+          <li>
             <a class="card" href="#satellite">
               <strong>Satellite</strong>
               <span>INSAT pictures and loops from IMD</span>
@@ -182,6 +190,12 @@
             <a class="card" href="#map">
               <strong>Station map</strong>
               <span>Your stations on a map, by rain or temperature</span>
+            </a>
+          </li>
+          <li>
+            <a class="card" href="#gauges">
+              <strong>TN rain gauges</strong>
+              <span>All of Tamil Nadu's 1,500 rain gauges hour by hour: map, table and charts</span>
             </a>
           </li>
           <li>
@@ -274,6 +288,7 @@
         <p class="note">
           Images © India Meteorological Department, from
           <a href="https://mausam.imd.gov.in/responsive/radar.php" target="_blank" rel="noopener noreferrer">mausam.imd.gov.in</a>.
+          <a href="#radarmap">See Chennai's radar on a map</a>
         </p>
       </section>
 
@@ -574,6 +589,139 @@
         <div id="map-box" class="station-map"></div>
         <p id="map-legend" class="legend map-legend"></p>
         <p class="note">Rain bands follow IMD's daily categories. Faded markers haven't reported for over an hour.</p>
+      </section>
+
+      <!-- TN rain gauges -->
+      <section id="view-gauges" class="view" hidden>
+        <form class="controls sticky-controls tg-filters" onsubmit="return false">
+          <label>
+            District
+            <select id="tg-area"></select>
+          </label>
+          <label>
+            Rain
+            <select id="tg-min">
+              <option value="">Any</option>
+              <option value="0.1">Some rain</option>
+              <option value="2.5">2.5 mm+</option>
+              <option value="15.6">15.6 mm+ (moderate)</option>
+              <option value="64.5">64.5 mm+ (heavy)</option>
+              <option value="115.6">115.6 mm+ (very heavy)</option>
+              <option value="204.5">204.5 mm+ (extreme)</option>
+              <option value="none">No data</option>
+            </select>
+          </label>
+          <label>
+            Show
+            <select id="tg-show">
+              <option value="total">Rain day total</option>
+              <option value="hour">Last hour</option>
+            </select>
+          </label>
+          <label class="tg-search">
+            Search
+            <input id="tg-search" type="search" placeholder="Gauge name" autocomplete="off" />
+          </label>
+        </form>
+        <form class="controls tg-day" onsubmit="return false">
+          <label>
+            Day ending
+            <input id="tg-date" type="date" />
+          </label>
+          <button id="tg-today" type="button" class="secondary">Today</button>
+          <button id="tg-refresh" type="button" aria-label="Refresh">↻</button>
+        </form>
+        <p id="tg-status" class="status" aria-live="polite"></p>
+        <p id="tg-summary" class="note"></p>
+        <div class="tabs" role="tablist">
+          <button type="button" role="tab" data-tab="map" aria-selected="true">Map</button>
+          <button type="button" role="tab" data-tab="table" aria-selected="false">Table</button>
+          <button type="button" role="tab" data-tab="charts" aria-selected="false">Charts</button>
+        </div>
+
+        <div id="tg-tab-map" class="tg-tab">
+          <div id="tg-map" class="station-map gauge-map"></div>
+          <p id="tg-legend" class="legend map-legend"></p>
+          <div class="chart-head"><strong id="tg-gauge-name"></strong></div>
+          <svg id="tg-gauge-chart" class="chart" role="group" aria-label="Rain per hour at the gauge"></svg>
+          <p id="tg-gauge-readout" class="readout" aria-live="polite"></p>
+        </div>
+
+        <div id="tg-tab-table" class="tg-tab" hidden>
+          <p id="tg-count" class="note"></p>
+          <div class="table-wrap">
+            <table id="tg-table" class="readings gauge-table">
+              <thead>
+                <tr>
+                  <th data-sort="station_name" scope="col">Gauge</th>
+                  <th data-sort="district_name" scope="col">District</th>
+                  <th data-sort="total" scope="col">Total</th>
+                  <th data-sort="last" scope="col">Last hr</th>
+                  <th data-sort="peak" scope="col">Max hr</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <p><button id="tg-more" type="button" class="secondary" hidden>Show more</button></p>
+          <p class="note">Tap a column to sort. Tap a gauge to see it on the map with its hourly chart.</p>
+        </div>
+
+        <div id="tg-tab-charts" class="tg-tab" hidden>
+          <div class="chart-head"><strong id="tg-area-head"></strong></div>
+          <svg id="tg-area-chart" class="chart" role="group" aria-label="Average rain per hour"></svg>
+          <p id="tg-area-readout" class="readout" aria-live="polite"></p>
+
+          <div class="chart-head"><strong>Gauges by amount of rain</strong></div>
+          <svg id="tg-band-chart" class="chart" role="group" aria-label="Gauges in each rain band"></svg>
+          <p id="tg-band-readout" class="readout" aria-live="polite"></p>
+
+          <div class="chart-head"><strong id="tg-wet-head">Gauges with rain each hour</strong></div>
+          <svg id="tg-wet-chart" class="chart" role="group" aria-label="Gauges with rain each hour"></svg>
+          <p id="tg-wet-readout" class="readout" aria-live="polite"></p>
+
+          <div class="chart-head"><strong id="tg-top-head"></strong></div>
+          <ol id="tg-top" class="rank-list"></ol>
+
+          <div id="tg-districts">
+            <div class="chart-head"><strong>Districts by average rain</strong></div>
+            <ol id="tg-district-list" class="rank-list"></ol>
+          </div>
+        </div>
+        <p class="note">
+          Automatic rain gauges of the Tamil Nadu government (TN-SMART), reported hourly. A rain day runs 8:30 AM to
+          8:30 AM IST, and each hour is the hour ending at that time. Filters apply to the map, table and charts.
+          <a id="tg-source" target="_blank" rel="noopener noreferrer">TN-SMART hourly page</a>
+        </p>
+      </section>
+
+      <!-- Radar map -->
+      <section id="view-radarmap" class="view" hidden>
+        <form class="controls sticky-controls" onsubmit="return false">
+          <label>
+            Layer
+            <select id="rm-product"></select>
+          </label>
+          <button id="rm-refresh" type="button">Refresh</button>
+        </form>
+        <p id="rm-status" class="status" aria-live="polite"></p>
+        <div id="rm-map" class="station-map radar-map"></div>
+        <div class="rm-player">
+          <button id="rm-play" type="button" class="secondary small" aria-label="Play the loop">▶</button>
+          <input id="rm-frame" type="range" min="0" max="0" value="0" aria-label="Radar time" />
+          <span id="rm-time" class="rm-time"></span>
+        </div>
+        <label class="rm-opacity">
+          Opacity
+          <input id="rm-opacity" type="range" min="20" max="100" value="80" />
+        </label>
+        <p id="rm-motion" class="rm-motion" hidden></p>
+        <p id="rm-legend" class="legend map-legend"></p>
+        <details class="rm-vvp">
+          <summary>Wind by height over the radar (IMD VVP)</summary>
+          <img id="rm-vvp" alt="IMD VVP wind profile for Chennai" loading="lazy" />
+        </details>
+        <p id="rm-note" class="note"></p>
       </section>
 
       <!-- Flood spots -->

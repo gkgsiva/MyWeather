@@ -661,6 +661,84 @@ body { overscroll-behavior-y: contain; }
   white-space: nowrap;
 }
 
+/* TN rain gauges */
+.gauge-map { height: calc(100dvh - 300px); }
+.rank-list { list-style: none; margin: 0 0 12px; padding: 0; }
+.rank-list li + li { margin-top: 2px; }
+.rank-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 2px 8px;
+  width: 100%;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--fg);
+  font: inherit;
+  font-size: 0.85rem;
+  text-align: left;
+  cursor: pointer;
+}
+.rank-row:active { background: var(--border); }
+.rank-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rank-val { font-weight: 700; font-variant-numeric: tabular-nums; }
+.rank-bar { grid-column: 1 / -1; height: 6px; border-radius: 3px; background: var(--grid); overflow: hidden; }
+.rank-bar i { display: block; height: 100%; border-radius: 3px; }
+
+/* Radar map */
+.radar-map { height: calc(100dvh - 330px); min-height: 300px; }
+.radar-map .leaflet-image-layer { image-rendering: pixelated; }
+.rm-player { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
+.rm-player input { flex: 1; }
+.rm-time { font-variant-numeric: tabular-nums; font-size: 0.85rem; min-width: 7.5em; text-align: right; }
+.rm-opacity { display: flex; align-items: center; gap: 10px; font-size: 0.85rem; color: var(--muted); }
+.rm-opacity input { flex: 1; }
+.rm-motion {
+  margin: 8px 0;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  font-size: 0.9rem;
+}
+.rm-arrow {
+  display: inline-block;
+  font-size: 1.1rem;
+  line-height: 1;
+  margin-right: 6px;
+}
+.rm-motion-icon svg { overflow: visible; }
+.rm-vvp img { display: block; max-width: 100%; margin-top: 8px; border-radius: 6px; }
+.rm-vvp summary { cursor: pointer; font-size: 0.9rem; }
+.tabs { display: flex; gap: 4px; margin: 8px 0; border-bottom: 1px solid var(--border); }
+.tabs button {
+  flex: 1;
+  padding: 8px 4px;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.tabs button[aria-selected="true"] { color: var(--fg); border-bottom-color: var(--accent); }
+.tg-search input { width: 9em; }
+.gauge-table th[data-sort] { cursor: pointer; white-space: nowrap; }
+.gauge-table th[aria-sort="descending"]::after { content: " ▾"; }
+.gauge-table th[aria-sort="ascending"]::after { content: " ▴"; }
+.gauge-table td:nth-child(2) { text-align: left; color: var(--muted); }
+.gauge-table td .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 4px; background: var(--level); }
+.tg-filters { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 10px; }
+.tg-filters label { flex: none; min-width: 0; }
+.tg-filters select, .tg-filters input { width: 100%; min-width: 0; padding: 6px 8px; }
+.tg-search input { width: 100%; }
+.tg-day { margin-top: 8px; gap: 8px; flex-wrap: nowrap; }
+.tg-day label { flex: 1 1 auto; min-width: 0; }
+.tg-day input { padding: 6px 8px; }
+.tg-day button { padding: 6px 12px; }
+
 /* Home: station strip, sun and moon, favourites */
 .strip, .sky-card {
   margin-top: 12px;
