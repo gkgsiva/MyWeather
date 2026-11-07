@@ -14,6 +14,25 @@ A small static web app for Chennai weather watchers. A home page and the ☰ men
   - The choice is kept in the URL (`?city=cni&product=caz#radar`), so it can be bookmarked or shared.
   - **Play last 3 hours** swaps in IMD's radar loop (MAX (Z) and Surface Rainfall Intensity only),
     e.g. `https://mausam.imd.gov.in/Radar/animation/Converted/CNI_MAXZ.gif`; kept in the URL as `&anim=1`.
+- **Radar map** (`#radarmap`): the Chennai radar on an OpenStreetMap map. **MAX (Z)** and **Rain rate (SRI)**
+  come from IMD's 3-hour loops: each frame is blurred a little (IMD's GIFs are dithered) and compared with the
+  per-pixel median of all frames, which is the bare base map, so only the rain is drawn, in IMD's colours. A slider
+  and ▶ play the loop. The frame times are read off each picture's title with digit templates. **Storm movement**
+  comes from matching the rain between frames over the last hour (best overlap of the echoes, then the median of
+  the speeds); it is the app's own estimate, shown as text and an arrow to where the rain would be in an hour.
+  **PPI Z** (150 and 500 km) and **radial wind (PPI V)** have no loop, so the whole picture is laid on the map
+  with an opacity slider. IMD's VVP wind-by-height chart is under the map. The plots sit on a latitude/longitude
+  grid measured on each Chennai image (`PRODUCTS` in `js/radarmap.js`), re-spaced for Mercator. GIFs are decoded
+  by `js/gif.js`. Needs the Android app for the CORS header.
+- **TN rain gauges** (`#gauges`): the Tamil Nadu government's ~1,500 automatic rain gauges (TN-SMART, with RIMES),
+  hour by hour, from the JSON the public
+  [hourly page](https://beta-tnsmart.rimes.int/index.php/RTDAS/Hourly_data_TNDRRA_c/public) reads
+  (`https://beta-tnsmart.rimes.int/Rainfall_Python_IDW/Hourly_json/hourly_rainfall_<day>.json`, one file per rain
+  day of 8:30 AM to 8:30 AM, named by the day it ends; CORS is open). Filters for district, amount of rain and a
+  name search apply to three tabs: a **map** (dots for many gauges, numbered pins for up to 60 or when zoomed in; tap one for its
+  hourly chart), a sortable **table** (total, last hour, wettest hour) and **charts** (average rain per hour,
+  gauges per IMD rain band, gauges with rain each hour, the 10 wettest gauges and districts by average rain).
+  Any past day can be picked.
 - **Satellite** (`#satellite`): IMD's INSAT pictures (Asia sector, full disc) and loops, from
   `https://mausam.imd.gov.in/Satellite/`.
 - **Lightning** (`#lightning`): how close the lightning of the last 30 minutes is to Chennai, from IMD's

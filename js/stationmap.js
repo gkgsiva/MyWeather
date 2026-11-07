@@ -103,7 +103,7 @@ function saveCoords(found) {
 
 // ---- Leaflet, loaded the first time the map opens ----
 
-function loadLeaflet() {
+export function loadLeaflet() {
   if (window.L) return Promise.resolve(window.L);
   return new Promise((resolve, reject) => {
     const css = document.createElement("link");
@@ -118,7 +118,7 @@ function loadLeaflet() {
   });
 }
 
-const isDark = () => {
+export const isDark = () => {
   const t = document.documentElement.dataset.theme;
   return t ? t === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
 };
