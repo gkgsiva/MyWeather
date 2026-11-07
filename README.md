@@ -2,6 +2,10 @@
 
 A small static web app for Chennai weather watchers. A home page and the ☰ menu in the header bar lead to:
 
+- **Home** (`#home`): the main Wunderground station's reading now (temperature, rain today, rain rate, wind,
+  humidity; the first saved station unless another is picked in the strip), Chennai's sunrise, sunset, daylight,
+  moonrise, moonset and moon phase (worked out on the phone in `js/astro.js`, no network), **Favourites** (tap ☆
+  on any card to pin that screen to the top) and every screen.
 - **Forecast** (`#forecast`): Chennai's weather now, the chance of rain for each of the next 24 hours, and
   7 days ahead (high/low, rain chance, expected mm, wind). From [Open-Meteo](https://open-meteo.com/)
   (`api.open-meteo.com`, no key), which blends ECMWF, GFS and other models.
@@ -27,6 +31,11 @@ A small static web app for Chennai weather watchers. A home page and the ☰ men
 - **Warnings** (`#warnings`): IMD's district-wise nowcast (next 3 hours) and 5-day warnings for Tamil Nadu and
   Puducherry, as a map and a district list (Chennai first). Both come from IMD's GeoServer at
   `reactjs.imd.gov.in`; the list needs the Android app, which adds the missing CORS header.
+- **Wind & storms** (`#wind`): moving wind particles over the Bay of Bengal (5–21°N, 78–94°E), coloured by IMD's
+  depression and cyclone categories, with a slider through the next 2 days in 3-hour steps, the wind at Chennai,
+  the strongest wind and the lowest pressure on the map (marked L below 1004 hPa). From Open-Meteo's forecast on a
+  1° grid in one request (`temporal_resolution=hourly_3`); the last forecast is kept on the phone. **Windy map**
+  shows Windy's embeddable map (`embed.windy.com`) under the menu for more layers.
 - **Cyclones** (`#cyclone`): IMD's current cyclone bulletins (Tropical Weather Outlook, National and Hourly
   bulletins, as PDFs) and the track, wind and storm-surge maps, read from IMD's
   [Cyclone Information](https://mausam.imd.gov.in/responsive/cycloneinformation.php) page. The app adds the
@@ -42,6 +51,10 @@ A small static web app for Chennai weather watchers. A home page and the ☰ men
   The data is Wunderground's (`api.weather.com` `dailysummary/7day` and `history/daily`, with the same key as
   the dashboard). History comes one day per request, so each finished day is kept on the phone and only
   today is fetched again; requests are spaced about 2 seconds apart to stay inside the key's limits.
+- **Rain season** (`#season`): every saved station's total rain since 1 October (the northeast monsoon season;
+  from January to September, the last season), wettest first, with rainy days (2.5 mm or more) and the wettest
+  day. Uses the daily totals Rain history keeps on the phone; opening it asks only for the last 7 days, and
+  **Load the whole season** fetches the missing days one request at a time (about 2 seconds apart).
 - **Compare stations** (`#compare?ids=ICHENN47,ICHENNAI1&day=2026-11-05` or `&month=2026-10`): two or three
   stations' rain as running totals through a day (every reading of the day, `history/all` or
   `observations/all/1day`, one request per station) or a month (the daily totals Rain history keeps on the
@@ -50,6 +63,11 @@ A small static web app for Chennai weather watchers. A home page and the ☰ men
   (IMD's daily bands), rain rate or temperature; tap one for its readings and links. Positions come with the
   readings and are kept on the phone. [Leaflet](https://leafletjs.com/) 1.9.4 is bundled in `js/vendor/leaflet`
   (BSD-2 licence). The Android app fetches the tiles with its own User-Agent, as OpenStreetMap's tile policy asks.
+- **Flood spots** (`#floods`): Chennai's known waterlogging spots (low-lying areas and road subways that
+  flooded in 2015, 2021 and 2023, listed with rough positions in `js/flood-spots.js`) on the map with today's rain
+  at the stations. Each spot takes the rain at the nearest station within 6 km: **Watch** from 30 mm a day or
+  15 mm/h, **Likely flooded** from 64.5 mm a day or 30 mm/h. Your own spots can be added (kept on the phone). The
+  Chennai radar links here.
 - **Lakes** (`#lakes`): storage in Chennai's reservoirs, read from Chennai Metro Water's
   [lake-level page](https://cmwssb.tn.gov.in/lakelevel) (percent full when the table has capacity and
   storage columns). **Open Metro Water page** shows the page itself under the menu.

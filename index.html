@@ -33,11 +33,14 @@
       <a href="#satellite" data-view="satellite">Satellite</a>
       <a href="#lightning" data-view="lightning">Lightning</a>
       <a href="#warnings" data-view="warnings">Warnings</a>
+      <a href="#wind" data-view="wind">Wind &amp; storms</a>
       <a href="#cyclone" data-view="cyclone">Cyclones</a>
       <a href="#monsoon" data-view="monsoon">Monsoon</a>
       <a href="#rain" data-view="rain">Rain history</a>
+      <a href="#season" data-view="season">Rain season</a>
       <a href="#compare" data-view="compare">Compare stations</a>
       <a href="#map" data-view="map">Station map</a>
+      <a href="#floods" data-view="floods">Flood spots</a>
       <a href="#lakes" data-view="lakes">Lakes</a>
       <a href="#air" data-view="air">Air quality</a>
       <a href="#sea" data-view="sea">Sea &amp; tides</a>
@@ -87,7 +90,28 @@
           </div>
         </div>
 
-        <ul class="cards">
+        <div id="home-strip" class="strip">
+          <div class="strip-head">
+            <label class="strip-pick">
+              <span class="visually-hidden">Main station</span>
+              <select id="home-station"></select>
+            </label>
+            <button id="home-refresh" type="button" class="secondary small" aria-label="Refresh the station's reading">↻</button>
+          </div>
+          <a id="home-strip-body" class="strip-body"></a>
+          <small id="home-strip-status" class="strip-status" aria-live="polite"></small>
+        </div>
+
+        <div id="home-sky" class="sky-card" aria-label="Sun and moon in Chennai today"></div>
+
+        <div id="fav-box">
+          <h3>Favourites</h3>
+          <ul id="fav-cards" class="cards fav-cards"></ul>
+          <p id="fav-hint" class="note">Tap ☆ on any screen below to pin it here.</p>
+        </div>
+
+        <h3>All screens</h3>
+        <ul id="all-cards" class="cards">
           <li>
             <a class="card" href="#forecast">
               <strong>Forecast</strong>
@@ -119,6 +143,12 @@
             </a>
           </li>
           <li>
+            <a class="card" href="#wind">
+              <strong>Wind &amp; storms</strong>
+              <span>Moving wind over the Bay of Bengal, for when a cyclone is near</span>
+            </a>
+          </li>
+          <li>
             <a class="card" href="#cyclone">
               <strong>Cyclones</strong>
               <span>IMD cyclone bulletins and track maps</span>
@@ -137,6 +167,12 @@
             </a>
           </li>
           <li>
+            <a class="card" href="#season">
+              <strong>Rain season</strong>
+              <span>Rain at each station since 1 October, wettest first</span>
+            </a>
+          </li>
+          <li>
             <a class="card" href="#compare">
               <strong>Compare stations</strong>
               <span>Two or three stations' rain through a day or month</span>
@@ -146,6 +182,12 @@
             <a class="card" href="#map">
               <strong>Station map</strong>
               <span>Your stations on a map, by rain or temperature</span>
+            </a>
+          </li>
+          <li>
+            <a class="card" href="#floods">
+              <strong>Flood spots</strong>
+              <span>Chennai's waterlogging spots and the rain near each today</span>
             </a>
           </li>
           <li>
@@ -228,6 +270,7 @@
             <a id="radar-link" target="_blank" rel="noopener noreferrer"></a>
           </figcaption>
         </figure>
+        <p id="radar-floods" class="frame-bar" hidden><a href="#floods">Flood spots in Chennai and the rain near each today →</a></p>
         <p class="note">
           Images © India Meteorological Department, from
           <a href="https://mausam.imd.gov.in/responsive/radar.php" target="_blank" rel="noopener noreferrer">mausam.imd.gov.in</a>.
@@ -317,6 +360,39 @@
           District-wise nowcast and warnings © India Meteorological Department, from
           <a id="warn-source" href="https://mausam.imd.gov.in/responsive/districtWiseNowcastGIS.php" target="_blank" rel="noopener noreferrer">mausam.imd.gov.in</a>.
         </p>
+      </section>
+
+      <!-- Wind and storms -->
+      <section id="view-wind" class="view" hidden>
+        <div id="wind-home">
+          <form class="controls sticky-controls" onsubmit="return false">
+            <button id="wind-refresh" type="button">Refresh</button>
+            <a class="button secondary-link" href="#wind?page=windy">Windy map</a>
+            <a class="button secondary-link" href="#cyclone">Cyclone bulletins</a>
+          </form>
+          <p id="wind-status" class="status" aria-live="polite"></p>
+          <div class="map-wrap">
+            <div id="wind-map" class="station-map wind-map"></div>
+            <canvas id="wind-canvas" class="wind-canvas" aria-hidden="true"></canvas>
+          </div>
+          <label class="wind-slider">
+            <span>Forecast for <b id="wind-time-label">…</b></span>
+            <input id="wind-time" type="range" min="0" max="15" step="1" value="0" />
+          </label>
+          <div id="wind-summary" class="wind-summary" aria-live="polite"></div>
+          <p id="wind-legend" class="legend map-legend"></p>
+          <p class="note">
+            Wind 10 m above the ground, from <a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer">Open-Meteo</a>'s
+            forecast models on a 1° (about 110 km) grid, every 3 hours. Colours follow IMD's names for a system with
+            that sustained wind; a coarse model often shows a cyclone's core weaker and wider than it is, so use
+            IMD's <a href="#cyclone">bulletins</a> for the official track and strength. <b>Windy map</b> has gusts, rain
+            and pressure layers.
+          </p>
+        </div>
+        <div id="wind-reader" hidden>
+          <p class="frame-bar"><a href="#wind">← Wind &amp; storms</a></p>
+          <iframe id="wind-frame" class="site-frame" title="Windy wind map" referrerpolicy="strict-origin-when-cross-origin"></iframe>
+        </div>
       </section>
 
       <!-- Cyclones -->
@@ -414,6 +490,25 @@
         </div>
       </section>
 
+      <!-- Rain season -->
+      <section id="view-season" class="view" hidden>
+        <h2>Rain season · since 1 October</h2>
+        <form class="controls" onsubmit="return false">
+          <button id="season-refresh" type="button">Refresh</button>
+        </form>
+        <p id="season-status" class="status" aria-live="polite"></p>
+        <p id="season-heading" class="note"></p>
+        <div id="season-summary" class="season-summary" hidden></div>
+        <ol id="season-list" class="season-list"></ol>
+        <p><button id="season-load" type="button" class="secondary">Load the whole season</button></p>
+        <p id="season-load-note" class="note"></p>
+        <p class="note">
+          Each station's own rain gauge, from Wunderground, added up day by day (days run midnight to midnight).
+          A rainy day is 2.5 mm or more. Lighter rows aren't fully loaded yet. Tap a station for its daily chart.
+          IMD's official figures against normal are under <a href="#monsoon">Monsoon</a>.
+        </p>
+      </section>
+
       <!-- Compare stations -->
       <section id="view-compare" class="view" hidden>
         <h2>Compare stations</h2>
@@ -479,6 +574,43 @@
         <div id="map-box" class="station-map"></div>
         <p id="map-legend" class="legend map-legend"></p>
         <p class="note">Rain bands follow IMD's daily categories. Faded markers haven't reported for over an hour.</p>
+      </section>
+
+      <!-- Flood spots -->
+      <section id="view-floods" class="view" hidden>
+        <form class="controls sticky-controls" onsubmit="return false">
+          <button id="flood-refresh" type="button">Refresh</button>
+          <a class="button secondary-link" href="#radar">Radar</a>
+        </form>
+        <p id="flood-status" class="status" aria-live="polite"></p>
+        <div class="map-wrap">
+          <div id="flood-map" class="station-map flood-map"></div>
+          <span class="map-cross" aria-hidden="true">+</span>
+        </div>
+        <p class="legend flood-legend">
+          <span class="spot spot-high">!</span> Likely flooded
+          <span class="spot spot-watch">!</span> Watch
+          <span class="spot spot-low">!</span> Low
+          <span class="spot spot-unknown">!</span> No station near
+          <span class="spot spot-low spot-subway">U</span> Subway
+        </p>
+        <h3>Rain near each spot today</h3>
+        <ul id="flood-list" class="flood-list"></ul>
+        <h3>Add your own spot</h3>
+        <form id="flood-add" class="controls">
+          <label>
+            Name
+            <input id="flood-name" required maxlength="50" placeholder="e.g. Our street" />
+          </label>
+          <button type="submit">Add at the cross</button>
+        </form>
+        <p class="note">Move the map so the + in its middle is on the place, then add it. It is kept on this phone.</p>
+        <p class="note">
+          Spots are low-lying areas and road subways that flooded in past monsoons (2015, 2021, 2023), placed
+          roughly. Each takes the rain today at the nearest station within 6 km: <b>Watch</b> from 30 mm a day or
+          15 mm/h, <b>Likely flooded</b> from 64.5 mm a day (IMD's heavy rain) or 30 mm/h. It's a rough guide from
+          rain alone, not a flood report; check Greater Chennai Corporation's alerts before travelling.
+        </p>
       </section>
 
       <!-- Lakes -->
