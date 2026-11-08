@@ -115,6 +115,20 @@ async function getPage(page, period) {
   }
 }
 
+/** IMD's district figures since 1 October (the season so far), for other screens. */
+export async function seasonByDistrict() {
+  const page = await getPage(PAGES.district, "C");
+  try {
+    const saved = JSON.parse(localStorage.getItem(SAVED_KEY + "C"));
+    if (saved?.data) {
+      saved.data.district = page;
+      saved.at = Date.now();
+      localStorage.setItem(SAVED_KEY + "C", JSON.stringify(saved));
+    }
+  } catch {}
+  return page;
+}
+
 function card(label, a, sub) {
   const li = document.createElement("li");
   const c = category(a?.departure);

@@ -14,6 +14,7 @@ import { loadLeaflet, isDark } from "./stationmap.js";
 import { drawBars } from "./chart.js";
 import { getDays, missing, daysEnding, remember, weeklyNormals, imdDistrict, gaugeKey, niceDay as dayLabel } from "./gaugedays.js";
 import { IN_APP, routeParams } from "./route.js";
+import { gaugeFlags, skipSuspects, setSkipSuspects } from "./health.js";
 
 const BASE = "https://beta-tnsmart.rimes.int/Rainfall_Python_IDW/Hourly_json/";
 const PAGE = "https://beta-tnsmart.rimes.int/index.php/RTDAS/Hourly_data_TNDRRA_c/public";
@@ -62,6 +63,7 @@ let sortDir = -1;
 let tableRows = PAGE_ROWS;
 let tab = "map";
 let userDay = false; // a day picked in the date box, not the running one
+let flags = new Map(); // gaugeKey -> { level, why } (js/health.js)
 let pendingGauge = ""; // "district|station" from a link (#gauges?gauge=…), e.g. Home's nearest gauge
 
 function say(text, error = false) {
@@ -150,6 +152,7 @@ async function load(force = false) {
       return;
     }
     rows = data.filter((r) => typeof r.latitude === "number" && typeof r.longitude === "number");
+    flags = gaugeFlags(rows);
     remember(day, data);
     hours = Object.keys(data[0] || {}).filter((k) => HOUR_RE.test(k));
     loadedDay = day;
@@ -196,6 +199,10 @@ function inArea() {
     return true;
   });
 }
+// Suspect gauges (Station health) stay on the map and in the table, marked,
+// but are left out of averages, counts and rankings unless turned off.
+const flagOf = (r) => flags.get(gaugeKey(r));
+const counts = (r) => !(skipSuspects() && flagOf(r));
 const areaName = () => (areaPick.value === "all" ? "Tamil Nadu" : areaPick.value);
 // The wettest single hour at a gauge.
 const peakOf = (r) => {
@@ -257,6 +264,13 @@ function popup(r) {
   const d = document.createElement("small");
   d.textContent = r.district_name;
   div.append(t, s, d);
+  const f = flagOf(r);
+  if (f) {
+    const w = document.createElement("small");
+    w.className = "health-why";
+    w.textContent = `${f.level === "bad" ? "Wrong reading" : "Odd reading"}: ${f.why.join("; ")}`;
+    div.append(w);
+  }
   return div;
 }
 
@@ -276,15 +290,16 @@ function drawMap(list) {
     if (pins) {
       const icon = L.divIcon({
         className: "",
-        html: `<span class="pin${typeof v === "number" ? "" : " off"}" style="background:${c};color:${LIGHT.has(c) ? "#111" : "#fff"}">${fmt(v)}</span>`,
+        html: `<span class="pin${typeof v === "number" ? "" : " off"}${flagOf(r) ? " suspect" : ""}" style="background:${c};color:${LIGHT.has(c) ? "#111" : "#fff"}">${fmt(v)}${flagOf(r) ? "?" : ""}</span>`,
         iconSize: null,
       });
       m = L.marker(pos, { icon, title: r.station_name });
     } else {
       m = L.circleMarker(pos, {
         radius: typeof v === "number" && v > 0 ? 6 : 4,
-        color: "rgba(0,0,0,.45)",
-        weight: 1,
+        color: flagOf(r) ? "#000" : "rgba(0,0,0,.45)",
+        weight: flagOf(r) ? 2 : 1,
+        dashArray: flagOf(r) ? "2 2" : null,
         fillColor: c,
         fillOpacity: typeof v === "number" ? 0.95 : 0.35,
       });
@@ -519,7 +534,7 @@ function drawDistricts() {
   const all = inArea();
   areaPick.value = keep;
   for (const r of all) {
-    if (typeof r.total !== "number") continue;
+    if (typeof r.total !== "number" || !counts(r)) continue;
     const d = by.get(r.district_name) || { sum: 0, n: 0, max: 0 };
     d.sum += r.total;
     d.n++;
@@ -545,12 +560,13 @@ function drawDistricts() {
   );
 }
 
-function drawSummary(list) {
+function drawSummary(list, left = 0) {
   const on = list.filter((r) => typeof r.total === "number");
   if (!on.length) {
     summary.textContent = "";
     return;
   }
+  const leftOut = left ? ` · ${left} suspect gauge${left > 1 ? "s" : ""} left out (see Station health)` : "";
   const avg = on.reduce((a, r) => a + r.total, 0) / on.length;
   const wet = on.filter((r) => r.total >= 0.1).length;
   const heavy = on.filter((r) => r.total >= 64.5).length;
@@ -558,7 +574,8 @@ function drawSummary(list) {
   summary.textContent =
     `Average ${fmt(avg)} mm · rain at ${wet} of ${on.length} gauges` +
     (heavy ? ` · ${heavy} heavy (64.5 mm+)` : "") +
-    ` · wettest ${top.station_name} ${fmt(top.total)} mm`;
+    ` · wettest ${top.station_name} ${fmt(top.total)} mm` +
+    leftOut;
 }
 
 // How many gauges fall in each of IMD's daily bands.
@@ -648,6 +665,13 @@ function drawTable(list) {
           td.append(dot);
         }
         td.append(text);
+        if (!i && flagOf(r)) {
+          const q = document.createElement("span");
+          q.className = "suspect-mark";
+          q.textContent = " ?";
+          q.title = flagOf(r).why.join("; ");
+          td.append(q);
+        }
         tr.append(td);
       });
       tr.addEventListener("click", () => focus(r));
@@ -676,24 +700,32 @@ function setTab(name) {
 
 function draw() {
   const list = inArea();
+  const counted = list.filter(counts);
   lastIdx = findLastHour(list);
   renderLegend();
   drawMap(list);
-  drawSummary(list);
-  if (!picked) picked = [...list].filter((r) => typeof r.total === "number").sort((a, b) => b.total - a.total)[0] || null;
+  drawSummary(counted, list.length - counted.length);
+  if (!picked) picked = [...counted].filter((r) => typeof r.total === "number").sort((a, b) => b.total - a.total)[0] || null;
   drawGauge();
   drawHistory();
   drawTable(list);
-  drawArea(list);
-  drawBands(list);
-  drawWet(list);
-  drawTop(list);
+  drawArea(counted);
+  drawBands(counted);
+  drawWet(counted);
+  drawTop(counted);
   drawDistricts();
 }
 
 // ---- Screen ----
 
 export function initGauges() {
+  const skip = $("tg-skip");
+  skip.checked = skipSuspects();
+  skip.addEventListener("change", () => {
+    setSkipSuspects(skip.checked);
+    picked = null;
+    if (rows.length) draw();
+  });
   try {
     const a = localStorage.getItem(AREA_KEY);
     if (a) areaPick.replaceChildren(new Option(a === "all" ? "All Tamil Nadu" : a, a));
@@ -760,6 +792,7 @@ export function initGauges() {
 }
 
 export async function showGauges() {
+  $("tg-skip").checked = skipSuspects();
   const want = routeParams().get("gauge");
   if (want) {
     pendingGauge = want;

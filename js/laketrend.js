@@ -142,6 +142,30 @@ async function readDay(day) {
   return chennaiLakes(await pdfText(await res.arrayBuffer())) || 0;
 }
 
+/**
+ * The latest daily report of the last 4 days, for the digest:
+ * { day, lakes: { name: [storage, capacity] }, storage, capacity } or null.
+ */
+export async function latestLakes() {
+  const all = loadSaved();
+  const end = today();
+  for (let k = 0; k < 4; k++) {
+    const d = shift(end, -k);
+    let v = all[d];
+    if (!v && !(d in all && d < shift(end, -3))) {
+      try {
+        v = await readDay(d);
+        all[d] = v;
+        save(all);
+      } catch {
+        v = 0;
+      }
+    }
+    if (v) return { day: d, lakes: v, storage: totalOf(v), capacity: capOf(v) };
+  }
+  return null;
+}
+
 // ---- Screen ----
 
 let range = 30;

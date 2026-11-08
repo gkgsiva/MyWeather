@@ -169,9 +169,9 @@ function fillPeriods() {
   period.value = keep;
 }
 
-function rowsFor(sel) {
+function rowsFor(sel, d0 = data) {
   if (sel === "now") {
-    return data.nowcast.map((p) => {
+    return d0.nowcast.map((p) => {
       const items = [];
       for (let i = 2; i <= 19; i++) {
         if (i === 16) {
@@ -188,8 +188,8 @@ function rowsFor(sel) {
     });
   }
   const d = Number(sel);
-  return data.nowcast.map((n) => {
-    const p = data.warnings.get(n.District) || {};
+  return d0.nowcast.map((n) => {
+    const p = d0.warnings.get(n.District) || {};
     const codes = String(p[`Day_${d}`] || "")
       .split(",")
       .map(Number)
@@ -282,6 +282,19 @@ function init() {
 }
 
 // Reloads each time the Warnings menu is opened.
+/**
+ * One district's warnings for the digest: { now, today, tomorrow }, each
+ * { level 0–3, levelName, color, text } or null.
+ */
+export async function districtOutlook(name = HOME) {
+  const d = await load();
+  const pick = (sel) => {
+    const r = rowsFor(sel, d).find((x) => x.name === name);
+    return r ? { ...r, levelName: LEVELS[r.level].name, color: LEVELS[r.level].color } : null;
+  };
+  return { now: pick("now"), today: pick("1"), tomorrow: pick("2") };
+}
+
 export function showWarnings() {
   if (!ready) init();
   refresh();

@@ -28,7 +28,9 @@
     <div id="menu-backdrop" class="menu-backdrop" hidden></div>
     <nav id="menu-panel" class="menu" aria-label="Main menu" hidden>
       <a href="#home" data-view="home">Home</a>
+      <a href="#digest" data-view="digest">Morning digest</a>
       <a href="#forecast" data-view="forecast">Forecast</a>
+      <a href="#heat" data-view="heat">Heat &amp; humidity</a>
       <a href="#radar" data-view="radar">Radars</a>
       <a href="#radarmap" data-view="radarmap">Radar map</a>
       <a href="#satellite" data-view="satellite">Satellite</a>
@@ -37,11 +39,13 @@
       <a href="#wind" data-view="wind">Wind &amp; storms</a>
       <a href="#cyclone" data-view="cyclone">Cyclones</a>
       <a href="#monsoon" data-view="monsoon">Monsoon</a>
+      <a href="#yoy" data-view="yoy">Year on year</a>
       <a href="#rain" data-view="rain">Rain history</a>
       <a href="#season" data-view="season">Rain season</a>
       <a href="#compare" data-view="compare">Compare stations</a>
       <a href="#map" data-view="map">Station map</a>
       <a href="#gauges" data-view="gauges">TN rain gauges</a>
+      <a href="#health" data-view="health">Station health</a>
       <a href="#spell" data-view="spell">Rain spell</a>
       <a href="#floods" data-view="floods">Flood spots</a>
       <a href="#lakes" data-view="lakes">Lakes</a>
@@ -105,6 +109,15 @@
           <small id="home-strip-status" class="strip-status" aria-live="polite"></small>
         </div>
 
+        <div id="home-nowcast" class="sky-card nowcast-card">
+          <div class="strip-head">
+            <strong class="near-title">Rain coming?</strong>
+            <button id="home-nowcast-btn" type="button" class="secondary small">Check radar</button>
+          </div>
+          <a id="home-nowcast-body" class="nowcast-body" href="#radarmap"></a>
+          <small id="home-nowcast-status" class="strip-status" aria-live="polite"></small>
+        </div>
+
         <div id="home-near" class="sky-card near-card off">
           <div class="strip-head">
             <strong class="near-title">Near you</strong>
@@ -124,9 +137,21 @@
         <h3>All screens</h3>
         <ul id="all-cards" class="cards">
           <li>
+            <a class="card" href="#digest">
+              <strong>Morning digest</strong>
+              <span>Today's rain, forecast, warnings and lakes in one picture to share on WhatsApp</span>
+            </a>
+          </li>
+          <li>
             <a class="card" href="#forecast">
               <strong>Forecast</strong>
               <span>Chennai's next 7 days and today's rain chance by hour</span>
+            </a>
+          </li>
+          <li>
+            <a class="card" href="#heat">
+              <strong>Heat &amp; humidity</strong>
+              <span>How hot it feels, heat stress and wet bulb for the next 48 hours</span>
             </a>
           </li>
           <li>
@@ -138,7 +163,7 @@
           <li>
             <a class="card" href="#radarmap">
               <strong>Radar map</strong>
-              <span>Chennai radar echoes on a map, with a loop and storm movement</span>
+              <span>Radar echoes and INSAT clouds on a map, with a loop, storm movement and when rain will reach you</span>
             </a>
           </li>
           <li>
@@ -178,6 +203,12 @@
             </a>
           </li>
           <li>
+            <a class="card" href="#yoy">
+              <strong>Year on year</strong>
+              <span>This monsoon against the last 12, for Chennai and every TN district</span>
+            </a>
+          </li>
+          <li>
             <a class="card" href="#rain">
               <strong>Rain history</strong>
               <span>Daily and monthly rain at your stations</span>
@@ -205,6 +236,12 @@
             <a class="card" href="#gauges">
               <strong>TN rain gauges</strong>
               <span>All of Tamil Nadu's 1,500 rain gauges hour by hour: map, table and charts</span>
+            </a>
+          </li>
+          <li>
+            <a class="card" href="#health">
+              <strong>Station health</strong>
+              <span>Offline stations and gauges, and readings that don't add up</span>
             </a>
           </li>
           <li>
@@ -250,6 +287,59 @@
             </a>
           </li>
         </ul>
+      </section>
+
+      <!-- Heat & humidity -->
+      <section id="view-heat" class="view" hidden>
+        <h2>Heat &amp; humidity</h2>
+        <form class="controls" onsubmit="return false">
+          <button id="heat-refresh" type="button">Refresh</button>
+        </form>
+        <p id="heat-status" class="status" aria-live="polite"></p>
+        <div data-share="Heat & humidity · now" data-share-from="heat-place">
+          <div id="heat-now" class="heat-now"></div>
+          <p id="heat-place" class="note"></p>
+          <p id="heat-station" class="heat-station" hidden></p>
+        </div>
+        <div data-share="Heat & humidity · next 48 hours" data-share-from="heat-place">
+          <div class="chart-head"><strong>Feels like · next 48 hours</strong></div>
+          <svg id="heat-chart" class="chart" role="group" aria-label="Air temperature and feels-like temperature by hour"></svg>
+          <p class="legend line-legend"><span class="key air"></span> Air <span class="key feels"></span> Feels like (heat index)</p>
+          <p id="heat-readout" class="readout" aria-live="polite"></p>
+          <div class="chart-head"><strong>Heat stress hour by hour</strong></div>
+          <div id="heat-strip" class="heat-strip" role="img" aria-label="Heat stress level for each of the next 48 hours"></div>
+          <p id="heat-legend" class="legend map-legend"></p>
+        </div>
+        <div data-share="Heat & humidity · next days" data-share-from="heat-place">
+          <h3>Hottest feel each day</h3>
+          <ul id="heat-days" class="fc-days heat-days"></ul>
+        </div>
+        <p class="note">
+          Feels like is the heat index: what the air temperature feels like with the humidity, in the shade. Full sun
+          can add up to 8°. Levels follow the US weather service's heat index bands. Wet bulb is the lowest temperature
+          sweat can cool to. Forecast from <a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer">Open-Meteo</a>.
+        </p>
+      </section>
+
+      <!-- Morning digest -->
+      <section id="view-digest" class="view" hidden>
+        <form class="controls" onsubmit="return false">
+          <button id="dg-share" type="button" class="share-btn">Share on WhatsApp</button>
+          <button id="dg-refresh" type="button" class="secondary">Refresh</button>
+        </form>
+        <p id="dg-status" class="status" aria-live="polite"></p>
+        <div id="dg-card" class="dg-card">
+          <div class="dg-head">
+            <strong>Chennai weather today</strong>
+            <span id="dg-date"></span>
+          </div>
+          <div id="dg-parts"></div>
+        </div>
+        <p class="note">
+          A summary to share each morning: the picture goes with the same summary as text. Rain is the last full rain
+          day (8:30 AM to 8:30 AM) at the TN-SMART gauges; the radar nowcast appears when Home or the Radar map
+          checked it in the last 30 minutes.
+        </p>
       </section>
 
       <!-- Forecast -->
@@ -486,6 +576,54 @@
         </p>
       </section>
 
+      <!-- Year on year -->
+      <section id="view-yoy" class="view" hidden>
+        <form class="controls sticky-controls" onsubmit="return false">
+          <label>
+            Area
+            <select id="yoy-area"></select>
+          </label>
+          <button id="yoy-refresh" type="button">Refresh</button>
+        </form>
+        <p id="yoy-status" class="status" aria-live="polite"></p>
+        <div data-share="Year on year" data-share-from="yoy-title">
+          <h2 id="yoy-title" class="yoy-title"></h2>
+          <div id="yoy-summary" class="yoy-summary"></div>
+          <div class="chart-head"><strong>Rain since 1 October, season by season</strong></div>
+          <svg id="yoy-chart" class="chart" role="group" aria-label="Rain added up since 1 October, this season against past seasons"></svg>
+          <p class="legend line-legend"><span class="key this-year"></span> This season <span class="key avg"></span> Average <span class="key past"></span> Past seasons</p>
+          <p id="yoy-readout" class="readout" aria-live="polite"></p>
+        </div>
+        <div data-share="Year on year · to the same day" data-share-from="yoy-title">
+          <div class="chart-head"><strong>Each season to the same day</strong></div>
+          <svg id="yoy-bars" class="chart" role="group" aria-label="Rain to the same day of each season"></svg>
+          <p id="yoy-bars-readout" class="readout" aria-live="polite"></p>
+        </div>
+        <div data-share="Year on year · all districts">
+          <div class="chart-head"><strong id="yoy-table-head">All districts</strong></div>
+          <div class="table-wrap">
+            <table id="yoy-table" class="readings yoy-table">
+              <thead>
+                <tr>
+                  <th scope="col">District</th>
+                  <th scope="col">This season</th>
+                  <th scope="col">Average</th>
+                  <th scope="col">Diff.</th>
+                  <th scope="col">Rank</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+        <p class="note">
+          Rain in mm from 1 October, at the middle of each district (about 25 km across), from the ERA5 weather
+          reanalysis through <a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer">Open-Meteo</a>,
+          so every season is worked out the same way. It is a model's figure and often runs below rain gauges in heavy
+          rain; use it to compare seasons, and the Monsoon screen for IMD's measured rain. Tap a district to chart it.
+        </p>
+      </section>
+
       <!-- Rain history -->
       <section id="view-rain" class="view" hidden>
         <h2>Rain history</h2>
@@ -675,6 +813,7 @@
           </label>
           <button id="tg-today" type="button" class="secondary">Today</button>
           <button id="tg-refresh" type="button" aria-label="Refresh">↻</button>
+          <label class="rm-check"><input id="tg-skip" type="checkbox" checked /> Leave out suspect gauges</label>
         </form>
         <p id="tg-status" class="status" aria-live="polite"></p>
         <p id="tg-summary" class="note"></p>
@@ -766,6 +905,50 @@
         </p>
       </section>
 
+      <!-- Station health -->
+      <section id="view-health" class="view" hidden>
+        <h2>Station health</h2>
+        <form class="controls" onsubmit="return false">
+          <button id="health-refresh" type="button">Check again</button>
+        </form>
+        <label class="health-toggle">
+          <input id="health-skip" type="checkbox" checked />
+          <span>Leave suspect readings out of the maps, averages and rankings (they stay on the map, greyed or marked ?)</span>
+        </label>
+        <p id="health-status" class="status" aria-live="polite"></p>
+        <div data-share="Station health · Wunderground">
+          <div class="chart-head"><strong id="health-pws-head">Wunderground stations</strong></div>
+          <ul id="health-pws" class="health-list"></ul>
+        </div>
+        <div data-share="Station health · TN rain gauges">
+          <div class="chart-head"><strong id="health-gauges-head">TN rain gauges</strong></div>
+          <ul id="health-gauges" class="health-list"></ul>
+        </div>
+        <div data-share="Station health · TN gauges reporting by district">
+          <div class="chart-head"><strong>TN gauges reporting, by district</strong></div>
+          <div class="table-wrap">
+            <table id="health-districts" class="readings">
+              <thead>
+                <tr>
+                  <th scope="col">District</th>
+                  <th scope="col">Reporting</th>
+                  <th scope="col">Silent</th>
+                  <th scope="col">Silent %</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+        <p class="note">
+          Checks: offline or over an hour old; impossible values (negative rain, over 150 mm in an hour, humidity 0%,
+          dew point above the temperature); a day total that doesn't match its hours; the same rain every hour for 6
+          hours; and readings far from every neighbour (a gauge with 50 mm+ when the gauges within 10 km had a quarter
+          of that, a dry gauge among wet ones, a temperature 4° off the stations within 25 km). A flag is a reason
+          to doubt a reading, not proof: a real downpour can hit one gauge only.
+        </p>
+      </section>
+
       <!-- Radar map -->
       <section id="view-radarmap" class="view" hidden>
         <form class="controls sticky-controls" onsubmit="return false">
@@ -787,11 +970,16 @@
             <input id="rm-frame" class="snap-skip" type="range" min="0" max="0" value="0" aria-label="Radar time" />
             <span id="rm-time" class="rm-time"></span>
           </div>
-          <label class="rm-opacity snap-skip">
-            Opacity
-            <input id="rm-opacity" type="range" min="20" max="100" value="80" />
-          </label>
+          <div class="rm-options snap-skip">
+            <label class="rm-opacity">
+              Opacity
+              <input id="rm-opacity" type="range" min="20" max="100" value="80" />
+            </label>
+            <label class="rm-check"><input id="rm-clouds" type="checkbox" /> Clouds (INSAT)</label>
+          </div>
           <p id="rm-motion" class="rm-motion" hidden></p>
+          <p id="rm-nowcast" class="rm-nowcast" aria-live="polite" hidden></p>
+          <p id="rm-clouds-note" class="note rm-clouds-note" hidden></p>
           <p id="rm-legend" class="legend map-legend"></p>
         </div>
         <details class="rm-vvp">

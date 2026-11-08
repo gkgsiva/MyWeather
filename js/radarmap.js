@@ -22,6 +22,7 @@ import { loadLeaflet, isDark } from "./stationmap.js";
 import { decodeGif } from "./gif.js";
 import { IMD_RADAR_BASE, radarImageUrl } from "./stations.js";
 import { routeParams } from "./route.js";
+import { nowcastAt, headline, saveNowcast, distanceKm } from "./nowcast.js";
 
 const STATION_KEY = "myweather.radarmap.station";
 const PRODUCT_KEY = "myweather.radarmap.product";
@@ -251,6 +252,9 @@ const opacity = $("rm-opacity");
 const motionBox = $("rm-motion");
 const legendBox = $("rm-legend");
 const note = $("rm-note");
+const nowcastBox = $("rm-nowcast");
+const cloudsPick = $("rm-clouds");
+const cloudsNote = $("rm-clouds-note");
 
 let L = null;
 let map = null;
@@ -657,6 +661,14 @@ function ensureMap() {
   if (map) return;
   map = L.map(box).setView([radar().lat, radar().lon], 7);
   setTiles();
+  // Tap the map: nowcast for that spot.
+  map.on("click", (e) => {
+    if (!last) return;
+    try {
+      localStorage.setItem(PLACE_KEY, JSON.stringify({ lat: e.latlng.lat, lon: e.latlng.lng }));
+    } catch {}
+    drawNowcast();
+  });
   new MutationObserver(setTiles).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
 }
 
@@ -767,11 +779,252 @@ async function fetchBuffer(url) {
   return res.arrayBuffer();
 }
 
+// Downloads a loop and lifts the rain out of each frame:
+// { rgbs, masks, times, w, h }, or null when cancelled() turns true.
+async function analyseLoop(r, p, cancelled = () => false, onDecode = () => {}) {
+  const [w, h] = size(p);
+  const buf = await fetchBuffer(`${IMD_RADAR_BASE}animation/Converted/${r.code.toUpperCase()}_${p.loop}.gif`);
+  if (cancelled()) return null;
+  onDecode();
+  await new Promise((res) => setTimeout(res, 30)); // let the message paint
+  const rgbs = [];
+  const minutes = [];
+  decodeGif(buf, (rgba, width) => {
+    const m = readTime(rgba, width, p);
+    // IMD repeats a frame when a scan is missing; keep one of each time.
+    if (minutes.length && m != null && m === minutes[minutes.length - 1]) return;
+    minutes.push(m);
+    rgbs.push(cropRgb(rgba, width, p));
+  });
+  const t0 = performance.now();
+  const blurred = rgbs.map((rgb) => blur(rgb, w, h));
+  const bg = median(blurred);
+  const masks = blurred.map((bl) => rainMask(bl, bg, w, h));
+  console.debug(`radar map: ${r.code}/${p.code} processed in ${Math.round(performance.now() - t0)} ms`);
+  return { rgbs, masks, times: datesOf(minutes), w, h };
+}
+
+// A rain mask placed on the map, for the nowcast.
+function gridOf(p, mask, w, h) {
+  return {
+    mask,
+    w,
+    h,
+    kmPerPx: kmPerPx(p),
+    toPx: (lat, lon) => [
+      ((lon - p.lon[0]) * p.lon[2] + p.lon[1] - p.crop[0]) / step(p),
+      (yOfLat(p, lat) - p.crop[1]) / step(p),
+    ],
+  };
+}
+
+// ---- Nowcast ----
+
+const PLACE_KEY = "myweather.nowcast.place"; // a spot tapped on the map
+const CHENNAI_PLACE = { lat: 13.08, lon: 80.27, name: "Chennai" };
+let last = null; // { r, p, grid, motion, time } of the latest loop
+let spotMarker = null;
+
+const readJson = (key) => {
+  try {
+    return JSON.parse(localStorage.getItem(key));
+  } catch {
+    return null;
+  }
+};
+
+// The place to nowcast for: a spot tapped on the map, else the phone's
+// position when Home's "Near you" is on, else Chennai.
+export function nowcastPlace() {
+  const picked = readJson(PLACE_KEY);
+  if (picked && typeof picked.lat === "number") return { ...picked, name: "Picked spot", picked: true };
+  const pos = readJson("myweather.home.gps") === true && readJson("myweather.home.pos");
+  if (pos && typeof pos.lat === "number") return { lat: pos.lat, lon: pos.lon, name: "Your location" };
+  return CHENNAI_PLACE;
+}
+
+function drawNowcast() {
+  const box = nowcastBox;
+  spotMarker?.remove();
+  spotMarker = null;
+  if (!last) {
+    box.hidden = true;
+    return;
+  }
+  const place = nowcastPlace();
+  const res = nowcastAt(last.grid, last.motion, place.lat, place.lon);
+  box.hidden = false;
+  box.replaceChildren();
+  const b = document.createElement("b");
+  b.textContent = `${place.name}: `;
+  const t = document.createElement("span");
+  t.textContent = res.edge && res.eta === null && !res.raining && !res.nearest ? `outside ${last.r.name} radar's picture.` : headline(res);
+  const small = document.createElement("small");
+  small.textContent = place.picked
+    ? " Tap the map to move the spot. "
+    : " Tap the map for another spot. ";
+  box.append(b, t, small);
+  if (place.picked) {
+    const clear = document.createElement("button");
+    clear.type = "button";
+    clear.className = "linkish snap-skip";
+    clear.textContent = "Back to " + (readJson("myweather.home.gps") === true ? "my location" : "Chennai");
+    clear.addEventListener("click", () => {
+      try {
+        localStorage.removeItem(PLACE_KEY);
+      } catch {}
+      drawNowcast();
+    });
+    box.append(clear);
+  }
+  spotMarker = L.marker([place.lat, place.lon], {
+    icon: L.divIcon({ className: "", html: '<span class="nc-pin">📍</span>', iconSize: null }),
+    interactive: false,
+  }).addTo(map);
+  saveNowcast({ at: Date.now(), frame: last.time ? last.time.valueOf() : null, place: place.name, lat: place.lat, lon: place.lon, radar: last.r.name, result: res });
+}
+
+/**
+ * Downloads the nearest radar's loop and nowcasts for a place, for Home:
+ * the saved entry (see js/nowcast.js), or throws.
+ */
+export async function runNowcast(place = nowcastPlace()) {
+  const near = RADARS.map((r) => ({ r, d: distanceKm([place.lat, place.lon], [r.lat, r.lon]) }))
+    .filter(({ r }) => r.products.some((p) => p.loop && p.motion))
+    .sort((a, b) => a.d - b.d)[0];
+  if (!near || near.d > 230) throw new Error("No radar loop covers this place.");
+  const r = near.r;
+  const p = r.products.find((x) => x.loop && x.motion);
+  const a = await analyseLoop(r, p);
+  const m = motion(a.masks, a.times, p, a.w, a.h);
+  const grid = gridOf(p, a.masks[a.masks.length - 1], a.w, a.h);
+  const time = a.times[a.times.length - 1];
+  const entry = { at: Date.now(), frame: time ? time.valueOf() : null, place: place.name, lat: place.lat, lon: place.lon, radar: r.name, result: nowcastAt(grid, m, place.lat, place.lon) };
+  saveNowcast(entry);
+  return entry;
+}
+
+// ---- Clouds (INSAT-3DS infrared, IMD's Asia sector picture) ----
+//
+// IMD's 3Dasiasec pictures are "L1C Mercator": longitude is linear (10° every
+// 285.7 px, 80°E at x 1143) and rows are linear in Mercator y (equator at
+// y 1912, 1870.33 px per unit), measured on its grid lines (Nov 2026). Rows
+// above y 242 are the title. A Mercator picture lines up with the web map as
+// it is, so only the region around Tamil Nadu is cut out and made see-through
+// where the sky is clear: brighter (colder) cloud tops are more solid.
+const SAT_URL = "https://mausam.imd.gov.in/Satellite/3Dasiasec_ir1.jpg";
+const SAT = { lonX: (lon) => 28.5714 * lon - 1142.857, mercY: (m) => 1912.185 - 1870.33 * m, top: 242 };
+const SAT_BOX = { lon0: 68, lon1: 96, lat0: 2, lat1: 24 };
+const CLOUDS_KEY = "myweather.radarmap.clouds";
+let clouds = null; // { layer, url, at }
+
+export function cloudCrop() {
+  const x0 = Math.round(SAT.lonX(SAT_BOX.lon0));
+  const x1 = Math.round(SAT.lonX(SAT_BOX.lon1));
+  const y0 = Math.max(SAT.top, Math.round(SAT.mercY(merc(SAT_BOX.lat1))));
+  const y1 = Math.round(SAT.mercY(merc(SAT_BOX.lat0)));
+  const lonOf = (x) => (x + 1142.857) / 28.5714;
+  const latOf = (y) => unmerc((1912.185 - y) / 1870.33);
+  return { x0, y0, w: x1 - x0, h: y1 - y0, bounds: [[latOf(y1), lonOf(x0)], [latOf(y0), lonOf(x1)]] };
+}
+
+// Grey infrared counts to see-through white cloud. IMD's borders are drawn in
+// yellow-green; those pixels are dropped.
+export function cloudPixels(d) {
+  for (let i = 0; i < d.length; i += 4) {
+    const r = d[i];
+    const g = d[i + 1];
+    const b = d[i + 2];
+    const v = (r + g + b) / 3;
+    const line = g - Math.min(r, b) > 40 || r - b > 60;
+    const a = line ? 0 : Math.max(0, Math.min(1, (v - 105) / 110));
+    d[i] = d[i + 1] = 255;
+    d[i + 2] = 255;
+    d[i + 3] = Math.round(a * 220);
+  }
+}
+
+// IMD's dotted 10° grid lines (one pixel wide) would show as thin cloud:
+// each is replaced by the average of the pixels two away on either side.
+export function removeGrid(img, c) {
+  const { data, width: w, height: h } = img;
+  const mix = (a, b, o) => {
+    for (let k = 0; k < 4; k++) data[o + k] = (data[a + k] + data[b + k]) >> 1;
+  };
+  for (let lon = 70; lon <= 90; lon += 10) {
+    const gx = Math.round(SAT.lonX(lon)) - c.x0;
+    if (gx < 3 || gx > w - 4) continue;
+    for (let y = 0; y < h; y++)
+      for (let d = -1; d <= 1; d++) mix((y * w + gx - 2) * 4, (y * w + gx + 2) * 4, (y * w + gx + d) * 4);
+  }
+  for (let lat = 10; lat <= 20; lat += 10) {
+    const gy = Math.round(SAT.mercY(merc(lat))) - c.y0;
+    if (gy < 3 || gy > h - 4) continue;
+    for (let x = 0; x < w; x++)
+      for (let d = -1; d <= 1; d++) mix(((gy - 2) * w + x) * 4, ((gy + 2) * w + x) * 4, ((gy + d) * w + x) * 4);
+  }
+}
+
+async function loadClouds() {
+  const status = cloudsNote;
+  if (clouds && Date.now() - clouds.at < TTL) {
+    clouds.layer.addTo(map);
+    return;
+  }
+  status.hidden = false;
+  status.textContent = "Loading INSAT clouds (0.7 MB)…";
+  try {
+    const res = await fetch(`${SAT_URL}?t=${Date.now()}`, { cache: "no-store" });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const modified = res.headers.get("last-modified");
+    const bmp = await createImageBitmap(await res.blob());
+    const c = cloudCrop();
+    const canvas = document.createElement("canvas");
+    canvas.width = c.w;
+    canvas.height = c.h;
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
+    ctx.drawImage(bmp, c.x0, c.y0, c.w, c.h, 0, 0, c.w, c.h);
+    const img = ctx.getImageData(0, 0, c.w, c.h);
+    removeGrid(img, c);
+    cloudPixels(img.data);
+    ctx.putImageData(img, 0, 0);
+    const blob = await new Promise((r) => canvas.toBlob(r, "image/png"));
+    if (clouds) {
+      clouds.layer.remove();
+      URL.revokeObjectURL(clouds.url);
+    }
+    const url = URL.createObjectURL(blob);
+    if (!map.getPane("clouds")) map.createPane("clouds").style.zIndex = 350;
+    const layer = L.imageOverlay(url, c.bounds, { pane: "clouds", className: "rm-cloud-layer", interactive: false, opacity: 0.85 });
+    clouds = { layer, url, at: Date.now() };
+    if (cloudsPick.checked) layer.addTo(map);
+    status.textContent = `Clouds: INSAT-3DS infrared${modified ? `, updated by IMD at ${ist(new Date(modified))}` : ""}. Whiter is higher, colder cloud.`;
+  } catch (e) {
+    status.textContent = /Failed to fetch|NetworkError|Load failed/.test(e.message)
+      ? "Couldn't read IMD's satellite picture. It can only be read inside the MyWeather app."
+      : `Couldn't load the clouds (${e.message}).`;
+  }
+}
+
+function setClouds() {
+  try {
+    localStorage.setItem(CLOUDS_KEY, cloudsPick.checked ? "1" : "0");
+  } catch {}
+  if (cloudsPick.checked) loadClouds();
+  else {
+    clouds?.layer.remove();
+    cloudsNote.hidden = true;
+  }
+}
+
 async function load(force = false) {
   const r = radar();
   const p = product();
   const key = `${r.code}/${p.code}`;
-  if (!force && loaded.key === key && Date.now() - loaded.at < TTL) return;
+  if (!force && loaded.key === key && Date.now() - loaded.at < TTL) {
+    drawNowcast();
+    return;
+  }
   const run = ++busy;
   stop();
   renderLegend(p);
@@ -789,24 +1042,9 @@ async function load(force = false) {
   try {
     if (p.loop) {
       say(`Downloading IMD's 3-hour loop for ${r.name} (1 to 5 MB)…`);
-      const buf = await fetchBuffer(`${IMD_RADAR_BASE}animation/Converted/${r.code.toUpperCase()}_${p.loop}.gif`);
-      if (run !== busy) return;
-      say("Finding the rain in each frame…");
-      await new Promise((r) => setTimeout(r, 30)); // let the message paint
-      const rgbs = [];
-      const minutes = [];
-      decodeGif(buf, (rgba, width) => {
-        const m = readTime(rgba, width, p);
-        // IMD repeats a frame when a scan is missing; keep one of each time.
-        if (minutes.length && m != null && m === minutes[minutes.length - 1]) return;
-        minutes.push(m);
-        rgbs.push(cropRgb(rgba, width, p));
-      });
-      const t0 = performance.now();
-      const blurred = rgbs.map((rgb) => blur(rgb, w, h));
-      const bg = median(blurred);
-      const masks = blurred.map((bl) => rainMask(bl, bg, w, h));
-      const times = datesOf(minutes);
+      const a = await analyseLoop(r, p, () => run !== busy, () => say("Finding the rain in each frame…"));
+      if (!a) return;
+      const { rgbs, masks, times, w, h } = a;
       const urls = await Promise.all(rgbs.map((rgb, i) => toImage(rgb, masks[i], w, h, rows)));
       if (run !== busy) return urls.forEach((u) => URL.revokeObjectURL(u));
       clearFrames();
@@ -816,8 +1054,9 @@ async function load(force = false) {
       showFrame(frames.length - 1);
       const m = p.motion ? motion(masks, times, p, w, h) : null;
       drawMotion(m, rainCentre(masks[masks.length - 1], p, w, h));
+      last = { r, p, grid: gridOf(p, masks[masks.length - 1], w, h), motion: m, time: times[times.length - 1] };
+      drawNowcast();
       const lastTime = times[times.length - 1];
-      console.debug(`radar map: ${key} processed in ${Math.round(performance.now() - t0)} ms`);
       say(`Latest frame ${lastTime ? ist(lastTime) : ""} · ${frames.length} frames over 3 hours. Tap ▶ to play.`);
     } else {
       say("Loading the radar picture…");
@@ -840,6 +1079,8 @@ async function load(force = false) {
       showFrame(0);
       drawMotion(undefined);
       motionBox.hidden = true;
+      last = null;
+      drawNowcast();
       say(`Picture ${time ? ist(time) : ""}, with IMD's own map under it. Lower the opacity to see the streets.`);
     }
     loaded = { key, at: Date.now() };
@@ -911,7 +1152,17 @@ export function initRadarMap() {
     showFrame(Number(slider.value));
   });
   playBtn.addEventListener("click", play);
-  $("rm-refresh").addEventListener("click", () => load(true));
+  $("rm-refresh").addEventListener("click", () => {
+    load(true);
+    if (cloudsPick.checked) {
+      if (clouds) clouds.at = 0;
+      loadClouds();
+    }
+  });
+  try {
+    cloudsPick.checked = localStorage.getItem(CLOUDS_KEY) === "1";
+  } catch {}
+  cloudsPick.addEventListener("change", setClouds);
   slider.disabled = playBtn.disabled = true;
 }
 
@@ -926,6 +1177,7 @@ export async function showRadarMap() {
   ensureMap();
   setTimeout(() => map.invalidateSize(), 0);
   load();
+  if (cloudsPick.checked) loadClouds();
 }
 
 export function hideRadarMap() {

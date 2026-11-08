@@ -8,6 +8,7 @@
 // OpenStreetMap tiles, darkened to match a dark theme.
 import { loadStations, apiKey, fetchReading, loadLast } from "./wunderground.js";
 import { when } from "./offline.js";
+import { pwsFlags, isSuspect, skipSuspects } from "./health.js";
 
 const COORDS_KEY = "myweather.pws.coords";
 const SHOW_KEY = "myweather.map.show";
@@ -152,6 +153,8 @@ function draw() {
   const coords = loadCoords();
   const stations = loadStations();
   layer.clearLayers();
+  const flags = pwsFlags(readings, coords);
+  const skip = skipSuspects();
   const seen = new Set();
   const placed = [];
   let missing = 0;
@@ -167,11 +170,14 @@ function draw() {
       continue;
     }
     const v = obs ? m.value(obs.metric || {}) : undefined;
-    const c = colour(m.scale, v);
+    const flag = flags.get(s.id);
+    const suspect = isSuspect(flag);
+    // A suspect reading is greyed out (unless Station health says show it).
+    const c = suspect && skip ? "#9aa4af" : colour(m.scale, v);
     const stale = obs && Date.now() - obs.epoch * 1000 > 60 * 60 * 1000;
     const icon = L.divIcon({
       className: "",
-      html: `<span class="pin${stale ? " stale" : ""}${obs ? "" : " off"}" style="background:${c};color:${LIGHT.has(c) ? "#111" : "#fff"}">${obs ? fmt(v) : "–"}</span>`,
+      html: `<span class="pin${stale ? " stale" : ""}${obs ? "" : " off"}${suspect ? " suspect" : ""}" style="background:${c};color:${LIGHT.has(c) ? "#111" : "#fff"}">${obs ? fmt(v) : "–"}${suspect ? "?" : ""}</span>`,
       iconSize: null,
     });
     const marker = L.marker(pos, { icon, title: names, keyboard: true });
@@ -187,6 +193,12 @@ function draw() {
         ? "Offline, no recent data"
         : "No reading";
     pop.querySelector("small").textContent = obs ? `${s.id} · at ${at}${stale ? " (over an hour old)" : ""}` : s.id;
+    if (suspect) {
+      const w = document.createElement("small");
+      w.className = "health-why";
+      w.textContent = `${flag.level === "bad" ? "Wrong reading" : "Odd reading"}: ${flag.why.join("; ")}`;
+      pop.querySelector("small").after(w);
+    }
     const [page, rain] = pop.querySelectorAll("a");
     page.href = `#wunderground?id=${encodeURIComponent(s.id)}`;
     page.textContent = "Station page";
