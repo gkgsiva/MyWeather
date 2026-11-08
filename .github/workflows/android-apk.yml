@@ -69,6 +69,10 @@ jobs:
           fi
           echo "name=$name" >> "$GITHUB_OUTPUT"
 
+      # Shows the version on the app's Info screen.
+      - name: Write app version
+        run: printf 'export const APP_VERSION = "%s";\n' "${{ steps.version.outputs.name }}" > js/version.js
+
       - name: Set up signing key
         env:
           KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}

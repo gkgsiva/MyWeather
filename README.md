@@ -148,6 +148,8 @@ A small static web app for Chennai weather watchers. A home page and the ☰ men
   APK, or enter one under **Manage stations**. Never commit the key.
 - **Kea Blog** (`#blog`): the latest posts from [kwschennai.com/blog](https://kwschennai.com/blog/)
   (read from the site's WordPress feed); a post opens under the menu.
+- **Info** (`#info`): the installed version (the APK workflow writes it into `js/version.js`), where each
+  screen's data comes from, and the version history below, newest first (kept in `HISTORY` in `js/info.js`).
 
 **Share:** Radars, Satellite and Lightning have a **Share** button that sends the picture on screen, with a
 one-line caption, to WhatsApp or any other app through Android's share sheet (the Lightning close-up is shared
@@ -174,6 +176,54 @@ list, the lake table, and the last forecast, monsoon figures, air quality and se
 
 The app is meant for the Android app on a phone. Wunderground pages can only be shown in a frame there:
 the app drops Wunderground's no-framing headers and blocks requests to common ad servers.
+
+## Version history
+
+The same list is on the app's **Info** screen (`js/info.js`); keep the two in step.
+
+### v1.8 (upcoming)
+- **Info** screen in the menu: the installed version and this version history.
+- Home's **Rain coming?** card: **📍 Spot** picks the place to check, by name, pincode or a tap on a map.
+
+### v1.7 (8 Nov 2026, PRs #16–#21)
+- New screens: **Morning digest** (warnings, forecast, last day's rain, monsoon so far, lakes and sun times in one
+  card, for any TN district or all of KTCC; share on WhatsApp), **Heat & humidity** (heat index, wet bulb, heat
+  stress for 48 hours, any district, place or pincode), **Year on year** (this NE monsoon against every season since
+  2000), **Station health** (offline or odd stations and gauges left out) and **Rain spell**.
+- Radar map: **Rain nowcast** (when rain reaches Chennai, your location or a tapped spot; Home's **Rain coming?**
+  card), **Clouds (INSAT)** under the echoes, and Karaikal, Sriharikota, Thiruvananthapuram and Kochi radars.
+- **Rain & temperature** home-screen widget; **Share** on every map, table, chart and list; 7- and 30-day history
+  per TN gauge; lake storage over 30 or 90 days against last year; Home **Near you**; the menu stays above maps.
+
+### v1.6 (7 Nov 2026, PRs #14–#15)
+- Home: favourites, live station strip, sun and moon.
+- **Rain season**, **Flood spots**, **Wind & storms**.
+- **Radar map**: Chennai radar echoes on a map with the 3-hour loop and storm movement.
+- **TN rain gauges**: Tamil Nadu's ~1,500 gauges hour by hour (map, table, charts).
+
+### v1.5 (7 Nov 2026, PR #13)
+- **Lightning** near Chennai, **Share** buttons on Radars, Satellite and Lightning, and **pull to refresh**.
+
+### v1.4 (6 Nov 2026, PRs #11–#12)
+- **Forecast**, **Monsoon**, **Compare stations**, **Station map**, **Air quality** and **Sea & tides**.
+- The header and menu button sit below the status bar; the menu button is bigger.
+
+### v1.3 (6 Nov 2026, PRs #8–#10)
+- **Rain history**, **Cyclones**, **Lakes** (Metro Water's lake-level page), **offline** view and **dark mode**.
+- Coloured header bar with the ☰ menu.
+
+### v1.2 (6 Nov 2026, PRs #6–#7)
+- Chennai **radar widget** for the home screen, and signing APKs with your own key.
+- Radar **loop**, **Satellite**, Tamil Nadu **Warnings** and the Wunderground station **dashboard**.
+
+### v1.1 (6 Nov 2026, PRs #2–#5)
+- **Home** page with a menu, **Wunderground** stations and the **Kea Blog**.
+- Radar: no auto-refresh, **Set as default**. Wunderground ads hidden in the app.
+- An Android APK attached to every release.
+
+### v1.0 (6 Nov 2026, PR #1)
+- Current IMD Doppler radar image by city (36 stations, 7 products), straight from mausam.imd.gov.in, with the
+  choice kept in the link.
 
 ## Run locally
 
