@@ -260,11 +260,15 @@
         </form>
         <p id="fc-status" class="status" aria-live="polite"></p>
         <div id="fc-now" class="now-card"></div>
-        <div class="chart-head"><strong>Chance of rain · next 24 hours</strong></div>
-        <svg id="fc-hourly" class="chart" role="group" aria-label="Chance of rain by hour"></svg>
-        <p id="fc-hourly-readout" class="readout" aria-live="polite"></p>
-        <h3>Next 7 days</h3>
-        <ul id="fc-days" class="fc-days"></ul>
+        <div data-share="Forecast · Chennai · chance of rain, next 24 hours">
+          <div class="chart-head"><strong>Chance of rain · next 24 hours</strong></div>
+          <svg id="fc-hourly" class="chart" role="group" aria-label="Chance of rain by hour"></svg>
+          <p id="fc-hourly-readout" class="readout" aria-live="polite"></p>
+        </div>
+        <div data-share="Forecast · Chennai · next 7 days">
+          <h3>Next 7 days</h3>
+          <ul id="fc-days" class="fc-days"></ul>
+        </div>
         <p class="note">
           Rain chance is the highest for the day; mm is the expected total. From
           <a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer">Open-Meteo</a>
@@ -380,12 +384,16 @@
           <button id="warn-refresh" type="button">Refresh</button>
         </form>
         <p id="warn-status" class="status" aria-live="polite"></p>
-        <figure>
-          <img id="warn-map" alt="" />
-          <figcaption id="warn-legend" class="legend"></figcaption>
-        </figure>
-        <h3>Districts</h3>
-        <ul id="warn-list" class="warn-list"></ul>
+        <div data-share="Warnings · Tamil Nadu" data-share-from="warn-period">
+          <figure>
+            <img id="warn-map" alt="" />
+            <figcaption id="warn-legend" class="legend"></figcaption>
+          </figure>
+        </div>
+        <div data-share="Warnings · Tamil Nadu districts" data-share-from="warn-period">
+          <h3>Districts</h3>
+          <ul id="warn-list" class="warn-list"></ul>
+        </div>
         <p class="note">
           District-wise nowcast and warnings © India Meteorological Department, from
           <a id="warn-source" href="https://mausam.imd.gov.in/responsive/districtWiseNowcastGIS.php" target="_blank" rel="noopener noreferrer">mausam.imd.gov.in</a>.
@@ -401,9 +409,11 @@
             <a class="button secondary-link" href="#cyclone">Cyclone bulletins</a>
           </form>
           <p id="wind-status" class="status" aria-live="polite"></p>
-          <div class="map-wrap">
-            <div id="wind-map" class="station-map wind-map"></div>
-            <canvas id="wind-canvas" class="wind-canvas" aria-hidden="true"></canvas>
+          <div class="share-map" data-share="Wind" data-share-from="wind-time-label">
+            <div class="map-wrap">
+              <div id="wind-map" class="station-map wind-map"></div>
+              <canvas id="wind-canvas" class="wind-canvas" aria-hidden="true"></canvas>
+            </div>
           </div>
           <label class="wind-slider">
             <span>Forecast for <b id="wind-time-label">…</b></span>
@@ -456,12 +466,18 @@
           <button id="mon-refresh" type="button">Refresh</button>
         </form>
         <p id="mon-status" class="status" aria-live="polite"></p>
-        <p id="mon-heading" class="note"></p>
-        <ul id="mon-cards" class="mon-cards"></ul>
-        <h3>Around Chennai</h3>
-        <ul id="mon-near" class="mon-list"></ul>
-        <h3>All districts · wettest against normal first</h3>
-        <ul id="mon-districts" class="mon-list"></ul>
+        <div data-share="Monsoon" data-share-from="mon-period">
+          <p id="mon-heading" class="note"></p>
+          <ul id="mon-cards" class="mon-cards"></ul>
+        </div>
+        <div data-share="Monsoon · around Chennai" data-share-from="mon-period">
+          <h3>Around Chennai</h3>
+          <ul id="mon-near" class="mon-list"></ul>
+        </div>
+        <div data-share="Monsoon · all districts" data-share-from="mon-period">
+          <h3>All districts · wettest against normal first</h3>
+          <ul id="mon-districts" class="mon-list"></ul>
+        </div>
         <p class="note">
           IMD's categories: Large excess (60% or more above normal), Excess (20–59%), Normal (within 19%),
           Deficient (20–59% below), Large deficient (60–99% below), No rain. From IMD's
@@ -483,11 +499,13 @@
         <p id="rain-status" class="status" aria-live="polite"></p>
 
         <div id="rain-compare">
-          <div class="table-wrap">
-            <table id="rain-compare-table" class="readings rain-table">
-              <thead><tr></tr></thead>
-              <tbody></tbody>
-            </table>
+          <div data-share="Rain history · all stations">
+            <div class="table-wrap">
+              <table id="rain-compare-table" class="readings rain-table">
+                <thead><tr></tr></thead>
+                <tbody></tbody>
+              </table>
+            </div>
           </div>
           <p class="note">
             Rain in mm per day; today is so far. Tap a station for its daily and monthly charts.
@@ -497,20 +515,24 @@
 
         <div id="rain-station-view" hidden>
           <h3 id="rain-station-name"></h3>
-          <div class="chart-head">
-            <strong>Daily rain</strong>
-            <span class="month-nav">
-              <button id="rain-prev" type="button" class="secondary small" aria-label="Previous month">‹</button>
-              <span id="rain-month-label"></span>
-              <button id="rain-next" type="button" class="secondary small" aria-label="Next month">›</button>
-            </span>
+          <div data-share="Daily rain" data-share-from="rain-station-name rain-month-label">
+            <div class="chart-head">
+              <strong>Daily rain</strong>
+              <span class="month-nav">
+                <button id="rain-prev" type="button" class="secondary small snap-skip" aria-label="Previous month">‹</button>
+                <span id="rain-month-label"></span>
+                <button id="rain-next" type="button" class="secondary small snap-skip" aria-label="Next month">›</button>
+              </span>
+            </div>
+            <svg id="rain-daily" class="chart" role="group" aria-label="Rain per day"></svg>
+            <p id="rain-daily-readout" class="readout" aria-live="polite"></p>
           </div>
-          <svg id="rain-daily" class="chart" role="group" aria-label="Rain per day"></svg>
-          <p id="rain-daily-readout" class="readout" aria-live="polite"></p>
 
-          <div class="chart-head"><strong>Monthly rain · last 12 months</strong></div>
-          <svg id="rain-monthly" class="chart" role="group" aria-label="Rain per month"></svg>
-          <p id="rain-monthly-readout" class="readout" aria-live="polite"></p>
+          <div data-share="Monthly rain" data-share-from="rain-station-name">
+            <div class="chart-head"><strong>Monthly rain · last 12 months</strong></div>
+            <svg id="rain-monthly" class="chart" role="group" aria-label="Rain per month"></svg>
+            <p id="rain-monthly-readout" class="readout" aria-live="polite"></p>
+          </div>
           <p><button id="rain-load-year" type="button" class="secondary">Load all 12 months</button></p>
           <p id="rain-year-note" class="note"></p>
           <p class="note">
@@ -527,9 +549,11 @@
           <button id="season-refresh" type="button">Refresh</button>
         </form>
         <p id="season-status" class="status" aria-live="polite"></p>
-        <p id="season-heading" class="note"></p>
-        <div id="season-summary" class="season-summary" hidden></div>
-        <ol id="season-list" class="season-list"></ol>
+        <div data-share="Rain season · since 1 October">
+          <p id="season-heading" class="note"></p>
+          <div id="season-summary" class="season-summary" hidden></div>
+          <ol id="season-list" class="season-list"></ol>
+        </div>
         <p><button id="season-load" type="button" class="secondary">Load the whole season</button></p>
         <p id="season-load-note" class="note"></p>
         <p class="note">
@@ -576,13 +600,17 @@
           <button id="cmp-refresh" type="button">Refresh</button>
         </form>
         <p id="cmp-status" class="status" aria-live="polite"></p>
-        <svg id="cmp-chart" class="chart" role="group" aria-label="Rain at the chosen stations"></svg>
-        <p id="cmp-readout" class="readout" aria-live="polite"></p>
-        <div class="table-wrap">
-          <table id="cmp-totals" class="readings cmp-table">
-            <thead><tr></tr></thead>
-            <tbody></tbody>
-          </table>
+        <div data-share="Compare stations" data-share-from="cmp-day cmp-month-label">
+          <svg id="cmp-chart" class="chart" role="group" aria-label="Rain at the chosen stations"></svg>
+          <p id="cmp-readout" class="readout" aria-live="polite"></p>
+        </div>
+        <div data-share="Compare stations · totals" data-share-from="cmp-day cmp-month-label">
+          <div class="table-wrap">
+            <table id="cmp-totals" class="readings cmp-table">
+              <thead><tr></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
         </div>
         <p class="note">
           From Wunderground. A day uses every reading the stations sent; a month uses daily totals, which are kept on
@@ -601,8 +629,10 @@
           <button id="map-fit" type="button" class="secondary">All stations</button>
         </form>
         <p id="map-status" class="status" aria-live="polite"></p>
-        <div id="map-box" class="station-map"></div>
-        <p id="map-legend" class="legend map-legend"></p>
+        <div class="share-map" data-share="Station map" data-share-from="map-show">
+          <div id="map-box" class="station-map"></div>
+          <p id="map-legend" class="legend map-legend"></p>
+        </div>
         <p class="note">Rain bands follow IMD's daily categories. Faded markers haven't reported for over an hour.</p>
       </section>
 
@@ -655,24 +685,31 @@
         </div>
 
         <div id="tg-tab-map" class="tg-tab">
-          <div id="tg-map" class="station-map gauge-map"></div>
-          <p id="tg-legend" class="legend map-legend"></p>
-          <div class="chart-head"><strong id="tg-gauge-name"></strong></div>
-          <svg id="tg-gauge-chart" class="chart" role="group" aria-label="Rain per hour at the gauge"></svg>
-          <p id="tg-gauge-readout" class="readout" aria-live="polite"></p>
-          <div class="chart-head">
-            <strong id="tg-hist-head">Past days</strong>
-            <span id="tg-hist-pick" class="seg">
-              <button type="button" class="secondary small" data-days="7" aria-pressed="false">7 days</button>
-              <button type="button" class="secondary small" data-days="30" aria-pressed="false">30 days</button>
-            </span>
+          <div class="share-map" data-share="TN rain gauges" data-share-from="tg-area tg-show tg-date">
+            <div id="tg-map" class="station-map gauge-map"></div>
+            <p id="tg-legend" class="legend map-legend"></p>
           </div>
-          <svg id="tg-hist-chart" class="chart" role="group" aria-label="Rain each day at the gauge"></svg>
-          <p id="tg-hist-readout" class="readout" aria-live="polite"></p>
-          <p id="tg-hist-note" class="note" aria-live="polite"></p>
+          <div data-share="TN rain gauge" data-share-from="tg-gauge-name tg-date">
+            <div class="chart-head"><strong id="tg-gauge-name"></strong></div>
+            <svg id="tg-gauge-chart" class="chart" role="group" aria-label="Rain per hour at the gauge"></svg>
+            <p id="tg-gauge-readout" class="readout" aria-live="polite"></p>
+          </div>
+          <div data-share="TN rain gauge · past days" data-share-from="tg-gauge-name">
+            <div class="chart-head">
+              <strong id="tg-hist-head">Past days</strong>
+              <span id="tg-hist-pick" class="seg snap-skip">
+                <button type="button" class="secondary small" data-days="7" aria-pressed="false">7 days</button>
+                <button type="button" class="secondary small" data-days="30" aria-pressed="false">30 days</button>
+              </span>
+            </div>
+            <svg id="tg-hist-chart" class="chart" role="group" aria-label="Rain each day at the gauge"></svg>
+            <p id="tg-hist-readout" class="readout" aria-live="polite"></p>
+            <p id="tg-hist-note" class="note" aria-live="polite"></p>
+          </div>
         </div>
 
         <div id="tg-tab-table" class="tg-tab" hidden>
+          <div data-share="TN rain gauges" data-share-from="tg-area tg-show tg-date">
           <p id="tg-count" class="note"></p>
           <div class="table-wrap">
             <table id="tg-table" class="readings gauge-table">
@@ -688,27 +725,36 @@
               <tbody></tbody>
             </table>
           </div>
+          </div>
           <p><button id="tg-more" type="button" class="secondary" hidden>Show more</button></p>
           <p class="note">Tap a column to sort. Tap a gauge to see it on the map with its hourly chart.</p>
         </div>
 
         <div id="tg-tab-charts" class="tg-tab" hidden>
-          <div class="chart-head"><strong id="tg-area-head"></strong></div>
-          <svg id="tg-area-chart" class="chart" role="group" aria-label="Average rain per hour"></svg>
-          <p id="tg-area-readout" class="readout" aria-live="polite"></p>
+          <div data-share="TN rain gauges" data-share-from="tg-area-head tg-date">
+            <div class="chart-head"><strong id="tg-area-head"></strong></div>
+            <svg id="tg-area-chart" class="chart" role="group" aria-label="Average rain per hour"></svg>
+            <p id="tg-area-readout" class="readout" aria-live="polite"></p>
+          </div>
 
-          <div class="chart-head"><strong>Gauges by amount of rain</strong></div>
-          <svg id="tg-band-chart" class="chart" role="group" aria-label="Gauges in each rain band"></svg>
-          <p id="tg-band-readout" class="readout" aria-live="polite"></p>
+          <div data-share="TN rain gauges · by amount of rain" data-share-from="tg-area tg-date">
+            <div class="chart-head"><strong>Gauges by amount of rain</strong></div>
+            <svg id="tg-band-chart" class="chart" role="group" aria-label="Gauges in each rain band"></svg>
+            <p id="tg-band-readout" class="readout" aria-live="polite"></p>
+          </div>
 
-          <div class="chart-head"><strong id="tg-wet-head">Gauges with rain each hour</strong></div>
-          <svg id="tg-wet-chart" class="chart" role="group" aria-label="Gauges with rain each hour"></svg>
-          <p id="tg-wet-readout" class="readout" aria-live="polite"></p>
+          <div data-share="TN rain gauges" data-share-from="tg-wet-head tg-date">
+            <div class="chart-head"><strong id="tg-wet-head">Gauges with rain each hour</strong></div>
+            <svg id="tg-wet-chart" class="chart" role="group" aria-label="Gauges with rain each hour"></svg>
+            <p id="tg-wet-readout" class="readout" aria-live="polite"></p>
+          </div>
 
-          <div class="chart-head"><strong id="tg-top-head"></strong></div>
-          <ol id="tg-top" class="rank-list"></ol>
+          <div data-share="TN rain gauges" data-share-from="tg-top-head tg-date">
+            <div class="chart-head"><strong id="tg-top-head"></strong></div>
+            <ol id="tg-top" class="rank-list"></ol>
+          </div>
 
-          <div id="tg-districts">
+          <div id="tg-districts" data-share="TN rain gauges · districts by average rain" data-share-from="tg-date">
             <div class="chart-head"><strong>Districts by average rain</strong></div>
             <ol id="tg-district-list" class="rank-list"></ol>
           </div>
@@ -734,18 +780,20 @@
           <button id="rm-refresh" type="button">Refresh</button>
         </form>
         <p id="rm-status" class="status" aria-live="polite"></p>
-        <div id="rm-map" class="station-map radar-map"></div>
-        <div class="rm-player">
-          <button id="rm-play" type="button" class="secondary small" aria-label="Play the loop">▶</button>
-          <input id="rm-frame" type="range" min="0" max="0" value="0" aria-label="Radar time" />
-          <span id="rm-time" class="rm-time"></span>
+        <div class="share-map" data-share="Radar map" data-share-from="rm-station rm-product rm-time">
+          <div id="rm-map" class="station-map radar-map"></div>
+          <div class="rm-player">
+            <button id="rm-play" type="button" class="secondary small snap-skip" aria-label="Play the loop">▶</button>
+            <input id="rm-frame" class="snap-skip" type="range" min="0" max="0" value="0" aria-label="Radar time" />
+            <span id="rm-time" class="rm-time"></span>
+          </div>
+          <label class="rm-opacity snap-skip">
+            Opacity
+            <input id="rm-opacity" type="range" min="20" max="100" value="80" />
+          </label>
+          <p id="rm-motion" class="rm-motion" hidden></p>
+          <p id="rm-legend" class="legend map-legend"></p>
         </div>
-        <label class="rm-opacity">
-          Opacity
-          <input id="rm-opacity" type="range" min="20" max="100" value="80" />
-        </label>
-        <p id="rm-motion" class="rm-motion" hidden></p>
-        <p id="rm-legend" class="legend map-legend"></p>
         <details class="rm-vvp">
           <summary>Wind by height over the radar (IMD VVP)</summary>
           <img id="rm-vvp" alt="IMD VVP wind profile for Chennai" loading="lazy" />
@@ -813,6 +861,7 @@
           <a class="button secondary-link" href="#radar">Radar</a>
         </form>
         <p id="flood-status" class="status" aria-live="polite"></p>
+        <div class="share-map" data-share="Flood spots · Chennai">
         <div class="map-wrap">
           <div id="flood-map" class="station-map flood-map"></div>
           <span class="map-cross" aria-hidden="true">+</span>
@@ -824,8 +873,11 @@
           <span class="spot spot-unknown">!</span> No station near
           <span class="spot spot-low spot-subway">U</span> Subway
         </p>
-        <h3>Rain near each spot today</h3>
-        <ul id="flood-list" class="flood-list"></ul>
+        </div>
+        <div data-share="Flood spots · Chennai">
+          <h3>Rain near each spot today</h3>
+          <ul id="flood-list" class="flood-list"></ul>
+        </div>
         <h3>Add your own spot</h3>
         <form id="flood-add" class="controls">
           <label>
@@ -852,27 +904,31 @@
             <a class="button secondary-link" href="#lakes?page=1">Open Metro Water page</a>
           </form>
           <p id="lake-status" class="status" aria-live="polite"></p>
-          <p id="lake-heading" class="note"></p>
-          <ul id="lake-summary" class="lake-summary" hidden></ul>
-          <div id="lake-table" class="table-wrap"></div>
-          <div class="chart-head">
-            <strong>Storage over time</strong>
-            <span id="lk-range" class="seg">
-              <button type="button" class="secondary small" data-days="30" aria-pressed="false">30 days</button>
-              <button type="button" class="secondary small" data-days="90" aria-pressed="false">90 days</button>
-            </span>
+          <div data-share="Lakes · Chennai reservoirs">
+            <p id="lake-heading" class="note"></p>
+            <ul id="lake-summary" class="lake-summary" hidden></ul>
+            <div id="lake-table" class="table-wrap"></div>
           </div>
-          <form class="controls" onsubmit="return false">
-            <label>
-              Lake
-              <select id="lk-lake"></select>
-            </label>
-          </form>
-          <p id="lk-status" class="status" aria-live="polite"></p>
-          <svg id="lk-chart" class="chart" role="group" aria-label="Lake storage this year and last year"></svg>
-          <p class="legend line-legend"><span class="key this-year"></span> This year <span class="key last-year"></span> Same days last year</p>
-          <p id="lk-readout" class="readout" aria-live="polite"></p>
-          <p id="lk-summary" class="note"></p>
+          <div data-share="Lake storage over time" data-share-from="lk-lake">
+            <div class="chart-head">
+              <strong>Storage over time</strong>
+              <span id="lk-range" class="seg snap-skip">
+                <button type="button" class="secondary small" data-days="30" aria-pressed="false">30 days</button>
+                <button type="button" class="secondary small" data-days="90" aria-pressed="false">90 days</button>
+              </span>
+            </div>
+            <form class="controls snap-skip" onsubmit="return false">
+              <label>
+                Lake
+                <select id="lk-lake"></select>
+              </label>
+            </form>
+            <p id="lk-status" class="status" aria-live="polite"></p>
+            <svg id="lk-chart" class="chart" role="group" aria-label="Lake storage this year and last year"></svg>
+            <p class="legend line-legend"><span class="key this-year"></span> This year <span class="key last-year"></span> Same days last year</p>
+            <p id="lk-readout" class="readout" aria-live="polite"></p>
+            <p id="lk-summary" class="note"></p>
+          </div>
           <p class="note">
             Daily storage of the reservoirs supplying Chennai, from
             <a href="https://cmwssb.tn.gov.in/lakelevel" target="_blank" rel="noopener noreferrer">Chennai Metro Water</a>.
@@ -895,6 +951,7 @@
             <a class="button secondary-link" href="#air?page=1">CPCB readings by area</a>
           </form>
           <p id="air-status" class="status" aria-live="polite"></p>
+          <div data-share="Air quality · Chennai">
           <div id="air-now" class="air-now" hidden>
             <div class="air-badge"><b class="air-aqi"></b><small>AQI</small></div>
             <div class="now-desc">
@@ -905,9 +962,12 @@
           </div>
           <h3>Pollutants · sub-index</h3>
           <ul id="air-parts" class="air-parts"></ul>
-          <div class="chart-head"><strong>AQI · next few days</strong></div>
-          <svg id="air-chart" class="chart" role="group" aria-label="AQI forecast"></svg>
-          <p id="air-readout" class="readout" aria-live="polite"></p>
+          </div>
+          <div data-share="Air quality · Chennai · AQI forecast">
+            <div class="chart-head"><strong>AQI · next few days</strong></div>
+            <svg id="air-chart" class="chart" role="group" aria-label="AQI forecast"></svg>
+            <p id="air-readout" class="readout" aria-live="polite"></p>
+          </div>
           <p class="note">
             India's National AQI (CPCB scale: Good 0–50, Satisfactory –100, Moderate –200, Poor –300, Very poor –400,
             Severe), worked out from the
@@ -934,12 +994,16 @@
         </form>
         <p id="sea-status" class="status" aria-live="polite"></p>
         <div id="sea-now" class="now-card"></div>
-        <h3>Tides</h3>
-        <ul id="sea-tides" class="tide-list"></ul>
-        <div class="chart-head"><strong>Sea level · next 3 days</strong></div>
-        <svg id="sea-chart" class="chart" role="group" aria-label="Sea level"></svg>
-        <p id="sea-readout" class="readout" aria-live="polite"></p>
-        <ul id="sea-days" class="plain-list"></ul>
+        <div data-share="Sea & tides · Chennai coast">
+          <h3>Tides</h3>
+          <ul id="sea-tides" class="tide-list"></ul>
+        </div>
+        <div data-share="Sea & tides · Chennai coast">
+          <div class="chart-head"><strong>Sea level · next 3 days</strong></div>
+          <svg id="sea-chart" class="chart" role="group" aria-label="Sea level"></svg>
+          <p id="sea-readout" class="readout" aria-live="polite"></p>
+          <ul id="sea-days" class="plain-list"></ul>
+        </div>
         <p class="note">
           Off Marina Beach, from <a href="https://open-meteo.com/en/docs/marine-weather-api" target="_blank" rel="noopener noreferrer">Open-Meteo's marine forecast</a>.
           Tide times are worked out from the forecast sea level and are a guide (about ±30 minutes), not for
@@ -960,6 +1024,7 @@
 
         <div id="pws-dashboard">
           <p id="pws-dash-status" class="status" aria-live="polite"></p>
+          <div data-share="Wunderground stations">
           <div class="table-wrap">
             <table id="pws-table" class="readings">
               <thead>
@@ -974,6 +1039,7 @@
               </thead>
               <tbody></tbody>
             </table>
+          </div>
           </div>
           <p class="note">
             Tap a station to open its Wunderground page. Times in grey italics are over an hour old.

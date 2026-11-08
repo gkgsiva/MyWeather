@@ -25,6 +25,7 @@ import { initWunderground, showWunderground } from "./wunderground.js";
 import { showBlog } from "./blog.js";
 import { initTheme } from "./theme.js";
 import { initPullToRefresh } from "./pull.js";
+import { initSnaps } from "./snap.js";
 
 const VIEWS = {
   home: { title: "MyWeather", init: initHome, show: showHome },
@@ -115,6 +116,8 @@ function refreshView({ href } = {}) {
 }
 
 initTheme();
+// A Share button on every map, table, chart and list marked data-share.
+initSnaps();
 initPullToRefresh(refreshView, {
   // Not while the menu is open, and not on the map (dragging pans it).
   canStart: (target) => menuPanel.hidden && !target.closest?.(".leaflet-container"),
