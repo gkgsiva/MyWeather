@@ -181,7 +181,7 @@ the app drops Wunderground's no-framing headers and blocks requests to common ad
 
 The same list is on the app's **Info** screen (`js/info.js`); keep the two in step.
 
-### v1.8 (upcoming)
+### v1.8 (8 Nov 2026, PRs #22–#23)
 - **Info** screen in the menu: the installed version and this version history.
 - Home's **Rain coming?** card: **📍 Spot** picks the place to check, by name, pincode or a tap on a map.
 
