@@ -1114,3 +1114,29 @@ a.near-row .near-text b { color: var(--accent); }
 .dg-table .dg-dot { margin: 0; }
 .dg-table td { white-space: nowrap; }
 .dg-table td:last-child { white-space: normal; }
+
+/* Info: version and version history */
+.info-about,
+.info-release {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 10px 14px;
+}
+.info-about p { margin: 6px 0; }
+.info-history { display: grid; gap: 8px; }
+.info-release summary { cursor: pointer; display: flex; align-items: baseline; gap: 10px; }
+.info-release summary strong { color: var(--accent); font-size: 1.05rem; }
+.info-release summary span { color: var(--muted); font-size: 0.85rem; }
+.info-release summary em {
+  margin-left: auto;
+  font-style: normal;
+  font-size: 0.75rem;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--on-accent);
+}
+.info-release h4 { margin: 10px 0 4px; font-size: 0.9rem; color: var(--muted); }
+.info-release ul { margin: 0; padding-left: 20px; }
+.info-release li { margin: 4px 0; font-size: 0.92rem; line-height: 1.4; }

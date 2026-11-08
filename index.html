@@ -53,6 +53,7 @@
       <a href="#sea" data-view="sea">Sea &amp; tides</a>
       <a href="#wunderground" data-view="wunderground">Wunderground</a>
       <a href="#blog" data-view="blog">Kea Blog</a>
+      <a href="#info" data-view="info">Info</a>
       <button id="theme-btn" type="button" class="theme-btn">Theme: Auto</button>
     </nav>
 
@@ -284,6 +285,12 @@
             <a class="card" href="#blog">
               <strong>Kea Blog</strong>
               <span>Latest posts from the Kea Weather Blog</span>
+            </a>
+          </li>
+          <li>
+            <a class="card" href="#info">
+              <strong>Info</strong>
+              <span>App version, data sources and what's new in each version</span>
             </a>
           </li>
         </ul>
@@ -1312,6 +1319,24 @@
           <p class="frame-bar"><a href="#blog">← All posts</a></p>
           <iframe id="blog-frame" class="site-frame" title="Kea Weather Blog"></iframe>
         </div>
+      </section>
+
+      <!-- Info -->
+      <section id="view-info" class="view" hidden>
+        <h2>Info</h2>
+        <div class="info-about">
+          <p><strong>MyWeather</strong> · <span id="info-version"></span></p>
+          <p class="note">
+            Weather for Chennai and Tamil Nadu in one app. Radar, satellite, lightning, warnings, cyclones and monsoon
+            figures come from the India Meteorological Department (IMD); rain gauges and lake history from TN-SMART
+            (Tamil Nadu government, with RIMES); station readings from Wunderground; forecasts, heat, wind, air
+            quality and the sea from Open-Meteo; lake levels from Chennai Metro Water; maps from OpenStreetMap; posts
+            from the Kea Weather Blog. Nowcasts, storm movement and lightning distances are the app's own estimates.
+          </p>
+          <p class="note"><a href="https://github.com/gkgsiva/myweather/releases" target="_blank" rel="noopener noreferrer">All releases on GitHub</a></p>
+        </div>
+        <h3>Version history</h3>
+        <div id="info-history" class="info-history"></div>
       </section>
     </main>
 

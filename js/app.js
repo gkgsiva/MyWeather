@@ -27,6 +27,7 @@ import { initAir, showAir } from "./air.js";
 import { initSea, showSea } from "./sea.js";
 import { initWunderground, showWunderground } from "./wunderground.js";
 import { showBlog } from "./blog.js";
+import { initInfo } from "./info.js";
 import { initTheme } from "./theme.js";
 import { initPullToRefresh } from "./pull.js";
 import { initSnaps } from "./snap.js";
@@ -58,6 +59,7 @@ const VIEWS = {
   sea: { title: "MyWeather · Sea & tides", init: initSea, show: showSea },
   wunderground: { title: "MyWeather · Wunderground", init: initWunderground, show: showWunderground },
   blog: { title: "MyWeather · Kea Blog", show: showBlog },
+  info: { title: "MyWeather · Info", init: initInfo },
 };
 const started = new Set();
 
