@@ -205,7 +205,7 @@
           <li>
             <a class="card" href="#yoy">
               <strong>Year on year</strong>
-              <span>This monsoon against the last 12, for Chennai and every TN district</span>
+              <span>This monsoon against every season since 2000, for Chennai and every TN district</span>
             </a>
           </li>
           <li>
@@ -293,8 +293,20 @@
       <section id="view-heat" class="view" hidden>
         <h2>Heat &amp; humidity</h2>
         <form class="controls" onsubmit="return false">
+          <label>
+            Place
+            <select id="heat-area"></select>
+          </label>
           <button id="heat-refresh" type="button">Refresh</button>
         </form>
+        <form class="controls" onsubmit="return false">
+          <label class="heat-search">
+            Or search a place or pincode
+            <input id="heat-q" type="search" placeholder="Velachery or 600042" autocomplete="off" enterkeyhint="search" />
+          </label>
+          <button id="heat-go" type="button" class="secondary">Find</button>
+        </form>
+        <ul id="heat-results" class="rank-list heat-results"></ul>
         <p id="heat-status" class="status" aria-live="polite"></p>
         <div data-share="Heat & humidity · now" data-share-from="heat-place">
           <div id="heat-now" class="heat-now"></div>
@@ -324,13 +336,17 @@
       <!-- Morning digest -->
       <section id="view-digest" class="view" hidden>
         <form class="controls" onsubmit="return false">
+          <label>
+            District
+            <select id="dg-area"></select>
+          </label>
           <button id="dg-share" type="button" class="share-btn">Share on WhatsApp</button>
           <button id="dg-refresh" type="button" class="secondary">Refresh</button>
         </form>
         <p id="dg-status" class="status" aria-live="polite"></p>
         <div id="dg-card" class="dg-card">
           <div class="dg-head">
-            <strong>Chennai weather today</strong>
+            <strong id="dg-title">Chennai weather today</strong>
             <span id="dg-date"></span>
           </div>
           <div id="dg-parts"></div>

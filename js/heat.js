@@ -11,6 +11,8 @@
 // app has one, gives the heat index measured right now.
 import { drawLines } from "./chart.js";
 import { when } from "./offline.js";
+import { AREAS } from "./yoy.js";
+import { km } from "./floods.js";
 
 const CHENNAI = { lat: 13.0827, lon: 80.2707, name: "Chennai" };
 const SAVED_KEY = "myweather.heat.last";
@@ -69,13 +71,115 @@ export const levelOf = (hi) => (typeof hi === "number" ? LEVELS.find((l) => hi <
 
 // ---- Data ----
 
-function place() {
+// ---- Place: a district, the phone's position, or a searched place or pincode ----
+
+const PLACE_KEY = "myweather.heat.place"; // { lat, lon, name } or absent (automatic)
+const placePick = $("heat-area");
+
+function gpsPlace() {
   try {
     const on = JSON.parse(localStorage.getItem("myweather.home.gps")) === true;
     const pos = on && JSON.parse(localStorage.getItem("myweather.home.pos"));
     if (pos && typeof pos.lat === "number") return { lat: pos.lat, lon: pos.lon, name: "Your location" };
   } catch {}
-  return CHENNAI;
+  return null;
+}
+
+function place() {
+  try {
+    const p = JSON.parse(localStorage.getItem(PLACE_KEY));
+    if (p && typeof p.lat === "number") return p;
+  } catch {}
+  return gpsPlace() || CHENNAI;
+}
+
+function setPlace(p) {
+  try {
+    if (p) localStorage.setItem(PLACE_KEY, JSON.stringify(p));
+    else localStorage.removeItem(PLACE_KEY);
+  } catch {}
+  fillPicker();
+  refresh();
+}
+
+// Picker: automatic (your location or Chennai), the districts, and a searched place.
+function fillPicker() {
+  const p = place();
+  let saved = null;
+  try {
+    saved = JSON.parse(localStorage.getItem(PLACE_KEY));
+  } catch {}
+  const opts = [new Option(gpsPlace() ? "Your location" : "Chennai", "auto")];
+  const isDistrict = saved && AREAS.some((a) => a[1] === saved.name);
+  if (saved && !isDistrict) opts.push(new Option(saved.name, "saved"));
+  opts.push(...AREAS.map((a, i) => new Option(`${a[1]} district`, String(i))));
+  placePick.replaceChildren(...opts);
+  placePick.value = !saved ? "auto" : isDistrict ? String(AREAS.findIndex((a) => a[1] === saved.name)) : "saved";
+  return p;
+}
+
+async function getJson(u) {
+  const res = await fetch(u);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+}
+
+// A place name (Open-Meteo's place list) or a 6-digit pincode (OpenStreetMap's Nominatim).
+async function search(q) {
+  if (/^\d{6}$/.test(q)) {
+    const list = await getJson(
+      `https://nominatim.openstreetmap.org/search?${new URLSearchParams({ postalcode: q, countrycodes: "in", format: "json", addressdetails: "1", limit: "3" })}`
+    );
+    return list.map((r) => {
+      const a = r.address || {};
+      const where = a.suburb || a.city_district || a.village || a.town || a.city || a.county || "";
+      return { lat: Number(r.lat), lon: Number(r.lon), name: `${q}${where ? ` ${where}` : ""}`, detail: r.display_name };
+    });
+  }
+  const data = await getJson(`https://geocoding-api.open-meteo.com/v1/search?${new URLSearchParams({ name: q, count: "6", countryCode: "IN", language: "en" })}`);
+  return (data.results || []).map((r) => ({
+    lat: r.latitude,
+    lon: r.longitude,
+    name: r.name,
+    detail: [r.admin3, r.admin2, r.admin1].filter(Boolean).join(", "),
+  }));
+}
+
+async function runSearch() {
+  const q = $("heat-q").value.trim();
+  const list = $("heat-results");
+  if (!q) return;
+  list.replaceChildren(Object.assign(document.createElement("li"), { textContent: "Searching…" }));
+  try {
+    const found = await search(q);
+    if (!found.length) {
+      list.replaceChildren(Object.assign(document.createElement("li"), { textContent: "No place found. Try a nearby town or another spelling." }));
+      return;
+    }
+    list.replaceChildren(
+      ...found.map((f) => {
+        const li = document.createElement("li");
+        const b = document.createElement("button");
+        b.type = "button";
+        b.className = "rank-row";
+        b.innerHTML = "<span class=\"rank-name\"></span>";
+        b.querySelector("span").textContent = f.detail ? `${f.name} · ${f.detail}` : f.name;
+        b.addEventListener("click", () => {
+          list.replaceChildren();
+          $("heat-q").value = "";
+          setPlace({ lat: f.lat, lon: f.lon, name: f.name });
+        });
+        li.append(b);
+        return li;
+      })
+    );
+  } catch (e) {
+    list.replaceChildren(
+      Object.assign(document.createElement("li"), {
+        textContent: /Failed to fetch|NetworkError|Load failed/.test(e.message) ? "Couldn't search just now. Check the connection." : `Couldn't search (${e.message}).`,
+      })
+    );
+  }
 }
 
 const url = (p) =>
@@ -147,6 +251,11 @@ function renderStation() {
   const obs = kept?.obs;
   const m = obs?.metric;
   if (!m || typeof m.temp !== "number" || typeof obs.humidity !== "number" || Date.now() - obs.epoch * 1000 > 90 * 60 * 1000) {
+    box.hidden = true;
+    return;
+  }
+  const p = place();
+  if (typeof obs.lat === "number" && km([obs.lat, obs.lon], [p.lat, p.lon]) > 25) {
     box.hidden = true;
     return;
   }
@@ -300,9 +409,26 @@ async function refresh() {
 
 export function initHeat() {
   $("heat-refresh").addEventListener("click", refresh);
+  fillPicker();
+  placePick.addEventListener("change", () => {
+    const v = placePick.value;
+    if (v === "auto") setPlace(null);
+    else if (v !== "saved") {
+      const a = AREAS[Number(v)];
+      setPlace({ lat: a[2], lon: a[3], name: a[1] });
+    }
+  });
+  $("heat-go").addEventListener("click", runSearch);
+  $("heat-q").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      runSearch();
+    }
+  });
 }
 
 export function showHeat() {
+  fillPicker();
   if (Date.now() - loadedAt > TTL) refresh();
   else renderStation();
 }

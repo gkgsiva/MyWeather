@@ -1104,3 +1104,13 @@ a.near-row .near-text b { color: var(--accent); }
 .radar-map .leaflet-image-layer.rm-cloud-layer { image-rendering: auto; }
 .controls label.rm-check { flex-direction: row; align-items: center; flex-basis: 100%; gap: 8px; }
 .controls label.rm-check input { width: auto; flex: none; }
+.heat-search { flex: 1 1 200px; }
+.heat-results li { list-style: none; }
+.heat-results { padding: 0; margin: 0 0 8px; }
+.dg-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; margin: 2px 0 4px; }
+.dg-table th, .dg-table td { padding: 3px 4px; text-align: left; border-bottom: 1px solid var(--border); font-variant-numeric: tabular-nums; }
+.dg-table tr:first-child th { color: var(--muted); font-weight: 600; font-size: 0.75rem; }
+.dg-table tr:last-child th, .dg-table tr:last-child td { border-bottom: 0; }
+.dg-table .dg-dot { margin: 0; }
+.dg-table td { white-space: nowrap; }
+.dg-table td:last-child { white-space: normal; }
