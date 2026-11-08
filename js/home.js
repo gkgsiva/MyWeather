@@ -345,7 +345,7 @@ async function renderNear(fresh = false) {
   paintGpsButton();
   if (!gpsOn()) {
     nearBody.replaceChildren(
-      nearRow("📍", "Near you", "Turn on to follow the nearest station, rain gauge and radar wherever you are.")
+      nearRow("📍", "Off", "Turn on to follow the nearest station, rain gauge and radar wherever you are.")
     );
     return;
   }
