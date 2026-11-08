@@ -1,5 +1,5 @@
 // Single-page menu: #home, #forecast, #radar, #radarmap, #satellite, #lightning, #warnings, #wind, #cyclone,
-// #monsoon, #rain, #season, #compare, #map, #gauges, #floods, #lakes, #air, #sea, #wunderground, #blog. Each view's init runs the first time it is
+// #monsoon, #rain, #season, #compare, #map, #gauges, #spell, #floods, #lakes, #air, #sea, #wunderground, #blog. Each view's init runs the first time it is
 // shown, show every time, and hide when another view is opened.
 import { initHome, showHome } from "./home.js";
 import { initForecast, showForecast } from "./forecast.js";
@@ -17,6 +17,7 @@ import { initMap, showMap } from "./stationmap.js";
 import { initGauges, showGauges } from "./gauges.js";
 import { initRadarMap, showRadarMap, hideRadarMap } from "./radarmap.js";
 import { initFloods, showFloods } from "./floods.js";
+import { initSpell, showSpell } from "./spell.js";
 import { initLakes, showLakes } from "./lakes.js";
 import { initAir, showAir } from "./air.js";
 import { initSea, showSea } from "./sea.js";
@@ -42,6 +43,7 @@ const VIEWS = {
   compare: { title: "MyWeather · Compare stations", init: initCompare, show: showCompare, hide: hideCompare },
   map: { title: "MyWeather · Station map", init: initMap, show: showMap },
   gauges: { title: "MyWeather · TN rain gauges", init: initGauges, show: showGauges },
+  spell: { title: "MyWeather · Rain spell", init: initSpell, show: showSpell },
   floods: { title: "MyWeather · Flood spots", init: initFloods, show: showFloods },
   lakes: { title: "MyWeather · Lakes", init: initLakes, show: showLakes },
   air: { title: "MyWeather · Air quality", init: initAir, show: showAir },

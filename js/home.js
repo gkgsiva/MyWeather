@@ -7,13 +7,22 @@
 //   another is picked here), read again when Home opens after 5 minutes, or
 //   with ↻ / pull to refresh. The last reading stays on screen offline.
 // - Sun and moon: worked out on the phone (js/astro.js), no network.
+// - Near you (off until turned on): the phone's position picks the nearest
+//   saved station for the strip, the nearest TN rain gauge and the nearest
+//   radar on the radar map; sun and moon are worked out for that place.
 import { loadStations, apiKey, fetchReading, loadLast } from "./wunderground.js";
 import { when } from "./offline.js";
 import { sunTimes, moonTimes, moonIllumination, phaseName, nextPhases } from "./astro.js";
+import { loadCoords } from "./stationmap.js";
+import { km } from "./floods.js";
+import { RADARS } from "./radarmap.js";
+import { getDay, currentRainDay } from "./gaugedays.js";
 
 const FAV_KEY = "myweather.home.favs";
 const STATION_KEY = "myweather.home.station";
 const READING_KEY = "myweather.home.reading";
+const GPS_KEY = "myweather.home.gps"; // true when "Use my location" is on
+const POS_KEY = "myweather.home.pos"; // { lat, lon, at }
 const TTL = 5 * 60 * 1000;
 const STALE_MS = 60 * 60 * 1000;
 export const CHENNAI = { lat: 13.08, lon: 80.27 };
@@ -109,8 +118,25 @@ const fmt = (v, digits = 1) => (typeof v === "number" ? v.toFixed(digits) : "–
 const COMPASS = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
 const compass = (deg) => (typeof deg === "number" ? COMPASS[Math.round(deg / 45) % 8] : "");
 
+// The saved station nearest the phone (when location is on and positions are known).
+function nearestStation(stations) {
+  const pos = gpsOn() && read(POS_KEY, null);
+  if (!pos) return null;
+  const coords = loadCoords();
+  let best = null;
+  for (const s of stations) {
+    const c = coords[s.id];
+    if (!c) continue;
+    const d = km([pos.lat, pos.lon], c);
+    if (!best || d < best.d) best = { s, d };
+  }
+  return best && best.d < 50 ? best : null;
+}
+
 function mainStation() {
   const stations = loadStations();
+  const near = nearestStation(stations);
+  if (near) return near.s;
   const saved = read(STATION_KEY, "");
   return stations.find((s) => s.id === saved) || stations[0] || null;
 }
@@ -201,9 +227,15 @@ async function refreshStrip() {
       return say(`${main.name} is offline: no recent data.`, true);
     }
     write(READING_KEY, { id: main.id, obs, at: Date.now() });
+    if (typeof obs.lat === "number") {
+      const c = loadCoords();
+      c[main.id] = [obs.lat, obs.lon];
+      write("myweather.pws.coords", c);
+    }
     renderStrip(obs);
     const line = readingLine(obs);
-    say(line.text, line.old);
+    const near = nearestStation(loadStations());
+    say(near?.s.id === main.id ? `Nearest station, ${near.d.toFixed(1)} km away · ${line.text}` : line.text, line.old);
   } catch (e) {
     if (e.key) return say("Wunderground didn't accept the API key. Check it under Wunderground → Manage stations.", true);
     if (keptObs) {
@@ -218,11 +250,17 @@ async function refreshStrip() {
 const hm = (d) => (d ? d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "–");
 const dayMonth = (d) => d.toLocaleDateString([], { day: "numeric", month: "short" });
 
+function skyPlace() {
+  const pos = gpsOn() && read(POS_KEY, null);
+  return pos ? { lat: pos.lat, lon: pos.lon, name: "Your location" } : { ...CHENNAI, name: "Chennai" };
+}
+
 function renderSky() {
   const now = new Date();
-  skyDay = now.toDateString();
-  const sun = sunTimes(now, CHENNAI.lat, CHENNAI.lon);
-  const moon = moonTimes(now, CHENNAI.lat, CHENNAI.lon);
+  const place = skyPlace();
+  skyDay = `${now.toDateString()}|${place.lat.toFixed(2)},${place.lon.toFixed(2)}`;
+  const sun = sunTimes(now, place.lat, place.lon);
+  const moon = moonTimes(now, place.lat, place.lon);
   const ill = moonIllumination(now);
   const { name, icon } = phaseName(ill.phase);
   const next = nextPhases(now);
@@ -254,7 +292,123 @@ function renderSky() {
         <span><small>${name}</small><b>${Math.round(ill.fraction * 100)}% lit</b></span>
       </span>
     </div>
-    <small class="sky-note">Chennai · first light ${hm(sun.dawn)}, last light ${hm(sun.dusk)}${nextLine ? ` · ${nextLine}` : ""}</small>`;
+    <small class="sky-note">${place.name} · first light ${hm(sun.dawn)}, last light ${hm(sun.dusk)}${nextLine ? ` · ${nextLine}` : ""}</small>`;
+}
+
+// ---- Near you ----
+
+const nearBox = $("home-near");
+const nearBody = $("home-near-body");
+const nearBtn = $("home-gps");
+const gpsOn = () => read(GPS_KEY, false) === true;
+let nearAt = 0;
+
+function paintGpsButton() {
+  const on = gpsOn();
+  nearBtn.textContent = on ? "Turn off" : "Use my location";
+  nearBtn.setAttribute("aria-pressed", String(on));
+  nearBox.classList.toggle("off", !on);
+}
+
+function locate() {
+  return new Promise((resolve, reject) => {
+    if (!navigator.geolocation) return reject(new Error("This phone can't share its location here."));
+    navigator.geolocation.getCurrentPosition(
+      (p) => resolve({ lat: p.coords.latitude, lon: p.coords.longitude, at: Date.now() }),
+      (e) =>
+        reject(
+          new Error(
+            e.code === 1
+              ? "Location permission is off. Allow it for MyWeather in the phone's settings."
+              : "Couldn't find your location just now."
+          )
+        ),
+      { enableHighAccuracy: false, timeout: 20000, maximumAge: 10 * 60 * 1000 }
+    );
+  });
+}
+
+function nearRow(icon, title, detail, href) {
+  const a = document.createElement(href ? "a" : "div");
+  a.className = "near-row";
+  if (href) a.href = href;
+  a.innerHTML = `<span class="near-icon" aria-hidden="true"></span><span class="near-text"><b></b><small></small></span>`;
+  a.querySelector(".near-icon").textContent = icon;
+  a.querySelector("b").textContent = title;
+  a.querySelector("small").textContent = detail;
+  return a;
+}
+
+const mm = (v) => (typeof v === "number" ? `${(Math.round(v * 10) / 10).toFixed(v % 1 ? 1 : 0)} mm` : "no data");
+
+async function renderNear(fresh = false) {
+  paintGpsButton();
+  if (!gpsOn()) {
+    nearBody.replaceChildren(
+      nearRow("📍", "Off", "Turn on to follow the nearest station, rain gauge and radar wherever you are.")
+    );
+    return;
+  }
+  let pos = read(POS_KEY, null);
+  if (fresh || !pos || Date.now() - pos.at > 10 * 60 * 1000) {
+    nearBody.replaceChildren(nearRow("📍", "Finding your location…", ""));
+    try {
+      pos = await locate();
+      write(POS_KEY, pos);
+    } catch (e) {
+      if (!pos) {
+        nearBody.replaceChildren(nearRow("📍", "Location not available", e.message));
+        return;
+      }
+    }
+  }
+  nearAt = Date.now();
+  const here = [pos.lat, pos.lon];
+  const rows = [];
+  // Radar: the nearest of the radars on the radar map.
+  const radar = RADARS.map((r) => ({ r, d: km(here, [r.lat, r.lon]) })).sort((a, b) => a.d - b.d)[0];
+  rows.push(
+    radar.d < 300
+      ? nearRow("📡", `${radar.r.name} radar`, `${Math.round(radar.d)} km away · open it on the radar map`, `#radarmap?station=${radar.r.code}`)
+      : nearRow("📡", "Radars", "No radar on the radar map covers you; see IMD's radars", "#radar")
+  );
+  const station = nearestStation(loadStations());
+  rows.push(
+    station
+      ? nearRow("🌡️", station.s.name, `Nearest of your stations, ${station.d.toFixed(1)} km · shown in the strip above`, `#wunderground?id=${encodeURIComponent(station.s.id)}`)
+      : nearRow("🌡️", "No saved station within 50 km", "Open the Station map once so the app learns where your stations are", "#map")
+  );
+  const gaugeRow = nearRow("🌧️", "Nearest TN rain gauge", "Loading…");
+  rows.push(gaugeRow);
+  const at = document.createElement("small");
+  at.className = "strip-status";
+  at.textContent = `Location from ${when(pos.at)} · ${pos.lat.toFixed(3)}, ${pos.lon.toFixed(3)}`;
+  nearBody.replaceChildren(...rows, at);
+  if (station && mainStation()?.id === station.s.id && stationPick.value !== station.s.id) refreshStrip();
+  if (skyDay.split("|")[1] !== `${pos.lat.toFixed(2)},${pos.lon.toFixed(2)}`) renderSky();
+  try {
+    const day = await getDay(currentRainDay());
+    let best = null;
+    for (const g of day.gauges) {
+      const d = km(here, [g[2], g[3]]);
+      if (!best || d < best.d) best = { g, d };
+    }
+    if (!best || best.d > 30) {
+      gaugeRow.replaceWith(nearRow("🌧️", "TN rain gauges", "No TN-SMART gauge within 30 km", "#gauges"));
+      return;
+    }
+    const [district, name, , , total, wettest] = best.g;
+    gaugeRow.replaceWith(
+      nearRow(
+        "🌧️",
+        `${name} · ${mm(total)} today`,
+        `Nearest TN rain gauge, ${best.d.toFixed(1)} km · ${district}` + (typeof wettest === "number" && wettest > 0 ? ` · wettest hour ${mm(wettest)}` : ""),
+        `#gauges?gauge=${encodeURIComponent(`${district}|${name}`)}`
+      )
+    );
+  } catch {
+    gaugeRow.replaceWith(nearRow("🌧️", "TN rain gauges", "Couldn't load the gauges just now", "#gauges"));
+  }
 }
 
 // ---- Screen ----
@@ -264,14 +418,29 @@ export function initHome() {
   renderPicker();
   stationPick.addEventListener("change", () => {
     write(STATION_KEY, stationPick.value);
+    // Picking a station by hand stops the strip following the nearest one.
+    if (gpsOn() && nearestStation(loadStations())?.s.id !== stationPick.value) {
+      write(GPS_KEY, false);
+      renderNear();
+      renderSky();
+    }
     refreshStrip();
+  });
+  nearBtn.addEventListener("click", () => {
+    write(GPS_KEY, !gpsOn());
+    if (!gpsOn()) {
+      renderSky();
+      refreshStrip();
+    }
+    renderNear(true);
   });
   $("home-refresh").addEventListener("click", refreshStrip);
 }
 
 export function showHome() {
   renderFavs();
-  if (skyDay !== new Date().toDateString()) renderSky();
+  if (!skyDay.startsWith(new Date().toDateString())) renderSky();
+  if (!nearAt || Date.now() - nearAt > TTL) renderNear();
   if (Date.now() - loadedAt > TTL) refreshStrip();
   else renderPicker();
 }

@@ -42,6 +42,7 @@
       <a href="#compare" data-view="compare">Compare stations</a>
       <a href="#map" data-view="map">Station map</a>
       <a href="#gauges" data-view="gauges">TN rain gauges</a>
+      <a href="#spell" data-view="spell">Rain spell</a>
       <a href="#floods" data-view="floods">Flood spots</a>
       <a href="#lakes" data-view="lakes">Lakes</a>
       <a href="#air" data-view="air">Air quality</a>
@@ -104,7 +105,15 @@
           <small id="home-strip-status" class="strip-status" aria-live="polite"></small>
         </div>
 
-        <div id="home-sky" class="sky-card" aria-label="Sun and moon in Chennai today"></div>
+        <div id="home-near" class="sky-card near-card off">
+          <div class="strip-head">
+            <strong class="near-title">Near you</strong>
+            <button id="home-gps" type="button" class="secondary small" aria-pressed="false">Use my location</button>
+          </div>
+          <div id="home-near-body"></div>
+        </div>
+
+        <div id="home-sky" class="sky-card" aria-label="Sun and moon today"></div>
 
         <div id="fav-box">
           <h3>Favourites</h3>
@@ -196,6 +205,12 @@
             <a class="card" href="#gauges">
               <strong>TN rain gauges</strong>
               <span>All of Tamil Nadu's 1,500 rain gauges hour by hour: map, table and charts</span>
+            </a>
+          </li>
+          <li>
+            <a class="card" href="#spell">
+              <strong>Rain spell</strong>
+              <span>The latest spell of rain in one screen: total, wettest gauges, map, radar and flood spots, to share</span>
             </a>
           </li>
           <li>
@@ -292,7 +307,7 @@
         <p class="note">
           Images © India Meteorological Department, from
           <a href="https://mausam.imd.gov.in/responsive/radar.php" target="_blank" rel="noopener noreferrer">mausam.imd.gov.in</a>.
-          <a href="#radarmap">See Chennai's radar on a map</a>
+          <a id="radar-map-link" href="#radarmap">See Chennai's radar on a map</a>
         </p>
       </section>
 
@@ -679,6 +694,18 @@
             <svg id="tg-gauge-chart" class="chart" role="group" aria-label="Rain per hour at the gauge"></svg>
             <p id="tg-gauge-readout" class="readout" aria-live="polite"></p>
           </div>
+          <div data-share="TN rain gauge · past days" data-share-from="tg-gauge-name">
+            <div class="chart-head">
+              <strong id="tg-hist-head">Past days</strong>
+              <span id="tg-hist-pick" class="seg snap-skip">
+                <button type="button" class="secondary small" data-days="7" aria-pressed="false">7 days</button>
+                <button type="button" class="secondary small" data-days="30" aria-pressed="false">30 days</button>
+              </span>
+            </div>
+            <svg id="tg-hist-chart" class="chart" role="group" aria-label="Rain each day at the gauge"></svg>
+            <p id="tg-hist-readout" class="readout" aria-live="polite"></p>
+            <p id="tg-hist-note" class="note" aria-live="polite"></p>
+          </div>
         </div>
 
         <div id="tg-tab-table" class="tg-tab" hidden>
@@ -743,13 +770,17 @@
       <section id="view-radarmap" class="view" hidden>
         <form class="controls sticky-controls" onsubmit="return false">
           <label>
+            Radar
+            <select id="rm-station"></select>
+          </label>
+          <label>
             Layer
             <select id="rm-product"></select>
           </label>
           <button id="rm-refresh" type="button">Refresh</button>
         </form>
         <p id="rm-status" class="status" aria-live="polite"></p>
-        <div class="share-map" data-share="Radar map · Chennai" data-share-from="rm-product rm-time">
+        <div class="share-map" data-share="Radar map" data-share-from="rm-station rm-product rm-time">
           <div id="rm-map" class="station-map radar-map"></div>
           <div class="rm-player">
             <button id="rm-play" type="button" class="secondary small snap-skip" aria-label="Play the loop">▶</button>
@@ -768,6 +799,59 @@
           <img id="rm-vvp" alt="IMD VVP wind profile for Chennai" loading="lazy" />
         </details>
         <p id="rm-note" class="note"></p>
+      </section>
+
+      <!-- Rain spell -->
+      <section id="view-spell" class="view" hidden>
+        <form class="controls sticky-controls" onsubmit="return false">
+          <label>
+            Area
+            <select id="sp-area"></select>
+          </label>
+          <button id="sp-refresh" type="button">Latest spell</button>
+          <button id="sp-share" type="button" class="secondary share-btn">Share</button>
+        </form>
+        <form class="controls" onsubmit="return false">
+          <label>
+            From
+            <input id="sp-from" type="date" />
+          </label>
+          <label>
+            To
+            <input id="sp-to" type="date" />
+          </label>
+          <button id="sp-show" type="button" class="secondary">Show</button>
+        </form>
+        <p id="sp-status" class="status" aria-live="polite"></p>
+        <div id="sp-body" hidden>
+          <h2 id="sp-title"></h2>
+          <div id="sp-stats" class="strip-body sp-stats"></div>
+          <p id="sp-headline" class="note"></p>
+          <div class="chart-head"><strong>Average rain each day</strong></div>
+          <svg id="sp-days" class="chart" role="group" aria-label="Average rain each day of the spell"></svg>
+          <p id="sp-days-readout" class="readout" aria-live="polite"></p>
+          <div class="chart-head"><strong>Wettest gauges</strong></div>
+          <ol id="sp-top" class="rank-list"></ol>
+          <div class="chart-head"><strong>Every gauge's total</strong></div>
+          <canvas id="sp-map" class="sp-map" role="img" aria-label="Map of the gauges coloured by rain in the spell"></canvas>
+          <p id="sp-legend" class="legend map-legend"></p>
+          <div class="chart-head"><strong>Radar</strong><a id="sp-radar-link" href="#radarmap">On the map →</a></div>
+          <img id="sp-radar" class="sp-radar" alt="IMD radar picture" />
+          <p id="sp-radar-note" class="note"></p>
+          <div id="sp-floods">
+            <div class="chart-head"><strong>Flood spots with the most rain nearby</strong></div>
+            <ul id="sp-flood-list" class="sp-flood-list"></ul>
+            <p class="note">
+              Each spot takes the nearest gauge within 6 km. Risk from its wettest day: <b>Watch</b> from 30 mm,
+              <b>Likely flooded</b> from 64.5 mm a day or 30 mm in an hour. A rough guide from rain alone.
+            </p>
+          </div>
+        </div>
+        <p class="note">
+          From the Tamil Nadu government's TN-SMART rain gauges. A spell is the latest run of rain days (8:30 AM to
+          8:30 AM) with at least 2.5 mm on average over the area in the last two weeks; change the dates to see
+          another. Days are kept on the phone once downloaded (about 0.7 MB each).
+        </p>
       </section>
 
       <!-- Flood spots -->
@@ -825,9 +909,31 @@
             <ul id="lake-summary" class="lake-summary" hidden></ul>
             <div id="lake-table" class="table-wrap"></div>
           </div>
+          <div data-share="Lake storage over time" data-share-from="lk-lake">
+            <div class="chart-head">
+              <strong>Storage over time</strong>
+              <span id="lk-range" class="seg snap-skip">
+                <button type="button" class="secondary small" data-days="30" aria-pressed="false">30 days</button>
+                <button type="button" class="secondary small" data-days="90" aria-pressed="false">90 days</button>
+              </span>
+            </div>
+            <form class="controls snap-skip" onsubmit="return false">
+              <label>
+                Lake
+                <select id="lk-lake"></select>
+              </label>
+            </form>
+            <p id="lk-status" class="status" aria-live="polite"></p>
+            <svg id="lk-chart" class="chart" role="group" aria-label="Lake storage this year and last year"></svg>
+            <p class="legend line-legend"><span class="key this-year"></span> This year <span class="key last-year"></span> Same days last year</p>
+            <p id="lk-readout" class="readout" aria-live="polite"></p>
+            <p id="lk-summary" class="note"></p>
+          </div>
           <p class="note">
             Daily storage of the reservoirs supplying Chennai, from
             <a href="https://cmwssb.tn.gov.in/lakelevel" target="_blank" rel="noopener noreferrer">Chennai Metro Water</a>.
+            The trend comes from the Tamil Nadu government's daily reservoir report (TN-SMART), which lists the same
+            five lakes (Veeranam is not in it); the reports are kept on the phone once read.
           </p>
         </div>
         <div id="lake-reader" hidden>

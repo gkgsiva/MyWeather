@@ -5,6 +5,7 @@
 // under the menu (#lakes?page=1). The last table is kept for offline use.
 import { routeParams } from "./route.js";
 import { when } from "./offline.js";
+import { initLakeTrend, showLakeTrend } from "./laketrend.js";
 
 // The page Siva's phone shows; the older address is tried if it fails.
 export const LAKES_PAGE = "https://cmwssb.tn.gov.in/lakelevel";
@@ -235,10 +236,15 @@ function render() {
     return;
   }
   if (Date.now() - loadedAt > 10 * 60 * 1000) refresh();
+  showLakeTrend();
 }
 
 export function initLakes() {
-  $("lake-refresh").addEventListener("click", refresh);
+  $("lake-refresh").addEventListener("click", () => {
+    refresh();
+    showLakeTrend(true);
+  });
+  initLakeTrend();
 }
 
 export function showLakes() {
