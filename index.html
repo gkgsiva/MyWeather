@@ -113,10 +113,29 @@
         <div id="home-nowcast" class="sky-card nowcast-card">
           <div class="strip-head">
             <strong class="near-title">Rain coming?</strong>
-            <button id="home-nowcast-btn" type="button" class="secondary small">Check radar</button>
+            <span class="nc-buttons">
+              <button id="home-nc-spot" type="button" class="secondary small" aria-expanded="false" aria-controls="home-nc-pick">📍 Spot</button>
+              <button id="home-nowcast-btn" type="button" class="secondary small">Check radar</button>
+            </span>
           </div>
           <a id="home-nowcast-body" class="nowcast-body" href="#radarmap"></a>
           <small id="home-nowcast-status" class="strip-status" aria-live="polite"></small>
+          <div id="home-nc-pick" class="nc-pick snap-skip" hidden>
+            <form class="controls" onsubmit="return false">
+              <label class="heat-search">
+                Search a place or pincode
+                <input id="home-nc-q" type="search" placeholder="Velachery or 600042" autocomplete="off" enterkeyhint="search" />
+              </label>
+              <button id="home-nc-go" type="button" class="secondary">Find</button>
+            </form>
+            <ul id="home-nc-results" class="rank-list heat-results"></ul>
+            <small class="nc-hint">Or tap the map to drop the pin anywhere.</small>
+            <div id="home-nc-map" class="nc-map"></div>
+            <div class="nc-pick-foot">
+              <button id="home-nc-auto" type="button" class="linkish">Use my location</button>
+              <button id="home-nc-ok" type="button" class="small">Check this spot</button>
+            </div>
+          </div>
         </div>
 
         <div id="home-near" class="sky-card near-card off">

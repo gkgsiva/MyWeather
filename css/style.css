@@ -995,6 +995,12 @@ a.near-row .near-text b { color: var(--accent); }
 .nc-pin { display: block; font-size: 22px; line-height: 1; transform: translate(-50%, -100%); filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.5)); }
 .linkish { background: none; border: 0; padding: 0; color: var(--accent); font: inherit; font-size: 0.85rem; text-decoration: underline; cursor: pointer; }
 .nowcast-card .strip-head { justify-content: space-between; margin-bottom: 4px; }
+.nc-buttons { display: flex; gap: 6px; }
+.nc-pick { margin-top: 8px; border-top: 1px solid var(--border); padding-top: 8px; }
+.nc-hint { display: block; color: var(--muted); margin-bottom: 4px; }
+.nc-map { height: 240px; border-radius: 8px; border: 1px solid var(--border); }
+.nc-pick-foot { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-top: 8px; }
+.nc-pick-foot button.small { margin-left: auto; }
 .nowcast-body { display: flex; gap: 10px; align-items: center; color: inherit; text-decoration: none; }
 .nowcast-body .near-text b { color: var(--fg); }
 .nowcast-body.wet .near-text b { color: var(--accent); }

@@ -664,10 +664,7 @@ function ensureMap() {
   // Tap the map: nowcast for that spot.
   map.on("click", (e) => {
     if (!last) return;
-    try {
-      localStorage.setItem(PLACE_KEY, JSON.stringify({ lat: e.latlng.lat, lon: e.latlng.lng }));
-    } catch {}
-    drawNowcast();
+    setNowcastPlace({ lat: e.latlng.lat, lon: e.latlng.lng, name: "Picked spot" });
   });
   new MutationObserver(setTiles).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
 }
@@ -837,10 +834,19 @@ const readJson = (key) => {
 // position when Home's "Near you" is on, else Chennai.
 export function nowcastPlace() {
   const picked = readJson(PLACE_KEY);
-  if (picked && typeof picked.lat === "number") return { ...picked, name: "Picked spot", picked: true };
+  if (picked && typeof picked.lat === "number") return { lat: picked.lat, lon: picked.lon, name: picked.name || "Picked spot", picked: true };
   const pos = readJson("myweather.home.gps") === true && readJson("myweather.home.pos");
   if (pos && typeof pos.lat === "number") return { lat: pos.lat, lon: pos.lon, name: "Your location" };
   return CHENNAI_PLACE;
+}
+
+/** Saves the spot to nowcast for ({ lat, lon, name }), or null to go back to your location or Chennai. */
+export function setNowcastPlace(p) {
+  try {
+    if (p) localStorage.setItem(PLACE_KEY, JSON.stringify({ lat: p.lat, lon: p.lon, name: p.name || "Picked spot" }));
+    else localStorage.removeItem(PLACE_KEY);
+  } catch {}
+  if (map && last) drawNowcast();
 }
 
 function drawNowcast() {
@@ -869,12 +875,7 @@ function drawNowcast() {
     clear.type = "button";
     clear.className = "linkish snap-skip";
     clear.textContent = "Back to " + (readJson("myweather.home.gps") === true ? "my location" : "Chennai");
-    clear.addEventListener("click", () => {
-      try {
-        localStorage.removeItem(PLACE_KEY);
-      } catch {}
-      drawNowcast();
-    });
+    clear.addEventListener("click", () => setNowcastPlace(null));
     box.append(clear);
   }
   spotMarker = L.marker([place.lat, place.lon], {

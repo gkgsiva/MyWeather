@@ -44,7 +44,9 @@ A small static web app for Chennai weather watchers. A home page and the ☰ men
   by `js/gif.js`. Needs the Android app for the CORS header.
   **Rain nowcast**: from the storm movement, the app looks upstream of a place to say when the rain will reach it
   ("Rain likely in about 40 min, for about 25 min"), up to 2 hours ahead. The place is Chennai, the phone's
-  position (Near you) or a spot tapped on the map. Home's **Rain coming?** card runs the same check on demand.
+  position (Near you) or a spot tapped on the map. Home's **Rain coming?** card runs the same check on demand;
+  its **📍 Spot** button picks the place on a map (tap anywhere) or by searching a place name or pincode, and
+  the app remembers it.
   **Clouds (INSAT)** lays IMD's INSAT-3DS infrared picture (Asia sector, Mercator; grid measured Nov 2026) under
   the radar echoes, see-through where the sky is clear.
 - **TN rain gauges** (`#gauges`): the Tamil Nadu government's ~1,500 automatic rain gauges (TN-SMART, with RIMES),
