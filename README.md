@@ -181,6 +181,7 @@ The same list is on the app's **Info** screen (`js/info.js`); keep the two in st
 
 ### v1.8 (upcoming)
 - **Info** screen in the menu: the installed version and this version history.
+- Home's **Rain coming?** card: **📍 Spot** picks the place to check, by name, pincode or a tap on a map.
 
 ### v1.7 (8 Nov 2026, PRs #16–#21)
 - New screens: **Morning digest** (warnings, forecast, last day's rain, monsoon so far, lakes and sun times in one

@@ -7,7 +7,15 @@ export const HISTORY = [
   {
     version: "1.8",
     date: "Upcoming",
-    groups: [["New", ["**Info** screen in the menu: the installed version and this version history."]]],
+    groups: [
+      [
+        "New",
+        [
+          "**Info** screen in the menu: the installed version and this version history.",
+          "Home's **Rain coming?** card: **📍 Spot** picks the place to check, by name, pincode or a tap on a map.",
+        ],
+      ],
+    ],
   },
   {
     version: "1.7",
