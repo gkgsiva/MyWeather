@@ -115,6 +115,14 @@ with its distance rings). The page hands the picture to the app over a message c
 page can use; the app saves it in its cache and shares it through a `FileProvider`. In a browser it uses the Web
 Share API, or downloads the picture.
 
+Every map, table, chart and list (Station map, TN rain gauges, Radar map, Flood spots, Wind, Rain history,
+Rain season, Compare, Forecast, Monsoon, Warnings, Lakes, Air quality, Sea & tides, Wunderground) also has a
+small **Share** button. It turns that block, as it is on screen, into a PNG with a MyWeather band naming it
+(with the chosen layer, district or day) and the time, and shares it the same way. Maps keep their place, zoom
+and markers; tables are shared whole. `js/snap.js` does this with
+[html-to-image](https://github.com/bubkoo/html-to-image) (MIT, bundled in `js/vendor/html-to-image`); a block
+gets the button by having `data-share="Title"` in `index.html`.
+
 **Pull to refresh:** at the top of any screen, pull down and let go to reload it (the screen's own **Refresh**,
 or the page shown under the menu). It works on Wunderground and blog pages too: the app adds a few lines to
 those pages that pass the gesture to MyWeather. The station map is left out, since dragging it moves the map.
