@@ -85,10 +85,15 @@ final class FrameProxy {
         }
     }
 
-    /** A map tile, fetched with the given User-Agent and no Referer. */
+    /**
+     * A map tile, fetched with the given User-Agent and no Referer or Origin.
+     * It is answered with a CORS header so the Share buttons can put the map
+     * in a picture (js/snap.js reads the tiles again with fetch()).
+     */
     static WebResourceResponse withUserAgent(WebResourceRequest request, String userAgent) {
         try {
             Fetched f = fetch(request, userAgent);
+            f.headers.put("access-control-allow-origin", "*");
             return f.toResponse();
         } catch (IOException e) {
             return null;
@@ -129,7 +134,7 @@ final class FrameProxy {
         conn.setInstanceFollowRedirects(true);
         for (Map.Entry<String, String> h : request.getRequestHeaders().entrySet()) {
             if (userAgent != null && (h.getKey().equalsIgnoreCase("user-agent")
-                    || h.getKey().equalsIgnoreCase("referer"))) {
+                    || h.getKey().equalsIgnoreCase("referer") || h.getKey().equalsIgnoreCase("origin"))) {
                 continue;
             }
             conn.setRequestProperty(h.getKey(), h.getValue());
