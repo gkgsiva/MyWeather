@@ -6,4 +6,16 @@
     <string name="widget_caption">Chennai radar · %1$s</string>
     <string name="widget_failed">Chennai radar · couldn\'t load, tap ↻</string>
     <string name="widget_refresh">Refresh radar</string>
+    <string name="station_widget_description">Rain and temperature at your main Wunderground station</string>
+    <string name="station_widget_title">Rain &amp; temperature</string>
+    <string name="station_widget_setup">Open MyWeather once to set up</string>
+    <string name="station_widget_loading">Loading…</string>
+    <string name="station_widget_at">Reading at %1$s IST</string>
+    <string name="station_widget_offline">Station offline</string>
+    <string name="station_widget_bad_key">API key not accepted</string>
+    <string name="station_widget_failed">Couldn\'t load, tap ↻</string>
+    <string name="station_widget_refresh">Refresh reading</string>
+    <string name="station_widget_rain_label">mm today</string>
+    <string name="station_widget_rate_label">Now</string>
+    <string name="station_widget_wind_label">Wind</string>
 </resources>

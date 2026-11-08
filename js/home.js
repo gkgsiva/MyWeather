@@ -168,6 +168,16 @@ function readingLine(obs, savedAt) {
   return { text: `Reading at ${time}${old ? ", over an hour old" : ""}${savedAt ? ` · no connection, kept from ${when(savedAt)}` : ""}`, old };
 }
 
+// The Android rain & temperature widget reads the same station with the same key.
+// Only the app's own page can send this (see MainActivity.listenToPage).
+function tellWidget(station, key) {
+  const bridge = window.MyWeatherAndroid;
+  if (!bridge || typeof bridge.postMessage !== "function") return;
+  try {
+    bridge.postMessage(JSON.stringify({ action: "widgetStation", id: station.id, name: station.name, key }));
+  } catch {}
+}
+
 async function refreshStrip() {
   const main = mainStation();
   renderPicker();
@@ -180,6 +190,7 @@ async function refreshStrip() {
   renderStrip(keptObs);
   const key = apiKey();
   if (!key) return say("Add your Wunderground API key under Wunderground → Manage stations.", true);
+  tellWidget(main, key);
   say("Loading…");
   try {
     const obs = await fetchReading(main.id, key);

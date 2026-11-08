@@ -276,7 +276,7 @@ public class MainActivity extends Activity {
      * Messages from the MyWeather page (window.MyWeatherAndroid.postMessage),
      * accepted only from the app's own origin and top frame, so Wunderground
      * or the blog in their frames can't use them. Used by the Share buttons
-     * (js/share.js).
+     * (js/share.js) and by Home to tell the rain widget its station (js/home.js).
      */
     private void listenToPage() {
         if (!WebViewFeature.isFeatureSupported(WebViewFeature.WEB_MESSAGE_LISTENER)) return;
@@ -288,8 +288,12 @@ public class MainActivity extends Activity {
                     if (json == null) return;
                     try {
                         JSONObject msg = new JSONObject(json);
-                        if ("shareImage".equals(msg.optString("action"))) {
+                        String action = msg.optString("action");
+                        if ("shareImage".equals(action)) {
                             new Thread(() -> shareImage(msg), "share").start();
+                        } else if ("widgetStation".equals(action)) {
+                            StationWidget.setStation(getApplicationContext(), msg.optString("id"),
+                                    msg.optString("name"), msg.optString("key"));
                         }
                     } catch (JSONException ignored) {
                         // Not a message for us.
