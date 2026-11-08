@@ -34,10 +34,14 @@ import {
   motion,
   loopUrl,
   mercatorRows,
+  blur,
+  rainMask,
 } from "./radarmap.js";
 import { radarImageUrl } from "./stations.js";
 import { decodeGif } from "./gif.js";
 import { distanceKm } from "./nowcast.js";
+import { idbGet, idbPut } from "./idb.js";
+import { savingData } from "./datasaver.js";
 
 const TTL = 8 * 60 * 1000;
 const STEP_MIN = 10;
@@ -52,6 +56,9 @@ const PPD_LAT = 111.2 / CELL_KM;
 const PPD_LON = (111.2 * Math.cos((11.4 * Math.PI) / 180)) / CELL_KM;
 const W = Math.round((BOX.lon1 - BOX.lon0) * PPD_LON);
 const H = Math.round((BOX.lat1 - BOX.lat0) * PPD_LAT);
+
+/** The grid, for screens that work on the mosaic. */
+export const GRID = { ...BOX, W, H, PPD_LAT, PPD_LON, CELL_KM, STEP_MIN };
 
 /** The mosaic as a Radar map "product" (same geometry fields). */
 export const MOSAIC_PRODUCT = {
@@ -233,6 +240,29 @@ function lookup(r, p, w, h) {
 
 const mainProduct = (r) => r.products.find((x) => x.code === "caz");
 
+// Data saver: a loop radar's latest picture against the bare map saved from
+// its last full loop. null when there's no saved map yet.
+async function stillLayer(r, buf, saved) {
+  const p = mainProduct(r);
+  const [w, h] = size(p);
+  if (!saved || saved.w !== w || saved.h !== h) return null;
+  let rgb = null;
+  let minute = null;
+  decodeFirst(buf, (rgba, width) => {
+    minute = readTime(rgba, width, p);
+    rgb = cropRgb(rgba, width, p);
+  });
+  const time = datesOf([minute])[0];
+  if (!time) throw new Error("couldn't read the scan time");
+  const mask = rainMask(blur(rgb, w, h), saved.bg, w, h);
+  const dbz = loopDbz(rgb, mask, saved.bg, w, h, classifier(r.code, 60));
+  const mo = await idbGet("misc", `motion.${r.code}`);
+  const m = mo && Date.now() - mo.at < 2 * 3600 * 1000 ? mo.motion : null;
+  let rain = 0;
+  for (const v of mask) rain += v;
+  return { r, frames: [{ time, dbz }], motion: m, motionAt: m ? mo.at : 0, lut: lookup(r, p, w, h), rain };
+}
+
 // { r, frames: [{ time, dbz }], motion, lut, rain (pixels in the last frame) }
 async function radarLayer(r, buf, cancelled) {
   const p = mainProduct(r);
@@ -249,6 +279,9 @@ async function radarLayer(r, buf, cancelled) {
     });
     if (!frames.length) throw new Error("couldn't read the scan times");
     const m = p.motion ? motion(a.masks, a.times, p, a.w, a.h) : null;
+    // Kept for data-saver mode: the bare map and the motion.
+    idbPut("bg", r.code, { bg: a.bg, w: a.w, h: a.h, at: Date.now() });
+    idbPut("misc", `motion.${r.code}`, { motion: m, at: Date.now() });
     const lastMask = a.masks[a.masks.length - 1];
     let rain = 0;
     for (const v of lastMask) rain += v;
@@ -398,18 +431,21 @@ export async function frameImage(dbz) {
 /** The radars in the mosaic, for markers and range rings. */
 export const MOSAIC_RADARS = () => RADARS.map((r) => ({ r, km: RANGE[r.code] || 240 }));
 
-let cache = null; // { at, promise }
+let cache = null; // { at, promise, saver }
 
 /**
  * Downloads all five radars and builds the mosaic, or reuses one under 8
- * minutes old. onStep(text) reports progress.
+ * minutes old. onStep(text) reports progress. With the data saver on (see
+ * js/datasaver.js), latest pictures are read instead of loops.
  * Resolves to { frames: [{ time, dbz, scans }], w, h, p, layers: [{ name,
  * time, motion, error }], motion, motionAt(lat, lon), grid(frame) }.
  */
 export function buildMosaic({ force = false, onStep = () => {} } = {}) {
-  if (!force && cache && Date.now() - cache.at < TTL) return cache.promise;
-  const promise = build(onStep);
-  cache = { at: Date.now(), promise };
+  const saver = savingData();
+  // A full build serves the saver too; a saver build doesn't serve a full one.
+  if (!force && cache && Date.now() - cache.at < TTL && (saver || !cache.saver)) return cache.promise;
+  const promise = build(onStep, saver);
+  cache = { at: Date.now(), promise, saver };
   promise.catch(() => {
     if (cache?.promise === promise) cache = null;
   });
@@ -418,12 +454,22 @@ export function buildMosaic({ force = false, onStep = () => {} } = {}) {
 
 export const mosaicCached = () => (cache && Date.now() - cache.at < TTL ? cache.promise : null);
 
-async function build(onStep) {
-  onStep("Downloading the five radars (about 16 MB)…");
+async function build(onStep, saver) {
+  // Data saver: pictures for the radars whose bare map is saved; loops for the rest.
+  const saved = saver ? await Promise.all(RADARS.map((r) => (mainProduct(r).loop ? idbGet("bg", r.code) : null))) : [];
+  const still = (i) => !mainProduct(RADARS[i]).loop || (saver && !!saved[i]);
+  const needLoops = RADARS.filter((r, i) => !still(i)).length;
+  onStep(
+    saver
+      ? needLoops
+        ? `Data saver: downloading latest pictures, plus ${needLoops} loop${needLoops > 1 ? "s" : ""} once to learn the map…`
+        : "Data saver: downloading the latest radar pictures (about 0.8 MB)…"
+      : "Downloading the five radars (about 16 MB)…"
+  );
   const bufs = await Promise.all(
-    RADARS.map((r) => {
+    RADARS.map((r, i) => {
       const p = mainProduct(r);
-      return fetchBuffer(p.loop ? loopUrl(r, p) : radarImageUrl(r.code, p.code)).catch((e) => e);
+      return fetchBuffer(still(i) ? radarImageUrl(r.code, p.code) : loopUrl(r, p)).catch((e) => e);
     })
   );
   const layers = [];
@@ -437,10 +483,11 @@ async function build(onStep) {
       continue;
     }
     try {
-      const l = await radarLayer(r, bufs[i], () => false);
+      const l = still(i) && mainProduct(r).loop ? await stillLayer(r, bufs[i], saved[i]) : await radarLayer(r, bufs[i], () => false);
+      if (!l) throw new Error("its saved map is out of date; turn the data saver off once");
       bufs[i] = null;
       layers.push(l);
-      status.push({ name: r.name, time: l.frames[l.frames.length - 1].time, motion: l.motion, still: !mainProduct(r).loop });
+      status.push({ name: r.name, time: l.frames[l.frames.length - 1].time, motion: l.motion, still: l.frames.length === 1, motionAt: l.motionAt || 0 });
     } catch (e) {
       status.push({ name: r.name, error: e.message });
     }
@@ -471,6 +518,7 @@ async function build(onStep) {
     motion: all,
     motionAt: (lat, lon) => motionNear(slim, all, lat, lon),
     grid,
+    saver,
     at: Date.now(),
   };
 }

@@ -15,6 +15,16 @@ export const HISTORY = [
           "Radar map: **Tamil Nadu (all 5 radars)** combines Chennai, Karaikal, Thiruvananthapuram, Kochi and Sriharikota into one map and loop, lining up their scan times.",
         ],
       ],
+      [
+        "More",
+        [
+          "**Rain map**: rain over the last 1 to 24 hours across Tamil Nadu, filled in between the 1,500 TN-SMART rain gauges, with district figures and any spot on the map.",
+          "Radar map: **Cyclone track** from IMD's map server while a depression or cyclone is active.",
+          "Flood spots: **Waterlogging risk** for each Chennai zone (rain, radar, flood spots and lakes).",
+          "**Rain records**: each district's wettest days, spells, months and hours, linked to Rain spell.",
+          "**Data saver**: the radar screens can read the latest pictures (0.8 MB) instead of the 3-hour loops (16 MB); Auto saves on mobile data.",
+        ],
+      ],
     ],
   },
   {

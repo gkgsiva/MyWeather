@@ -26,6 +26,8 @@ import { IMD_RADAR_BASE, radarImageUrl } from "./stations.js";
 import { routeParams } from "./route.js";
 import { nowcastAt, headline, saveNowcast, distanceKm } from "./nowcast.js";
 import { MOSAIC, MOSAIC_RADARS, DBZ_BANDS, buildMosaic, frameImage } from "./mosaic.js";
+import { fetchTrack, trackLayer } from "./cyclonetrack.js";
+import { bindSaver } from "./datasaver.js";
 
 const STATION_KEY = "myweather.radarmap.station";
 const PRODUCT_KEY = "myweather.radarmap.product";
@@ -189,7 +191,10 @@ export const RADARS = [
 ];
 
 const LEGENDS = {
-  dbz: DBZ_BANDS.map(([, c, label]) => [c, label]),
+  // A getter: js/mosaic.js and this file import each other.
+  get dbz() {
+    return DBZ_BANDS.map(([, c, label]) => [c, label]);
+  },
   z: [
     ["#0000cc", "Light"],
     ["#3399ff", "Moderate"],
@@ -344,7 +349,7 @@ export function cropRgb(rgba, width, p) {
 }
 
 // 5×5 box blur of an RGB image, to even out the dithering.
-function blur(rgb, w, h) {
+export function blur(rgb, w, h) {
   const r = 2;
   const tmp = new Uint16Array(w * h * 3);
   const out = new Uint8Array(w * h * 3);
@@ -395,7 +400,7 @@ function median(blurred) {
 }
 
 // Rain pixels: far enough from the bare map, and not a lone speck.
-function rainMask(blurred, bg, w, h) {
+export function rainMask(blurred, bg, w, h) {
   const raw = new Uint8Array(w * h);
   for (let i = 0, k = 0; i < w * h; i++, k += 3) {
     const dr = blurred[k] - bg[k];
@@ -1037,6 +1042,34 @@ async function loadClouds() {
   }
 }
 
+// ---- Cyclone track (IMD) ----
+
+const CYCLONE_KEY = "myweather.radarmap.cyclone";
+let cyclone = null; // Leaflet layer
+
+async function loadCyclone() {
+  const pick = $("rm-cyclone");
+  const note = $("rm-cyclone-note");
+  cyclone?.remove();
+  cyclone = null;
+  if (!pick.checked) {
+    note.hidden = true;
+    return;
+  }
+  try {
+    const { layer, text } = trackLayer(L, await fetchTrack());
+    if (!pick.checked) return;
+    cyclone = layer?.addTo(map) || null;
+    note.hidden = false;
+    note.textContent = text;
+  } catch (e) {
+    note.hidden = false;
+    note.textContent = /Failed to fetch|NetworkError|Load failed/.test(e.message)
+      ? "Couldn't read IMD's cyclone track. It can only be read inside the MyWeather app."
+      : `Couldn't load the cyclone track (${e.message}).`;
+  }
+}
+
 function setClouds() {
   try {
     localStorage.setItem(CLOUDS_KEY, cloudsPick.checked ? "1" : "0");
@@ -1234,6 +1267,16 @@ export function initRadarMap() {
     cloudsPick.checked = localStorage.getItem(CLOUDS_KEY) === "1";
   } catch {}
   cloudsPick.addEventListener("change", setClouds);
+  try {
+    $("rm-cyclone").checked = localStorage.getItem(CYCLONE_KEY) !== "0";
+  } catch {}
+  $("rm-cyclone").addEventListener("change", () => {
+    try {
+      localStorage.setItem(CYCLONE_KEY, $("rm-cyclone").checked ? "1" : "0");
+    } catch {}
+    loadCyclone();
+  });
+  bindSaver($("rm-saver"), () => radar().mosaic && load(true));
   slider.disabled = playBtn.disabled = true;
 }
 
@@ -1249,6 +1292,7 @@ export async function showRadarMap() {
   setTimeout(() => map.invalidateSize(), 0);
   load();
   if (cloudsPick.checked) loadClouds();
+  loadCyclone();
 }
 
 export function hideRadarMap() {

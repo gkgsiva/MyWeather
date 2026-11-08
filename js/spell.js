@@ -17,6 +17,7 @@ import { km, riskOf } from "./floods.js";
 import { RADARS } from "./radarmap.js";
 import { radarImageUrl, radarAnimationUrl } from "./stations.js";
 import { shareButton, shareName } from "./share.js";
+import { routeParams } from "./route.js";
 
 const AREA_KEY = "myweather.spell.area";
 const LOOK_BACK = 14;
@@ -511,6 +512,18 @@ export function initSpell() {
 
 let shownAt = 0;
 export function showSpell() {
+  // From Rain records: #spell?area=Chennai&from=2026-11-01&to=2026-11-04
+  const q = routeParams();
+  if (q.get("from") && q.get("to")) {
+    const area = q.get("area");
+    if (area && (area === "all" || DISTRICTS.includes(area))) areaPick.value = area;
+    fromInput.value = q.get("from");
+    toInput.value = q.get("to");
+    shownAt = Date.now();
+    history.replaceState(null, "", "#spell");
+    fromDates();
+    return;
+  }
   if (result && Date.now() - shownAt < 15 * 60 * 1000) {
     drawMap($("sp-map"), result);
     return;

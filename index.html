@@ -32,6 +32,7 @@
       <a href="#forecast" data-view="forecast">Forecast</a>
       <a href="#heat" data-view="heat">Heat &amp; humidity</a>
       <a href="#nowcast" data-view="nowcast">Rain nowcast</a>
+      <a href="#rainmap" data-view="rainmap">Rain map</a>
       <a href="#radar" data-view="radar">Radars</a>
       <a href="#radarmap" data-view="radarmap">Radar map</a>
       <a href="#satellite" data-view="satellite">Satellite</a>
@@ -48,6 +49,7 @@
       <a href="#gauges" data-view="gauges">TN rain gauges</a>
       <a href="#health" data-view="health">Station health</a>
       <a href="#spell" data-view="spell">Rain spell</a>
+      <a href="#records" data-view="records">Rain records</a>
       <a href="#floods" data-view="floods">Flood spots</a>
       <a href="#lakes" data-view="lakes">Lakes</a>
       <a href="#air" data-view="air">Air quality</a>
@@ -442,6 +444,7 @@
           <button id="nw-home" type="button" class="linkish">Use this place on Home</button>
           <button id="nw-refresh" type="button" class="small">Refresh radar</button>
         </div>
+        <label class="rm-saver">Download <select id="nw-saver" data-saver></select></label>
         <div data-share="Rain nowcast · districts">
           <h3>Every district, next 2 hours</h3>
           <p id="nw-districts-sum" class="note"></p>
@@ -452,6 +455,40 @@
           heading, up to 2 hours. Rain grows, fades and turns, so take it as a rough guide. District times are for
           the middle of each district. Radar: IMD Doppler Weather Radars at Chennai, Karaikal, Thiruvananthapuram,
           Kochi and Sriharikota; they can only be read inside the MyWeather app.
+        </p>
+      </section>
+
+      <section id="view-rainmap" class="view" hidden>
+        <h2>Rain map</h2>
+        <p class="note nw-intro">How much rain fell across Tamil Nadu, filled in between TN-SMART's 1,500 rain gauges.</p>
+        <form class="controls" onsubmit="return false">
+          <label>
+            Last
+            <select id="rmap-hours">
+              <option value="1">1 hour</option>
+              <option value="3" selected>3 hours</option>
+              <option value="6">6 hours</option>
+              <option value="12">12 hours</option>
+              <option value="24">24 hours</option>
+            </select>
+          </label>
+          <button id="rmap-refresh" type="button">Refresh</button>
+        </form>
+        <p id="rmap-status" class="status" aria-live="polite"></p>
+        <div class="share-map" data-share="Rain map" data-share-from="rmap-when">
+          <div id="rmap-map" class="station-map radar-map nw-map"></div>
+          <p id="rmap-when" class="note"></p>
+          <p id="rmap-legend" class="legend map-legend"></p>
+          <label class="rm-check snap-skip"><input id="rmap-dots" type="checkbox" /> Show the gauges</label>
+        </div>
+        <div data-share="Rain map · districts" data-share-from="rmap-when">
+          <h3>By district (mean of its gauges)</h3>
+          <ul id="rmap-districts" class="rank-list"></ul>
+        </div>
+        <p class="note">
+          Each spot takes the gauges within 20 km, the nearer ones counting more (inverse-distance weighting). Places
+          with no gauge that close are left blank. Gauges that miss more than one hour in ten, or that Station health
+          finds suspect, are left out. Rain gauges: TN-SMART (Tamil Nadu disaster management, RIMES), hourly.
         </p>
       </section>
 
@@ -1065,10 +1102,13 @@
               <input id="rm-opacity" type="range" min="20" max="100" value="80" />
             </label>
             <label class="rm-check"><input id="rm-clouds" type="checkbox" /> Clouds (INSAT)</label>
+            <label class="rm-check"><input id="rm-cyclone" type="checkbox" checked /> Cyclone track</label>
+            <label class="rm-saver">Download <select id="rm-saver" data-saver></select></label>
           </div>
           <p id="rm-motion" class="rm-motion" hidden></p>
           <p id="rm-nowcast" class="rm-nowcast" aria-live="polite" hidden></p>
           <p id="rm-clouds-note" class="note rm-clouds-note" hidden></p>
+          <p id="rm-cyclone-note" class="note rm-clouds-note" hidden></p>
           <p id="rm-legend" class="legend map-legend"></p>
         </div>
         <details class="rm-vvp">
@@ -1132,6 +1172,44 @@
       </section>
 
       <!-- Flood spots -->
+      <section id="view-records" class="view" hidden>
+        <h2>Rain records</h2>
+        <form class="controls" onsubmit="return false">
+          <label>
+            District
+            <select id="rec-area"></select>
+          </label>
+          <button id="rec-refresh" type="button">Refresh</button>
+        </form>
+        <p id="rec-status" class="status" aria-live="polite"></p>
+        <p id="rec-span" class="note"></p>
+        <p id="rec-summary"></p>
+        <div data-share="Rain records · wettest days" data-share-from="rec-span">
+          <h3>Wettest days</h3>
+          <ul id="rec-days" class="rank-list"></ul>
+        </div>
+        <div data-share="Rain records · wettest spells" data-share-from="rec-span">
+          <h3>Wettest spells</h3>
+          <ul id="rec-spells" class="rank-list"></ul>
+        </div>
+        <div data-share="Rain records · by month" data-share-from="rec-span">
+          <div class="chart-head"><strong>Rain by month</strong></div>
+          <svg id="rec-months" class="chart" role="group" aria-label="District rain by month"></svg>
+          <p id="rec-months-readout" class="readout" aria-live="polite"></p>
+        </div>
+        <div data-share="Rain records · wettest hours" data-share-from="rec-span">
+          <h3>Wettest hours at a gauge</h3>
+          <button id="rec-hours-btn" type="button" class="secondary small snap-skip">Find the wettest hours</button>
+          <ul id="rec-hours" class="rank-list"></ul>
+        </div>
+        <p class="note">
+          Days and spells use TN-SMART's daily district mean (the average of the district's gauges, rain days to
+          8:30 AM IST), which starts on 11 Oct 2025. A spell is a run of days with 2.5 mm or more (IMD's rainy day); tap
+          a day or spell to open it on Rain spell. Wettest hours are the biggest single hours at any gauge in the
+          district on its 6 wettest days.
+        </p>
+      </section>
+
       <section id="view-floods" class="view" hidden>
         <form class="controls sticky-controls" onsubmit="return false">
           <button id="flood-refresh" type="button">Refresh</button>
@@ -1150,6 +1228,16 @@
           <span class="spot spot-unknown">!</span> No station near
           <span class="spot spot-low spot-subway">U</span> Subway
         </p>
+        </div>
+        <div data-share="Waterlogging risk · Chennai zones" data-share-from="wl-when">
+          <h3>Waterlogging risk by zone</h3>
+          <p id="wl-when" class="note">Reading the zone rain gauges…</p>
+          <ul id="wl-zones" class="rank-list wl-zones"></ul>
+          <p class="note">
+            Each Greater Chennai Corporation zone, from its rain gauges (24 h and 3 h), rain due within the hour on the
+            radar (if the radar was read in the last few minutes), its known flood spots and the lakes upstream when over
+            90% full. A rough guide, not a flood warning.
+          </p>
         </div>
         <div data-share="Flood spots · Chennai">
           <h3>Rain near each spot today</h3>
