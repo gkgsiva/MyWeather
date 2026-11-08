@@ -47,6 +47,15 @@ A small static web app for Chennai weather watchers. A home page and the ☰ men
   position (Near you) or a spot tapped on the map. Home's **Rain coming?** card runs the same check on demand;
   its **📍 Spot** button picks the place on a map (tap anywhere) or by searching a place name or pincode, and
   the app remembers it.
+  **Tamil Nadu (all 5 radars)** (`js/mosaic.js`) puts Chennai, Karaikal, Thiruvananthapuram, Kochi and Sriharikota
+  on one map. The radars use different colour scales, so each echo's colour is read back to dBZ on that radar's own
+  colour bar (sampled Nov 2026); where radars overlap the stronger reading wins, and echoes under 20 dBZ are left
+  out. Frames step every 10 minutes over 3 hours; each radar gives its latest scan from the 30 minutes before,
+  moved on along its storm track to the step's time, and the scans used are listed under the slider. Storm motion
+  is each radar's own; the nowcast uses the nearest radar's.
+- **Rain nowcast** (`#nowcast`): will rain reach a place in the next 2 hours, from the Tamil Nadu mosaic. Pick a
+  district, search a place name or pincode, use the phone's location or tap the map. Below, every TN district
+  (at its centre) sorted by when rain arrives. **Use this place on Home** sends the place to Home's card.
   **Clouds (INSAT)** lays IMD's INSAT-3DS infrared picture (Asia sector, Mercator; grid measured Nov 2026) under
   the radar echoes, see-through where the sky is clear.
 - **TN rain gauges** (`#gauges`): the Tamil Nadu government's ~1,500 automatic rain gauges (TN-SMART, with RIMES),
@@ -180,6 +189,12 @@ the app drops Wunderground's no-framing headers and blocks requests to common ad
 ## Version history
 
 The same list is on the app's **Info** screen (`js/info.js`); keep the two in step.
+
+### v1.9
+- **Rain nowcast** screen: will rain reach any place in Tamil Nadu in the next 2 hours? Pick a district, a place
+  name, a pincode, your location or a spot on the map; every district is listed by when rain arrives.
+- Radar map: **Tamil Nadu (all 5 radars)** combines Chennai, Karaikal, Thiruvananthapuram, Kochi and Sriharikota
+  into one map and loop, lining up their scan times.
 
 ### v1.8 (8 Nov 2026, PRs #22–#23)
 - **Info** screen in the menu: the installed version and this version history.

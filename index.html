@@ -31,6 +31,7 @@
       <a href="#digest" data-view="digest">Morning digest</a>
       <a href="#forecast" data-view="forecast">Forecast</a>
       <a href="#heat" data-view="heat">Heat &amp; humidity</a>
+      <a href="#nowcast" data-view="nowcast">Rain nowcast</a>
       <a href="#radar" data-view="radar">Radars</a>
       <a href="#radarmap" data-view="radarmap">Radar map</a>
       <a href="#satellite" data-view="satellite">Satellite</a>
@@ -409,6 +410,51 @@
       </section>
 
       <!-- Radars -->
+      <section id="view-nowcast" class="view" hidden>
+        <h2>Rain nowcast</h2>
+        <p class="note nw-intro">Will rain reach a place in the next 2 hours? Read from all five IMD radars around Tamil Nadu together.</p>
+        <form class="controls" onsubmit="return false">
+          <label>
+            District
+            <select id="nw-district"><option value="">Pick a district…</option></select>
+          </label>
+        </form>
+        <form class="controls" onsubmit="return false">
+          <label class="heat-search">
+            Or search a place or pincode
+            <input id="nw-q" type="search" placeholder="Kumbakonam or 612001" autocomplete="off" enterkeyhint="search" />
+          </label>
+          <button id="nw-go" type="button" class="secondary">Find</button>
+        </form>
+        <ul id="nw-results" class="rank-list heat-results"></ul>
+        <div class="nc-pick-foot">
+          <small class="nc-hint">Or tap the map to drop the pin.</small>
+          <button id="nw-gps" type="button" class="linkish">📍 Use my location</button>
+        </div>
+        <p id="nw-status" class="status" aria-live="polite"></p>
+        <div class="share-map" data-share="Rain nowcast" data-share-from="nw-place">
+          <div id="nw-answer" class="nw-answer" aria-live="polite"></div>
+          <div id="nw-map" class="station-map radar-map nw-map"></div>
+          <p id="nw-place" class="note"></p>
+          <p id="nw-legend" class="legend map-legend"></p>
+        </div>
+        <div class="nc-pick-foot">
+          <button id="nw-home" type="button" class="linkish">Use this place on Home</button>
+          <button id="nw-refresh" type="button" class="small">Refresh radar</button>
+        </div>
+        <div data-share="Rain nowcast · districts">
+          <h3>Every district, next 2 hours</h3>
+          <p id="nw-districts-sum" class="note"></p>
+          <ul id="nw-districts" class="rank-list nw-districts"></ul>
+        </div>
+        <p class="note">
+          The app follows the rain on the radars over the last hour and carries it forward at the same speed and
+          heading, up to 2 hours. Rain grows, fades and turns, so take it as a rough guide. District times are for
+          the middle of each district. Radar: IMD Doppler Weather Radars at Chennai, Karaikal, Thiruvananthapuram,
+          Kochi and Sriharikota; they can only be read inside the MyWeather app.
+        </p>
+      </section>
+
       <section id="view-radar" class="view" hidden>
         <h2>Radars</h2>
         <form class="controls" onsubmit="return false">
@@ -1012,6 +1058,7 @@
             <input id="rm-frame" class="snap-skip" type="range" min="0" max="0" value="0" aria-label="Radar time" />
             <span id="rm-time" class="rm-time"></span>
           </div>
+          <p id="rm-scans" class="rm-scans" hidden></p>
           <div class="rm-options snap-skip">
             <label class="rm-opacity">
               Opacity

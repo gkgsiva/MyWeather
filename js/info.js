@@ -5,6 +5,19 @@ import { APP_VERSION } from "./version.js";
 
 export const HISTORY = [
   {
+    version: "1.9",
+    date: "upcoming",
+    groups: [
+      [
+        "New",
+        [
+          "**Rain nowcast** screen: will rain reach any place in Tamil Nadu in the next 2 hours? Pick a district, a place name, a pincode, your location or a spot on the map. Every district is listed by when rain arrives.",
+          "Radar map: **Tamil Nadu (all 5 radars)** combines Chennai, Karaikal, Thiruvananthapuram, Kochi and Sriharikota into one map and loop, lining up their scan times.",
+        ],
+      ],
+    ],
+  },
+  {
     version: "1.8",
     date: "8 Nov 2026",
     groups: [

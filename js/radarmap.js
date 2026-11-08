@@ -15,6 +15,8 @@
 // on each station's pictures (Nov 2026). Rows are re-spaced for the web map's
 // Mercator projection so the echoes line up with the coast.
 //
+// "Tamil Nadu (all 5 radars)" puts them all on one map: see js/mosaic.js.
+//
 // Movement: the echoes of each pair of frames are matched by sliding one over
 // the other; the best fit's shift over the time between frames is a speed.
 // The frame times are read off the picture's title with digit templates.
@@ -23,6 +25,7 @@ import { decodeGif } from "./gif.js";
 import { IMD_RADAR_BASE, radarImageUrl } from "./stations.js";
 import { routeParams } from "./route.js";
 import { nowcastAt, headline, saveNowcast, distanceKm } from "./nowcast.js";
+import { MOSAIC, MOSAIC_RADARS, DBZ_BANDS, buildMosaic, frameImage } from "./mosaic.js";
 
 const STATION_KEY = "myweather.radarmap.station";
 const PRODUCT_KEY = "myweather.radarmap.product";
@@ -186,6 +189,7 @@ export const RADARS = [
 ];
 
 const LEGENDS = {
+  dbz: DBZ_BANDS.map(([, c, label]) => [c, label]),
   z: [
     ["#0000cc", "Light"],
     ["#3399ff", "Moderate"],
@@ -253,6 +257,7 @@ const motionBox = $("rm-motion");
 const legendBox = $("rm-legend");
 const note = $("rm-note");
 const nowcastBox = $("rm-nowcast");
+const scansBox = $("rm-scans");
 const cloudsPick = $("rm-clouds");
 const cloudsNote = $("rm-clouds-note");
 
@@ -275,12 +280,13 @@ function say(text, error = false) {
 
 // ---- Geometry ----
 
-const radar = () => RADARS.find((r) => r.code === stationPick.value) || RADARS[0];
+const STATIONS = () => [MOSAIC, ...RADARS];
+const radar = () => STATIONS().find((r) => r.code === stationPick.value) || RADARS[0];
 const product = () => radar().products.find((p) => p.code === productPick.value) || radar().products[0];
-const step = (p) => p.scale || 1;
+export const step = (p) => p.scale || 1;
 const lonAt = (p, x) => p.lon[0] + (x - p.lon[1]) / p.lon[2];
 const latAt = (p, y) => p.lat[0] - (y - p.lat[1]) / p.lat[2];
-const yOfLat = (p, lat) => p.lat[1] - (lat - p.lat[0]) * p.lat[2];
+export const yOfLat = (p, lat) => p.lat[1] - (lat - p.lat[0]) * p.lat[2];
 const merc = (lat) => Math.log(Math.tan(Math.PI / 4 + (lat * Math.PI) / 360));
 const unmerc = (m) => (Math.atan(Math.exp(m)) * 360) / Math.PI - 90;
 const kmPerPx = (p) => (111.2 / p.lat[2]) * step(p); // per output pixel
@@ -297,7 +303,7 @@ function bounds(p) {
 }
 
 // Output row j of the Mercator-spaced image takes source row srcRow[j].
-function mercatorRows(p) {
+export function mercatorRows(p) {
   const [, y0, , y1] = p.crop;
   const s = step(p);
   const h = Math.floor((y1 - y0) / s);
@@ -312,7 +318,7 @@ function mercatorRows(p) {
 }
 
 // Size of the plot as read (after scale).
-function size(p) {
+export function size(p) {
   const [x0, y0, x1, y1] = p.crop;
   return [Math.floor((x1 - x0) / step(p)), Math.floor((y1 - y0) / step(p))];
 }
@@ -320,7 +326,7 @@ function size(p) {
 // ---- Pixels ----
 
 // The plot area of a frame as RGB.
-function cropRgb(rgba, width, p) {
+export function cropRgb(rgba, width, p) {
   const [x0, y0] = p.crop;
   const [w, h] = size(p);
   const n = step(p);
@@ -438,7 +444,7 @@ async function toImage(rgb, mask, w, h, rows) {
 
 // ---- Frame times ("00:31 / 07-Nov-2026", UTC) ----
 
-function readTime(rgba, width, p) {
+export function readTime(rgba, width, p) {
   const [x0, y0, right, y1] = p.time.box;
   const x1 = Math.min(width, right ?? width);
   const digits = FONTS[p.time.font || "dejavu"];
@@ -511,7 +517,7 @@ function readTime(rgba, width, p) {
 }
 
 // Minutes after midnight UTC → Dates, the last one at or before now.
-function datesOf(minutes) {
+export function datesOf(minutes) {
   const out = new Array(minutes.length).fill(null);
   const lastI = minutes.findLastIndex((m) => m != null);
   if (lastI < 0) return out;
@@ -529,7 +535,7 @@ function datesOf(minutes) {
   return out;
 }
 
-const ist = (d) =>
+export const ist = (d) =>
   d
     ? d.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "Asia/Kolkata" }) +
       " IST"
@@ -601,7 +607,7 @@ const COMPASS_WORDS = {
 };
 
 // From the last hour or so of frames: { speed km/h, toward degrees, pairs, agree }.
-function motion(masks, times, p, w, h) {
+export function motion(masks, times, p, w, h) {
   const km = kmPerPx(p);
   const vs = [];
   const last = masks.length - 1;
@@ -631,7 +637,7 @@ function motion(masks, times, p, w, h) {
 }
 
 // Centre of the rain in the last frame, as [lat, lon].
-function rainCentre(mask, p, w, h) {
+export function rainCentre(mask, p, w, h) {
   let sx = 0;
   let sy = 0;
   let n = 0;
@@ -671,9 +677,19 @@ function ensureMap() {
 
 function placeMarker(r) {
   marker?.remove();
-  marker = L.circleMarker([r.lat, r.lon], { radius: 4, color: "#111", weight: 2, fillColor: "#fff", fillOpacity: 1 })
-    .bindTooltip(`${r.name} radar`)
-    .addTo(map);
+  const dot = (x) =>
+    L.circleMarker([x.lat, x.lon], { radius: 4, color: "#111", weight: 2, fillColor: "#fff", fillOpacity: 1 }).bindTooltip(`${x.name} radar`);
+  if (!r.mosaic) {
+    marker = dot(r).addTo(map);
+    return;
+  }
+  // All five radars, with how far each reaches.
+  marker = L.layerGroup(
+    MOSAIC_RADARS().flatMap(({ r: x, km }) => [
+      L.circle([x.lat, x.lon], { radius: km * 1000, color: "#555", weight: 1, dashArray: "4 4", fill: false, interactive: false }),
+      dot(x),
+    ])
+  ).addTo(map);
 }
 
 function renderLegend(p) {
@@ -694,6 +710,15 @@ function showFrame(i) {
   overlay.setUrl(frames[shown].url);
   const t = frames[shown].time;
   timeLabel.textContent = t ? ist(t) : `${shown + 1} of ${frames.length}`;
+  // Which radar scans make up a mosaic frame.
+  const scans = frames[shown].scans;
+  scansBox.hidden = !scans;
+  if (scans)
+    scansBox.textContent =
+      "Scans: " +
+      scans.map((s) => `${s.name} ${s.time ? ist(s.time).replace(" IST", "") + (s.moved ? "*" : "") : "–"}`).join(" · ") +
+      (scans.some((s) => s.moved) ? " (* moved on along the rain's track to this time)" : "") +
+      (scans.some((s) => !s.time) ? " (– no scan in the 30 minutes before)" : "");
 }
 
 function stop() {
@@ -724,7 +749,7 @@ function clearFrames() {
   frames = [];
 }
 
-function drawMotion(m, centre) {
+function drawMotion(m, centre, from) {
   if (arrow) {
     arrow.remove();
     arrow = null;
@@ -750,7 +775,7 @@ function drawMotion(m, centre) {
       : `Rain is moving toward the ${COMPASS_WORDS[dir]} (${dir}) at about ${Math.round(m.speed)} km/h.` +
         (steady ? "" : " Estimates differ between frames, so take this loosely.");
   const s = document.createElement("small");
-  s.textContent = ` Worked out by the app from the last ${m.pairs + 1} radar frames, not an IMD figure.`;
+  s.textContent = from || ` Worked out by the app from the last ${m.pairs + 1} radar frames, not an IMD figure.`;
   motionBox.append(a, t, s);
   if (centre && m.speed >= 5) {
     // An arrow from the centre of the rain to where it would be in an hour.
@@ -770,7 +795,7 @@ function drawMotion(m, centre) {
   }
 }
 
-async function fetchBuffer(url) {
+export async function fetchBuffer(url) {
   const res = await fetch(`${url}?t=${Date.now()}`, { cache: "no-store" });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.arrayBuffer();
@@ -778,9 +803,13 @@ async function fetchBuffer(url) {
 
 // Downloads a loop and lifts the rain out of each frame:
 // { rgbs, masks, times, w, h }, or null when cancelled() turns true.
-async function analyseLoop(r, p, cancelled = () => false, onDecode = () => {}) {
+export const loopUrl = (r, p) => `${IMD_RADAR_BASE}animation/Converted/${r.code.toUpperCase()}_${p.loop}.gif`;
+
+// buf: the loop when already downloaded. The result also carries bg, the bare
+// map (blurred), for telling rain colours from map colours.
+export async function analyseLoop(r, p, cancelled = () => false, onDecode = () => {}, buf = null) {
   const [w, h] = size(p);
-  const buf = await fetchBuffer(`${IMD_RADAR_BASE}animation/Converted/${r.code.toUpperCase()}_${p.loop}.gif`);
+  buf = buf || (await fetchBuffer(loopUrl(r, p)));
   if (cancelled()) return null;
   onDecode();
   await new Promise((res) => setTimeout(res, 30)); // let the message paint
@@ -798,11 +827,11 @@ async function analyseLoop(r, p, cancelled = () => false, onDecode = () => {}) {
   const bg = median(blurred);
   const masks = blurred.map((bl) => rainMask(bl, bg, w, h));
   console.debug(`radar map: ${r.code}/${p.code} processed in ${Math.round(performance.now() - t0)} ms`);
-  return { rgbs, masks, times: datesOf(minutes), w, h };
+  return { rgbs, masks, bg, times: datesOf(minutes), w, h };
 }
 
 // A rain mask placed on the map, for the nowcast.
-function gridOf(p, mask, w, h) {
+export function gridOf(p, mask, w, h) {
   return {
     mask,
     w,
@@ -858,13 +887,14 @@ function drawNowcast() {
     return;
   }
   const place = nowcastPlace();
-  const res = nowcastAt(last.grid, last.motion, place.lat, place.lon);
+  const mo = last.motionAt ? last.motionAt(place.lat, place.lon) : last.motion;
+  const res = nowcastAt(last.grid, mo, place.lat, place.lon);
   box.hidden = false;
   box.replaceChildren();
   const b = document.createElement("b");
   b.textContent = `${place.name}: `;
   const t = document.createElement("span");
-  t.textContent = res.edge && res.eta === null && !res.raining && !res.nearest ? `outside ${last.r.name} radar's picture.` : headline(res);
+  t.textContent = res.edge && res.eta === null && !res.raining && !res.nearest ? last.r.mosaic ? "outside the radars' reach." : `outside ${last.r.name} radar's picture.` : headline(res);
   const small = document.createElement("small");
   small.textContent = place.picked
     ? " Tap the map to move the spot. "
@@ -1037,11 +1067,41 @@ async function load(force = false) {
   if (loaded.key !== key) {
     map.setView([r.lat, r.lon], p.zoom);
     placeMarker(r);
-    $("rm-vvp").src = radarImageUrl(r.code, "vp2");
-    $("rm-vvp").alt = `IMD VVP wind profile for ${r.name}`;
+    const vvp = RADARS.find((x) => x.code === (r.vvp || r.code));
+    $("rm-vvp").src = radarImageUrl(vvp.code, "vp2");
+    $("rm-vvp").alt = `IMD VVP wind profile for ${vvp.name}`;
   }
   try {
-    if (p.loop) {
+    if (p.mosaic) {
+      const mo = await buildMosaic({ force, onStep: (t) => run === busy && say(t) });
+      if (run !== busy) return;
+      const urls = await Promise.all(mo.frames.map((f) => frameImage(f.dbz)));
+      if (run !== busy) return urls.forEach((u) => URL.revokeObjectURL(u));
+      clearFrames();
+      frames = mo.frames.map((f, i) => ({ url: urls[i], time: f.time, scans: f.scans }));
+      slider.max = String(frames.length - 1);
+      slider.disabled = playBtn.disabled = frames.length < 2;
+      showFrame(frames.length - 1);
+      const lastF = mo.frames[mo.frames.length - 1];
+      const g = mo.grid(lastF);
+      const per = mo.layers
+        .filter((l) => l.motion)
+        .map((l) => `${l.name} ${l.motion.speed < 5 ? "still" : `${compass(l.motion.toward)} ${Math.round(l.motion.speed)} km/h`}`);
+      drawMotion(
+        mo.motion,
+        rainCentre(g.mask, p, mo.w, mo.h),
+        mo.motion
+          ? ` Average of ${mo.motion.radars} radar${mo.motion.radars > 1 ? "s" : ""}, weighted by their rain (${per.join(", ")}). The nowcast uses the nearest radar's. Worked out by the app, not an IMD figure.`
+          : ""
+      );
+      last = { r, p, grid: g, motion: mo.motion, motionAt: mo.motionAt, time: lastF.time };
+      drawNowcast();
+      const missing = mo.layers.filter((l) => l.error);
+      say(
+        `Latest ${ist(lastF.time)} · ${frames.length} steps of 10 minutes. Tap ▶ to play.` +
+          (missing.length ? ` Left out: ${missing.map((l) => `${l.name} (${l.error})`).join(", ")}.` : "")
+      );
+    } else if (p.loop) {
       say(`Downloading IMD's 3-hour loop for ${r.name} (1 to 5 MB)…`);
       const a = await analyseLoop(r, p, () => run !== busy, () => say("Finding the rain in each frame…"));
       if (!a) return;
@@ -1085,6 +1145,15 @@ async function load(force = false) {
       say(`Picture ${time ? ist(time) : ""}, with IMD's own map under it. Lower the opacity to see the streets.`);
     }
     loaded = { key, at: Date.now() };
+    if (r.mosaic) {
+      note.textContent =
+        "Combined from IMD's Doppler Weather Radars at Chennai, Karaikal, Thiruvananthapuram, Kochi and" +
+        " Sriharikota. The app reads each radar's colours back to reflectivity (dBZ) on that radar's own" +
+        " colour bar and keeps the stronger reading where radars overlap. Echoes under 20 dBZ are left out." +
+        " Sriharikota scans once an hour, so it shows only in the steps just after its scan. Dashed circles" +
+        " show each radar's reach; parts of the far west (Hosur, Krishnagiri) are at the edge.";
+      return;
+    }
     note.textContent =
       `IMD Doppler Weather Radar, ${r.name}. The rain` +
       " is lifted out of IMD's pictures by the app and placed by their" +
@@ -1110,17 +1179,18 @@ function fillProducts() {
 // Opens the map on a station, e.g. from Home's "near you" (#radarmap?station=kkl).
 function stationFromRoute() {
   const want = routeParams().get("station");
-  if (want && RADARS.some((r) => r.code === want) && want !== stationPick.value) {
+  if (want && STATIONS().some((r) => r.code === want) && want !== stationPick.value) {
     stationPick.value = want;
     fillProducts();
   }
 }
 
 export function initRadarMap() {
-  stationPick.replaceChildren(...RADARS.map((r) => new Option(r.name, r.code)));
+  stationPick.replaceChildren(...STATIONS().map((r) => new Option(r.name, r.code)));
+  stationPick.value = "cni";
   try {
     const st = localStorage.getItem(STATION_KEY);
-    if (RADARS.some((r) => r.code === st)) stationPick.value = st;
+    stationPick.value = STATIONS().some((r) => r.code === st) ? st : "cni";
     fillProducts();
     const saved = localStorage.getItem(PRODUCT_KEY);
     if (radar().products.some((p) => p.code === saved)) productPick.value = saved;
