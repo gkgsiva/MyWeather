@@ -5,7 +5,11 @@ A small static web app for Chennai weather watchers. A home page and the ☰ men
 - **Home** (`#home`): the main Wunderground station's reading now (temperature, rain today, rain rate, wind,
   humidity; the first saved station unless another is picked in the strip), Chennai's sunrise, sunset, daylight,
   moonrise, moonset and moon phase (worked out on the phone in `js/astro.js`, no network), **Favourites** (tap ☆
-  on any card to pin that screen to the top) and every screen.
+  on any card to pin that screen to the top) and every screen. **Near you** (off until **Use my location** is
+  tapped) uses the phone's position: the strip follows the nearest saved station within 50 km, and it lists the
+  nearest radar on the radar map, the nearest TN rain gauge (today's total) and gives sun and moon for that
+  place. Picking a station by hand turns it off. The Android app asks for location permission the first time
+  (`ACCESS_COARSE_LOCATION`/`FINE`, granted to the app's own page only).
 - **Forecast** (`#forecast`): Chennai's weather now, the chance of rain for each of the next 24 hours, and
   7 days ahead (high/low, rain chance, expected mm, wind). From [Open-Meteo](https://open-meteo.com/)
   (`api.open-meteo.com`, no key), which blends ECMWF, GFS and other models.
@@ -18,7 +22,11 @@ A small static web app for Chennai weather watchers. A home page and the ☰ men
   - The choice is kept in the URL (`?city=cni&product=caz#radar`), so it can be bookmarked or shared.
   - **Play last 3 hours** swaps in IMD's radar loop (MAX (Z) and Surface Rainfall Intensity only),
     e.g. `https://mausam.imd.gov.in/Radar/animation/Converted/CNI_MAXZ.gif`; kept in the URL as `&anim=1`.
-- **Radar map** (`#radarmap`): the Chennai radar on an OpenStreetMap map. **MAX (Z)** and **Rain rate (SRI)**
+- **Radar map** (`#radarmap`): IMD radars on an OpenStreetMap map, with a **Radar** picker: Chennai (five layers),
+  Karaikal, Thiruvananthapuram and Kochi (MAX (Z) loop), Sriharikota (latest MAX (Z) picture only: its loop is
+  24 MB with one scan an hour). Each station draws its pictures differently, so each has its own measured plot
+  area, grid and title position in `RADARS` (`js/radarmap.js`); Karaikal's title font has its own digit
+  templates. `#radarmap?station=kkl` opens a station. For Chennai: **MAX (Z)** and **Rain rate (SRI)**
   come from IMD's 3-hour loops: each frame is blurred a little (IMD's GIFs are dithered) and compared with the
   per-pixel median of all frames, which is the bare base map, so only the rain is drawn, in IMD's colours. A slider
   and ▶ play the loop. The frame times are read off each picture's title with digit templates. **Storm movement**
@@ -26,7 +34,7 @@ A small static web app for Chennai weather watchers. A home page and the ☰ men
   the speeds); it is the app's own estimate, shown as text and an arrow to where the rain would be in an hour.
   **PPI Z** (150 and 500 km) and **radial wind (PPI V)** have no loop, so the whole picture is laid on the map
   with an opacity slider. IMD's VVP wind-by-height chart is under the map. The plots sit on a latitude/longitude
-  grid measured on each Chennai image (`PRODUCTS` in `js/radarmap.js`), re-spaced for Mercator. GIFs are decoded
+  grid (or kilometres around the radar) measured on each image, re-spaced for Mercator. GIFs are decoded
   by `js/gif.js`. Needs the Android app for the CORS header.
 - **TN rain gauges** (`#gauges`): the Tamil Nadu government's ~1,500 automatic rain gauges (TN-SMART, with RIMES),
   hour by hour, from the JSON the public
@@ -36,7 +44,15 @@ A small static web app for Chennai weather watchers. A home page and the ☰ men
   name search apply to three tabs: a **map** (dots for many gauges, numbered pins for up to 60 or when zoomed in; tap one for its
   hourly chart), a sortable **table** (total, last hour, wettest hour) and **charts** (average rain per hour,
   gauges per IMD rain band, gauges with rain each hour, the 10 wettest gauges and districts by average rain).
-  Any past day can be picked.
+  Any past day can be picked. Under a gauge's hourly chart, **7 days** / **30 days** show its rain each day with
+  its district's average and IMD's weekly district normal (`rainfallinformation.php?msg=W`; 30 days is that ×30/7).
+  Past days are downloaded once (~0.7 MB each) and kept in IndexedDB (`js/gaugedays.js`, shared with Rain spell).
+  `#gauges?gauge=<district>|<gauge>` opens one gauge.
+- **Rain spell** (`#spell`): the latest run of rain days (at least 2.5 mm on average over the area in the last two
+  weeks, plus a lighter day either side) for a district (Chennai by default) or all Tamil Nadu, or any dates up
+  to 31 days: average total, rain each day, the 10 wettest gauges, a map of every gauge's total, the radar (IMD's
+  3-hour loop while the spell is going; IMD keeps nothing older) and the flood spots with the most rain at the
+  nearest gauge. **Share** draws it all as one picture.
 - **Satellite** (`#satellite`): IMD's INSAT pictures (Asia sector, full disc) and loops, from
   `https://mausam.imd.gov.in/Satellite/`.
 - **Lightning** (`#lightning`): how close the lightning of the last 30 minutes is to Chennai, from IMD's
@@ -89,7 +105,10 @@ A small static web app for Chennai weather watchers. A home page and the ☰ men
   Chennai radar links here.
 - **Lakes** (`#lakes`): storage in Chennai's reservoirs, read from Chennai Metro Water's
   [lake-level page](https://cmwssb.tn.gov.in/lakelevel) (percent full when the table has capacity and
-  storage columns). **Open Metro Water page** shows the page itself under the menu.
+  storage columns). **Open Metro Water page** shows the page itself under the menu. **Storage over time** charts
+  the five lakes (or one) over 30 or 90 days against the same days last year, from TN-SMART's daily reservoir
+  report (`https://beta-tnsmart.rimes.int/DATA/Rainfall/daily_reservoir/reservoir_<DD-MM-YYYY>.pdf`, ~30 KB,
+  CORS open), read by a small PDF text reader in `js/laketrend.js`; days read are kept in localStorage.
 - **Air quality** (`#air`): Chennai's AQI on India's National AQI scale (CPCB bands and breakpoints), now and
   every 3 hours for the next few days, with each pollutant's sub-index. Worked out from the Copernicus (CAMS)
   pollution forecast via Open-Meteo (`air-quality-api.open-meteo.com`): 24-hour means for PM2.5, PM10, NO₂ and

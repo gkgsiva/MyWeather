@@ -1,5 +1,7 @@
-// Radar map (#radarmap): the Chennai radar's echoes laid on OpenStreetMap, as
+// Radar map (#radarmap): IMD radar echoes laid on OpenStreetMap, as
 // switchable layers, with IMD's 3-hour loop and the way the rain is moving.
+// Chennai has five layers; Karaikal, Thiruvananthapuram and Kochi their MAX Z
+// loop; Sriharikota its latest MAX Z picture.
 //
 // IMD publishes finished pictures, not data: each GIF has the map, district
 // lines, range rings and labels drawn in under the echoes. To lift the echoes
@@ -8,9 +10,10 @@
 // frames, so the median is the bare map; whatever differs from it is rain.
 // Products without a loop are shown as the whole picture, see-through.
 //
-// The plots are drawn on a plain latitude/longitude grid. The grid lines were
-// measured on each Chennai image (Nov 2026); rows are re-spaced for the web
-// map's Mercator projection so the echoes line up with the coast.
+// The plots are drawn on a plain latitude/longitude grid or in kilometres
+// around the radar; either way a degree is a fixed number of pixels, measured
+// on each station's pictures (Nov 2026). Rows are re-spaced for the web map's
+// Mercator projection so the echoes line up with the coast.
 //
 // Movement: the echoes of each pair of frames are matched by sliding one over
 // the other; the best fit's shift over the time between frames is a speed.
@@ -18,63 +21,166 @@
 import { loadLeaflet, isDark } from "./stationmap.js";
 import { decodeGif } from "./gif.js";
 import { IMD_RADAR_BASE, radarImageUrl } from "./stations.js";
+import { routeParams } from "./route.js";
 
-const RADAR = { code: "cni", name: "Chennai", lat: 13.0667, lon: 80.2833 }; // DWR Chennai, Port Trust building
+const STATION_KEY = "myweather.radarmap.station";
 const PRODUCT_KEY = "myweather.radarmap.product";
 const OPACITY_KEY = "myweather.radarmap.opacity";
 const TTL = 8 * 60 * 1000;
 
+// Each radar's plots, measured on its own pictures (Nov 2026); each station
+// draws its pictures differently.
 // crop: the plot inside the GIF [left, top, right, bottom].
-// lon/lat: [degree, pixel x/y of that grid line, pixels per degree].
-const PRODUCTS = [
+// lon/lat: [degree, pixel x/y of that degree, pixels per degree]. For plots
+//   drawn in kilometres around the radar, the radar's own position and pixel.
+// scale: read every n-th pixel (very large pictures).
+// time: where the "HH:MM" UTC time is printed [left, top, right (null: the
+//   picture's edge), bottom], and which digit shapes it uses.
+const km = (pxPerKm, lat) => [pxPerKm * 111.2, pxPerKm * 111.2 * Math.cos((lat * Math.PI) / 180)];
+const [KKL_LAT, KKL_LON] = [10.92, 79.84];
+const [TVM_LAT, TVM_LON] = [8.5374, 76.8657];
+export const RADARS = [
   {
-    code: "caz",
-    zoom: 8,
-    name: "Max reflectivity (MAX Z) · 250 km · loop",
-    loop: "MAXZ",
-    crop: [0, 200, 500, 700],
-    lon: [80, 218, 108.0],
-    lat: [13, 457, 111.0],
-    legend: "z",
-    motion: true,
+    code: "cni",
+    name: "Chennai",
+    lat: 13.0667,
+    lon: 80.2833, // DWR Chennai, Port Trust building
+    products: [
+      {
+        code: "caz",
+        zoom: 8,
+        name: "Max reflectivity (MAX Z) · 250 km · loop",
+        loop: "MAXZ",
+        crop: [0, 200, 500, 700],
+        lon: [80, 218, 108.0],
+        lat: [13, 457, 111.0],
+        time: { box: [500, 30, null, 48] },
+        legend: "z",
+        motion: true,
+      },
+      {
+        code: "sri",
+        zoom: 9,
+        name: "Rain rate (SRI) · 100 km · loop",
+        loop: "SRI",
+        crop: [0, 0, 600, 600],
+        lon: [80, 221, 271.0],
+        lat: [13, 319, 277.5],
+        time: { box: [600, 30, null, 48] },
+        legend: "rate",
+        motion: true,
+      },
+      {
+        code: "ppi",
+        zoom: 8,
+        name: "Reflectivity (PPI Z) · 150 km · picture",
+        crop: [0, 0, 800, 800],
+        lon: [80, 316, 288.5],
+        lat: [13, 420, 296.0],
+        time: { box: [800, 30, null, 48] },
+        legend: "z",
+      },
+      {
+        code: "ppz",
+        zoom: 7,
+        name: "Reflectivity (PPI Z) · 500 km · picture",
+        crop: [0, 0, 800, 800],
+        lon: [80, 378, 72.75],
+        lat: [13, 404, 74.0],
+        time: { box: [800, 30, null, 48] },
+        legend: "z",
+      },
+      {
+        code: "ppv",
+        zoom: 8,
+        name: "Radial wind (PPI V) · 250 km · picture",
+        crop: [0, 0, 600, 600],
+        lon: [80, 262, 130.0],
+        lat: [13, 308, 133.25],
+        time: { box: [600, 30, null, 48] },
+        legend: "v",
+      },
+    ],
   },
   {
-    code: "sri",
-    zoom: 9,
-    name: "Rain rate (SRI) · 100 km · loop",
-    loop: "SRI",
-    crop: [0, 0, 600, 600],
-    lon: [80, 221, 271.0],
-    lat: [13, 319, 277.5],
-    legend: "rate",
-    motion: true,
+    code: "kkl",
+    name: "Karaikal",
+    lat: KKL_LAT,
+    lon: KKL_LON,
+    products: [
+      {
+        code: "caz",
+        zoom: 7,
+        name: "Max reflectivity (MAX Z) · 250 km · loop",
+        loop: "MAXZ",
+        crop: [0, 200, 520, 720],
+        lat: [KKL_LAT, 460, km(1.04, KKL_LAT)[0]],
+        lon: [KKL_LON, 260, km(1.04, KKL_LAT)[1]],
+        time: { box: [724, 222, 880, 246], font: "helvetica" },
+        legend: "z",
+        motion: true,
+      },
+    ],
   },
   {
-    code: "ppi",
-    zoom: 8,
-    name: "Reflectivity (PPI Z) · 150 km · picture",
-    crop: [0, 0, 800, 800],
-    lon: [80, 316, 288.5],
-    lat: [13, 420, 296.0],
-    legend: "z",
+    code: "shr",
+    name: "Sriharikota",
+    lat: 13.6645,
+    lon: 80.2274,
+    products: [
+      {
+        // The loop is 24 MB with one scan an hour, so only the latest picture.
+        code: "caz",
+        zoom: 7,
+        name: "Max reflectivity (MAX Z) · 240 km · picture",
+        crop: [58, 631, 1856, 2429],
+        scale: 3,
+        lon: [80, 866, 401.6],
+        lat: [13.5, 1596, 416.0],
+        time: { box: [2485, 445, 2700, 482] },
+        legend: "z",
+      },
+    ],
   },
   {
-    code: "ppz",
-    zoom: 7,
-    name: "Reflectivity (PPI Z) · 500 km · picture",
-    crop: [0, 0, 800, 800],
-    lon: [80, 378, 72.75],
-    lat: [13, 404, 74.0],
-    legend: "z",
+    code: "tvm",
+    name: "Thiruvananthapuram",
+    lat: TVM_LAT,
+    lon: TVM_LON,
+    products: [
+      {
+        code: "caz",
+        zoom: 7,
+        name: "Max reflectivity (MAX Z) · 240 km · loop",
+        loop: "MAXZ",
+        crop: [43, 181, 557, 695],
+        lat: [TVM_LAT, 438, km(1.07, TVM_LAT)[0]],
+        lon: [TVM_LON, 300, km(1.07, TVM_LAT)[1]],
+        time: { box: [236, 14, 330, 38] },
+        legend: "z",
+        motion: true,
+      },
+    ],
   },
   {
-    code: "ppv",
-    zoom: 8,
-    name: "Radial wind (PPI V) · 250 km · picture",
-    crop: [0, 0, 600, 600],
-    lon: [80, 262, 130.0],
-    lat: [13, 308, 133.25],
-    legend: "v",
+    code: "koc",
+    name: "Kochi",
+    lat: 9.92,
+    lon: 76.28,
+    products: [
+      {
+        code: "caz",
+        zoom: 7,
+        name: "Max reflectivity (MAX Z) · 250 km · loop",
+        loop: "MAXZ",
+        crop: [100, 300, 700, 900],
+        lon: [74, 100, 131.75],
+        lat: [12, 322, 133.75],
+        time: { box: [772, 192, 910, 216] },
+        legend: "z",
+        motion: true,
+      },
+    ],
   },
 ];
 
@@ -103,6 +209,7 @@ const LEGENDS = {
 };
 
 // 8×12 digit shapes (DejaVu Sans, IMD's title font), row by row.
+const FONTS = {};
 const DIGITS = {
   0: "001111000110011001000011110000111100001111000011110000111100001111000011010000110110011000111100",
   1: "011110001011100000111000001110000011100000111000001110000011100000111000001110000011100011111111",
@@ -115,9 +222,26 @@ const DIGITS = {
   8: "001111000110011011000011110000110110011000111100011001101100001111000011110000110110011100111100",
   9: "001111000110011011000011110000111100001111000011011001110011111100000011000000100100011001111000",
 };
+FONTS.dejavu = DIGITS;
+// Karaikal's bold Helvetica-like digits (0, 1, 2, 3, 5 read off its pictures,
+// the rest from FreeSans Bold, which matched those five).
+FONTS.helvetica = {
+  "0": "001110000111111011000110110001101100001111000011110000111100001111000110110001100111111000111000",
+  "1": "000011110011111111111111111011110000111100001111000011110000111100001111000011110000111100001111",
+  "2": "001111000111111001100110011001100000011000001110000011000001100001110000011000001111111111111111",
+  "3": "001111000111111011000011000000110000011000011100000111100000001111000011110000110111111000111100",
+  "4": "000011100001111000011110001001100110011001100110110001101111111111111111000001100000011000000110",
+  "5": "111111101111111011000000110000001101110011111110111001100000001100000011110001110111111000111100",
+  "6": "000111000111111001100111111000001101110011111110111001111100001111000011011001100111111000111100",
+  "7": "111111111111111100000111000001100000110000011000000110000001100000111000001100000011000001110000",
+  "8": "001110000111111011100110110001100110011001111110111001101100001111000011111001110111111000111100",
+  "9": "001110000111111011100110110001111100011111100111011111110011111100000110111001101111111000111000"
+};
+
 
 const $ = (id) => document.getElementById(id);
 const status = $("rm-status");
+const stationPick = $("rm-station");
 const productPick = $("rm-product");
 const box = $("rm-map");
 const playBtn = $("rm-play");
@@ -133,10 +257,11 @@ let map = null;
 let tiles = null;
 let overlay = null;
 let arrow = null;
+let marker = null;
 let frames = []; // [{ url, time: Date|null }]
 let shown = 0;
 let timer = 0;
-let loaded = { code: "", at: 0 };
+let loaded = { key: "", at: 0 };
 let busy = 0; // load counter, so a late load doesn't overwrite a newer one
 
 function say(text, error = false) {
@@ -146,16 +271,21 @@ function say(text, error = false) {
 
 // ---- Geometry ----
 
-const product = () => PRODUCTS.find((p) => p.code === productPick.value) || PRODUCTS[0];
+const radar = () => RADARS.find((r) => r.code === stationPick.value) || RADARS[0];
+const product = () => radar().products.find((p) => p.code === productPick.value) || radar().products[0];
+const step = (p) => p.scale || 1;
 const lonAt = (p, x) => p.lon[0] + (x - p.lon[1]) / p.lon[2];
 const latAt = (p, y) => p.lat[0] - (y - p.lat[1]) / p.lat[2];
 const yOfLat = (p, lat) => p.lat[1] - (lat - p.lat[0]) * p.lat[2];
 const merc = (lat) => Math.log(Math.tan(Math.PI / 4 + (lat * Math.PI) / 360));
 const unmerc = (m) => (Math.atan(Math.exp(m)) * 360) / Math.PI - 90;
-const kmPerPx = (p) => 111.2 / p.lat[2];
+const kmPerPx = (p) => (111.2 / p.lat[2]) * step(p); // per output pixel
 
 function bounds(p) {
-  const [x0, y0, x1, y1] = p.crop;
+  const [x0, y0] = p.crop;
+  const [w, h] = size(p);
+  const x1 = x0 + w * step(p);
+  const y1 = y0 + h * step(p);
   return [
     [latAt(p, y1), lonAt(p, x0)],
     [latAt(p, y0), lonAt(p, x1)],
@@ -165,28 +295,35 @@ function bounds(p) {
 // Output row j of the Mercator-spaced image takes source row srcRow[j].
 function mercatorRows(p) {
   const [, y0, , y1] = p.crop;
-  const h = y1 - y0;
+  const s = step(p);
+  const h = Math.floor((y1 - y0) / s);
   const top = merc(latAt(p, y0));
-  const bottom = merc(latAt(p, y1));
+  const bottom = merc(latAt(p, y0 + h * s));
   const rows = new Int32Array(h);
   for (let j = 0; j < h; j++) {
     const lat = unmerc(top + ((bottom - top) * (j + 0.5)) / h);
-    rows[j] = Math.min(h - 1, Math.max(0, Math.round(yOfLat(p, lat) - y0 - 0.5)));
+    rows[j] = Math.min(h - 1, Math.max(0, Math.round((yOfLat(p, lat) - y0) / s - 0.5)));
   }
   return rows;
+}
+
+// Size of the plot as read (after scale).
+function size(p) {
+  const [x0, y0, x1, y1] = p.crop;
+  return [Math.floor((x1 - x0) / step(p)), Math.floor((y1 - y0) / step(p))];
 }
 
 // ---- Pixels ----
 
 // The plot area of a frame as RGB.
 function cropRgb(rgba, width, p) {
-  const [x0, y0, x1, y1] = p.crop;
-  const w = x1 - x0;
-  const h = y1 - y0;
+  const [x0, y0] = p.crop;
+  const [w, h] = size(p);
+  const n = step(p);
   const out = new Uint8Array(w * h * 3);
   for (let y = 0; y < h; y++) {
     for (let x = 0; x < w; x++) {
-      const s = ((y + y0) * width + x + x0) * 4;
+      const s = ((y * n + y0) * width + x * n + x0) * 4;
       const d = (y * w + x) * 3;
       out[d] = rgba[s];
       out[d + 1] = rgba[s + 1];
@@ -298,10 +435,10 @@ async function toImage(rgb, mask, w, h, rows) {
 // ---- Frame times ("00:31 / 07-Nov-2026", UTC) ----
 
 function readTime(rgba, width, p) {
-  const x0 = p.crop[2];
-  const y0 = 30;
-  const y1 = 48;
-  const w = width - x0;
+  const [x0, y0, right, y1] = p.time.box;
+  const x1 = Math.min(width, right ?? width);
+  const digits = FONTS[p.time.font || "dejavu"];
+  const w = x1 - x0;
   const h = y1 - y0;
   const dark = new Uint8Array(w * h);
   for (let y = 0; y < h; y++)
@@ -323,13 +460,8 @@ function readTime(rgba, width, p) {
     if (glyphs.length >= 5) break;
   }
   if (glyphs.length < 5) return null;
-  let text = "";
-  for (const [a, b] of glyphs) {
-    if (b - a <= 3) {
-      text += ":";
-      continue;
-    }
-    // Ink box of the glyph, scaled to 8×12.
+  // Ink box of each glyph.
+  const boxes = glyphs.map(([a, b]) => {
     let top = h;
     let bottom = -1;
     for (let y = 0; y < h; y++)
@@ -338,7 +470,18 @@ function readTime(rgba, width, p) {
           top = Math.min(top, y);
           bottom = Math.max(bottom, y);
         }
+    return [a, b, top, bottom];
+  });
+  const tallest = Math.max(...boxes.map(([, , t, b]) => b - t + 1));
+  let text = "";
+  for (const [a, b, top, bottom] of boxes) {
     const gh = bottom - top + 1;
+    // The colon is the short one (and narrow).
+    if (gh < tallest * 0.8 || b - a <= 3) {
+      text += ":";
+      continue;
+    }
+    // Scaled to 8×12.
     const gw = b - a;
     let bits = "";
     for (let gy = 0; gy < 12; gy++)
@@ -349,7 +492,7 @@ function readTime(rgba, width, p) {
       }
     let best = "?";
     let bestD = Infinity;
-    for (const [digit, t] of Object.entries(DIGITS)) {
+    for (const [digit, t] of Object.entries(digits)) {
       let dd = 0;
       for (let i = 0; i < 96; i++) if (t[i] !== bits[i]) dd++;
       if (dd < bestD) {
@@ -496,7 +639,7 @@ function rainCentre(mask, p, w, h) {
         n++;
       }
   if (!n) return null;
-  return [latAt(p, sy / n + p.crop[1]), lonAt(p, sx / n + p.crop[0])];
+  return [latAt(p, (sy / n) * step(p) + p.crop[1]), lonAt(p, (sx / n) * step(p) + p.crop[0])];
 }
 
 // ---- Map ----
@@ -512,11 +655,15 @@ function setTiles() {
 
 function ensureMap() {
   if (map) return;
-  map = L.map(box).setView([RADAR.lat, RADAR.lon], 7);
+  map = L.map(box).setView([radar().lat, radar().lon], 7);
   setTiles();
   new MutationObserver(setTiles).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
-  L.circleMarker([RADAR.lat, RADAR.lon], { radius: 4, color: "#111", weight: 2, fillColor: "#fff", fillOpacity: 1 })
-    .bindTooltip("Chennai radar")
+}
+
+function placeMarker(r) {
+  marker?.remove();
+  marker = L.circleMarker([r.lat, r.lon], { radius: 4, color: "#111", weight: 2, fillColor: "#fff", fillOpacity: 1 })
+    .bindTooltip(`${r.name} radar`)
     .addTo(map);
 }
 
@@ -621,23 +768,28 @@ async function fetchBuffer(url) {
 }
 
 async function load(force = false) {
+  const r = radar();
   const p = product();
-  if (!force && loaded.code === p.code && Date.now() - loaded.at < TTL) return;
+  const key = `${r.code}/${p.code}`;
+  if (!force && loaded.key === key && Date.now() - loaded.at < TTL) return;
   const run = ++busy;
   stop();
   renderLegend(p);
-  const [x0, y0, x1, y1] = p.crop;
-  const w = x1 - x0;
-  const h = y1 - y0;
+  const [w, h] = size(p);
   const rows = mercatorRows(p);
   const b = bounds(p);
   if (!overlay) overlay = L.imageOverlay("data:,", b, { opacity: opacity.value / 100, interactive: false }).addTo(map);
   overlay.setBounds(L.latLngBounds(b));
-  if (loaded.code !== p.code) map.setView([RADAR.lat, RADAR.lon], p.zoom);
+  if (loaded.key !== key) {
+    map.setView([r.lat, r.lon], p.zoom);
+    placeMarker(r);
+    $("rm-vvp").src = radarImageUrl(r.code, "vp2");
+    $("rm-vvp").alt = `IMD VVP wind profile for ${r.name}`;
+  }
   try {
     if (p.loop) {
-      say("Downloading IMD's 3-hour loop (about 5 MB)…");
-      const buf = await fetchBuffer(`${IMD_RADAR_BASE}animation/Converted/${RADAR.code.toUpperCase()}_${p.loop}.gif`);
+      say(`Downloading IMD's 3-hour loop for ${r.name} (1 to 5 MB)…`);
+      const buf = await fetchBuffer(`${IMD_RADAR_BASE}animation/Converted/${r.code.toUpperCase()}_${p.loop}.gif`);
       if (run !== busy) return;
       say("Finding the rain in each frame…");
       await new Promise((r) => setTimeout(r, 30)); // let the message paint
@@ -665,11 +817,11 @@ async function load(force = false) {
       const m = p.motion ? motion(masks, times, p, w, h) : null;
       drawMotion(m, rainCentre(masks[masks.length - 1], p, w, h));
       const lastTime = times[times.length - 1];
-      console.debug(`radar map: ${p.code} processed in ${Math.round(performance.now() - t0)} ms`);
+      console.debug(`radar map: ${key} processed in ${Math.round(performance.now() - t0)} ms`);
       say(`Latest frame ${lastTime ? ist(lastTime) : ""} · ${frames.length} frames over 3 hours. Tap ▶ to play.`);
     } else {
       say("Loading the radar picture…");
-      const buf = await fetchBuffer(radarImageUrl(RADAR.code, p.code));
+      const buf = await fetchBuffer(radarImageUrl(r.code, p.code));
       if (run !== busy) return;
       let rgb = null;
       let minute = null;
@@ -690,11 +842,12 @@ async function load(force = false) {
       motionBox.hidden = true;
       say(`Picture ${time ? ist(time) : ""}, with IMD's own map under it. Lower the opacity to see the streets.`);
     }
-    loaded = { code: p.code, at: Date.now() };
+    loaded = { key, at: Date.now() };
     note.textContent =
-      "IMD Doppler Weather Radar, Chennai. The rain is lifted out of IMD's pictures by the app and placed by their " +
-      "latitude/longitude grid, so it can be off by a kilometre or two. Echoes that sit still for 3 hours (sea or " +
-      "ground clutter) are dropped along with the map.";
+      `IMD Doppler Weather Radar, ${r.name}. The rain` +
+      " is lifted out of IMD's pictures by the app and placed by their" +
+      " grid, so it can be off by a kilometre or two. Echoes that sit still for 3 hours (sea or" +
+      " ground clutter) are dropped along with the map.";
   } catch (e) {
     if (run !== busy) return;
     say(
@@ -706,14 +859,41 @@ async function load(force = false) {
   }
 }
 
+function fillProducts() {
+  const keep = productPick.value;
+  productPick.replaceChildren(...radar().products.map((p) => new Option(p.name, p.code)));
+  if (radar().products.some((p) => p.code === keep)) productPick.value = keep;
+}
+
+// Opens the map on a station, e.g. from Home's "near you" (#radarmap?station=kkl).
+function stationFromRoute() {
+  const want = routeParams().get("station");
+  if (want && RADARS.some((r) => r.code === want) && want !== stationPick.value) {
+    stationPick.value = want;
+    fillProducts();
+  }
+}
+
 export function initRadarMap() {
-  productPick.replaceChildren(...PRODUCTS.map((p) => new Option(p.name, p.code)));
+  stationPick.replaceChildren(...RADARS.map((r) => new Option(r.name, r.code)));
   try {
+    const st = localStorage.getItem(STATION_KEY);
+    if (RADARS.some((r) => r.code === st)) stationPick.value = st;
+    fillProducts();
     const saved = localStorage.getItem(PRODUCT_KEY);
-    if (PRODUCTS.some((p) => p.code === saved)) productPick.value = saved;
+    if (radar().products.some((p) => p.code === saved)) productPick.value = saved;
     const o = Number(localStorage.getItem(OPACITY_KEY));
     if (o >= 20 && o <= 100) opacity.value = String(o);
-  } catch {}
+  } catch {
+    fillProducts();
+  }
+  stationPick.addEventListener("change", () => {
+    try {
+      localStorage.setItem(STATION_KEY, stationPick.value);
+    } catch {}
+    fillProducts();
+    load();
+  });
   productPick.addEventListener("change", () => {
     try {
       localStorage.setItem(PRODUCT_KEY, productPick.value);
@@ -732,7 +912,6 @@ export function initRadarMap() {
   });
   playBtn.addEventListener("click", play);
   $("rm-refresh").addEventListener("click", () => load(true));
-  $("rm-vvp").src = radarImageUrl(RADAR.code, "vp2");
   slider.disabled = playBtn.disabled = true;
 }
 
@@ -743,6 +922,7 @@ export async function showRadarMap() {
     say(`Couldn't open the map (${e.message}).`, true);
     return;
   }
+  stationFromRoute();
   ensureMap();
   setTimeout(() => map.invalidateSize(), 0);
   load();

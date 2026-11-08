@@ -1,6 +1,7 @@
 import { STATIONS, PRODUCTS, radarImageUrl, radarAnimationUrl, hasAnimation } from "./stations.js";
 import { saveImage, loadImage, when } from "./offline.js";
 import { shareButton, shareName } from "./share.js";
+import { RADARS } from "./radarmap.js";
 
 const DEFAULT_KEY = "myweather.radar.default";
 const FALLBACK = { city: "cni", product: "caz" }; // Chennai, MAX (Z)
@@ -87,6 +88,11 @@ function render() {
   link.href = url;
   link.textContent = url;
   document.getElementById("radar-floods").hidden = city !== "cni";
+  const onMap = RADARS.some((r) => r.code === city);
+  const mapLink = document.getElementById("radar-map-link");
+  mapLink.hidden = !onMap;
+  mapLink.href = `#radarmap?station=${city}`;
+  mapLink.textContent = `See ${nameOf(STATIONS, city)}'s radar on a map`;
   say(playing ? "Loading the 3-hour loop (a few MB)…" : "Loading…");
   img.dataset.anim = playing ? "1" : "";
   loadRadar(url, playing);

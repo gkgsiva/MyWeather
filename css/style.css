@@ -899,3 +899,34 @@ body { overscroll-behavior-y: contain; }
   text-shadow: 0 0 3px #000;
 }
 .low-mark small { font-size: 11px; font-weight: 700; }
+
+/* Segmented choice (gauge history 7 / 30 days, lake trend range) */
+.seg { display: inline-flex; gap: 4px; flex-shrink: 0; }
+.seg button[aria-pressed="true"] { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+/* Home: near you */
+.near-card .strip-head { justify-content: space-between; margin-bottom: 4px; }
+.near-title { font-size: 1rem; }
+.near-row { display: flex; gap: 10px; align-items: center; padding: 6px 0; color: inherit; text-decoration: none; border-top: 1px solid var(--border); }
+.near-row:first-child { border-top: 0; }
+.near-icon { font-size: 1.3rem; width: 1.6em; text-align: center; flex-shrink: 0; }
+.near-text { display: flex; flex-direction: column; min-width: 0; }
+.near-text small { color: var(--muted); font-size: 0.78rem; }
+a.near-row .near-text b { color: var(--accent); }
+
+/* Lake trend: this year against last year */
+.chart .line.this-year { stroke: var(--accent); stroke-width: 2.5; }
+.chart .line.last-year { stroke: var(--muted); stroke-dasharray: 4 3; }
+.line-legend { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font-size: 0.85rem; color: var(--muted); }
+.line-legend .key { display: inline-block; width: 18px; height: 0; border-top: 3px solid var(--accent); }
+.line-legend .key.last-year { border-top: 2px dashed var(--muted); margin-left: 8px; }
+
+/* Rain spell */
+.sp-stats { margin: 8px 0; }
+.sp-map { display: block; width: 100%; border: 1px solid var(--border); border-radius: 12px; }
+.sp-radar { display: block; width: 100%; height: auto; border-radius: 8px; background: var(--card); }
+.sp-flood-list { list-style: none; padding: 0; margin: 0; }
+.sp-flood-list li { display: flex; gap: 10px; align-items: flex-start; padding: 8px 0; border-bottom: 1px solid var(--border); }
+.sp-flood-list .spot { transform: none; flex-shrink: 0; margin-top: 2px; }
+.sp-flood-text { display: flex; flex-direction: column; min-width: 0; }
+.sp-flood-text small { color: var(--muted); font-size: 0.78rem; }

@@ -12,6 +12,8 @@
 // A gauge that sent nothing has total null. The site allows cross-site reads.
 import { loadLeaflet, isDark } from "./stationmap.js";
 import { drawBars } from "./chart.js";
+import { getDays, missing, daysEnding, remember, weeklyNormals, imdDistrict, gaugeKey, niceDay as dayLabel } from "./gaugedays.js";
+import { IN_APP, routeParams } from "./route.js";
 
 const BASE = "https://beta-tnsmart.rimes.int/Rainfall_Python_IDW/Hourly_json/";
 const PAGE = "https://beta-tnsmart.rimes.int/index.php/RTDAS/Hourly_data_TNDRRA_c/public";
@@ -60,6 +62,7 @@ let sortDir = -1;
 let tableRows = PAGE_ROWS;
 let tab = "map";
 let userDay = false; // a day picked in the date box, not the running one
+let pendingGauge = ""; // "district|station" from a link (#gauges?gauge=…), e.g. Home's nearest gauge
 
 function say(text, error = false) {
   status.textContent = text;
@@ -147,13 +150,23 @@ async function load(force = false) {
       return;
     }
     rows = data.filter((r) => typeof r.latitude === "number" && typeof r.longitude === "number");
+    remember(day, data);
     hours = Object.keys(data[0] || {}).filter((k) => HOUR_RE.test(k));
     loadedDay = day;
     loadedAt = Date.now();
     dateInput.value = day;
     fillAreas();
+    const want = pendingGauge && rows.find((r) => gaugeKey(r) === pendingGauge);
+    pendingGauge = "";
+    if (want) {
+      areaPick.value = want.district_name;
+      picked = want;
+      setTab("map");
+      fitted = "";
+    }
     picked = picked && rows.find((r) => r.station_name === picked.station_name && r.district_name === picked.district_name);
     draw();
+    if (want) setTimeout(() => focus(picked), 50);
     const on = rows.filter((r) => typeof r.total === "number").length;
     const last = findLastHour(rows);
     say(
@@ -301,6 +314,7 @@ function hourBars(values, label) {
 function pick(r) {
   picked = r;
   drawGauge();
+  drawHistory();
 }
 
 function drawGauge() {
@@ -320,6 +334,103 @@ function drawGauge() {
     ),
     typeof r.total === "number" ? "Tap a bar for that hour." : "This gauge sent no data for the day."
   );
+}
+
+// ---- History of the picked gauge: the last 7 or 30 rain days ----
+
+let histDays = 0; // 0 until asked for; then 7 or 30
+let histRun = 0;
+const histHead = $("tg-hist-head");
+const histChart = $("tg-hist-chart");
+const histReadout = $("tg-hist-readout");
+const histNote = $("tg-hist-note");
+
+function paintHistButtons() {
+  for (const b of document.querySelectorAll("#tg-hist-pick button")) b.setAttribute("aria-pressed", String(Number(b.dataset.days) === histDays));
+}
+
+async function drawHistory() {
+  const r = picked;
+  paintHistButtons();
+  if (!r) {
+    histHead.textContent = "Past days";
+    histChart.replaceChildren();
+    histReadout.textContent = "";
+    histNote.textContent = "Tap a gauge on the map first.";
+    return;
+  }
+  histHead.textContent = `${r.station_name}: past days`;
+  if (!histDays) {
+    histChart.replaceChildren();
+    histReadout.textContent = "";
+    histNote.textContent =
+      "Tap 7 days or 30 days for this gauge's rain each day, against the district and IMD's normal. " +
+      "Each day is about 0.7 MB the first time; after that it is kept on the phone.";
+    return;
+  }
+  const run = ++histRun;
+  const days = daysEnding(loadedDay, histDays);
+  const need = await missing(days);
+  histNote.textContent = need ? `Downloading ${need} day${need > 1 ? "s" : ""} (about ${Math.max(1, Math.round(need * 0.7))} MB)…` : "Loading…";
+  const got = await getDays(days, (done, total) => {
+    if (run === histRun && need) histNote.textContent = `Downloading… ${done} of ${total} days`;
+  });
+  if (run !== histRun) return;
+  const key = gaugeKey(r);
+  const values = [];
+  const districtAvg = [];
+  for (const d of got) {
+    if (!d) {
+      values.push(undefined);
+      districtAvg.push(null);
+      continue;
+    }
+    const g = d.gauges.find((x) => `${x[0]}|${x[1]}` === key);
+    values.push(g ? g[4] : null);
+    const inD = d.gauges.filter((x) => x[0] === r.district_name && typeof x[4] === "number");
+    districtAvg.push(inD.length ? inD.reduce((a, x) => a + x[4], 0) / inD.length : null);
+  }
+  const every = histDays > 10 ? 5 : 1;
+  drawBars(
+    histChart,
+    histReadout,
+    days.map((day, i) => ({
+      tick: (days.length - 1 - i) % every === 0 ? dayLabel(day, { month: undefined }) : "",
+      value: values[i],
+      partial: i === days.length - 1 && day === loadedDay && !userDay,
+      text:
+        values[i] === undefined
+          ? `${dayLabel(day)}: couldn't download`
+          : `Rain day ending ${dayLabel(day)}: ${typeof values[i] === "number" ? `${fmt(values[i])} mm` : "no data"}` +
+            (typeof districtAvg[i] === "number" ? ` · ${r.district_name} average ${fmt(districtAvg[i])} mm` : ""),
+    })),
+    "Tap a bar for that day."
+  );
+  const sum = (a) => a.filter((v) => typeof v === "number").reduce((x, y) => x + y, 0);
+  const reported = values.filter((v) => typeof v === "number").length;
+  const total = sum(values);
+  const dTotal = sum(districtAvg);
+  let text =
+    `${fmt(total)} mm in ${histDays} days to ${dayLabel(loadedDay)}` +
+    (reported < histDays ? ` (${reported} days with data)` : "") +
+    ` · ${r.district_name} average ${fmt(dTotal)} mm.`;
+  histNote.textContent = text;
+  try {
+    const n = await weeklyNormals();
+    if (run !== histRun) return;
+    const a = n.areas[imdDistrict(r.district_name)];
+    if (a && a.normal > 0) {
+      const normal = (a.normal * histDays) / 7;
+      const dep = Math.round(((total - normal) / normal) * 100);
+      text +=
+        ` IMD's normal for ${r.district_name} is ${fmt(a.normal)} mm a week at this time of year` +
+        (histDays === 7 ? "" : `, so about ${fmt(normal)} mm for ${histDays} days`) +
+        `: this gauge is ${dep >= 0 ? `${dep}% above` : `${-dep}% below`} normal.`;
+    }
+  } catch {
+    if (!IN_APP) text += " (IMD's normal can only be read inside the app.)";
+  }
+  histNote.textContent = text;
 }
 
 function drawArea(list) {
@@ -571,6 +682,7 @@ function draw() {
   drawSummary(list);
   if (!picked) picked = [...list].filter((r) => typeof r.total === "number").sort((a, b) => b.total - a.total)[0] || null;
   drawGauge();
+  drawHistory();
   drawTable(list);
   drawArea(list);
   drawBands(list);
@@ -640,9 +752,28 @@ export function initGauges() {
     load(true);
   });
   $("tg-source").href = PAGE;
+  for (const b of document.querySelectorAll("#tg-hist-pick button"))
+    b.addEventListener("click", () => {
+      histDays = Number(b.dataset.days);
+      drawHistory();
+    });
 }
 
 export async function showGauges() {
+  const want = routeParams().get("gauge");
+  if (want) {
+    pendingGauge = want;
+    const r = rows.find((x) => gaugeKey(x) === want);
+    if (r) {
+      pendingGauge = "";
+      areaPick.value = r.district_name;
+      picked = r;
+      setTab("map");
+      fitted = "";
+      draw();
+      setTimeout(() => focus(r), 50);
+    }
+  }
   try {
     L = await loadLeaflet();
     ensureMap();
