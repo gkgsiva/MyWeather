@@ -209,7 +209,8 @@ the app drops Wunderground's no-framing headers and blocks requests to common ad
 `.github/workflows/data-sources.yml` runs `scripts/check-sources.mjs` every morning at 07:00 IST. It fetches each
 source the app reads (IMD radar, satellite, lightning, rainfall and cyclone pages and map server; TN-SMART gauges
 and district files; Chennai Metro Water lake levels; Wunderground; Open-Meteo; the Kea blog) and checks the answer
-looks as the app expects. If any fail, it opens an issue **Data source check failed** (or adds the day's report to
+looks as the app expects. (Chennai Metro Water's page often refuses servers outside India, so it is only reported; TN-SMART's reservoir report is
+checked for the lakes instead.) If any fail, it opens an issue **Data source check failed** (or adds the day's report to
 it), and closes the issue once everything answers again. Run it any time from **Actions → Data sources → Run
 workflow**, or locally with `node scripts/check-sources.mjs`. The Wunderground check uses the `WEATHER_API_KEY`
 secret and is skipped without it.

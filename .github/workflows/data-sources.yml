@@ -6,6 +6,9 @@ name: Data sources
 # "Data source check failed" is opened (or updated) so GitHub notifies you;
 # it is closed by itself once every source answers again.
 #
+# Chennai Metro Water's site often refuses servers outside India, so it is only
+# reported (⚠️); the TN-SMART reservoir report is checked for the lakes instead.
+#
 # Run it by hand from the Actions tab ("Run workflow") any time.
 # Optional secret WEATHER_API_KEY (the Wunderground key) adds the station check.
 

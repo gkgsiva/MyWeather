@@ -19,6 +19,12 @@ function istDay(offsetDays = 0) {
   return d.toISOString().slice(0, 10);
 }
 
+// Calendar day in IST as DD-MM-YYYY (TN-SMART's reservoir file names).
+function dmy(offsetDays = 0) {
+  const [y, m, d] = new Date(Date.now() + 5.5 * 3600e3 + offsetDays * 24 * 3600e3).toISOString().slice(0, 10).split("-");
+  return `${d}-${m}-${y}`;
+}
+
 const isImage = (type) => (r) => r.type.startsWith(type) || `wanted ${type}, got ${r.type || "no content type"}`;
 const minBytes = (n) => (r) => r.bytes >= n || `only ${r.bytes} bytes`;
 const has = (re, what) => (r) => re.test(r.text) || `no ${what} in the page`;
@@ -72,8 +78,22 @@ const CHECKS = [
     tests: [json((d) => d && typeof d === "object", "empty")],
   },
   { group: "TN-SMART", name: "District outlines", url: `${TNS}/DATA/countries/IND/district_tn.geojson`, tests: [json((d) => d.features?.length >= 30, "fewer than 30 districts")] },
-  // Lakes
-  { group: "Lakes", name: "Chennai Metro Water lake levels", url: "https://cmwssb.tn.gov.in/lakelevel", tests: [minBytes(5000), has(/chembarambakkam/i, "Chembarambakkam row")] },
+  // Lakes. The Metro Water site doesn't answer GitHub's servers (outside
+  // India), so it is reported but can't fail the run; TN-SMART's daily
+  // reservoir PDF (Lakes' 30/90-day history) is checked instead.
+  {
+    group: "Lakes",
+    name: "TN-SMART reservoir report (yesterday)",
+    url: [`${TNS}/DATA/Rainfall/daily_reservoir/reservoir_${dmy(-1)}.pdf`, `${TNS}/DATA/Rainfall/daily_reservoir/reservoir_${dmy(-2)}.pdf`],
+    tests: [isImage("application/pdf"), minBytes(5000)],
+  },
+  {
+    group: "Lakes",
+    name: "Chennai Metro Water lake levels",
+    warnOnly: "often unreachable from outside India",
+    url: "https://cmwssb.tn.gov.in/lakelevel",
+    tests: [minBytes(5000), has(/chembarambakkam/i, "Chembarambakkam row")],
+  },
   // Wunderground (station strip, Wunderground, Station map, Rain history)
   {
     group: "Wunderground",
@@ -142,22 +162,23 @@ async function runOne(check) {
     }
     if (attempt === 0) await new Promise((r) => setTimeout(r, 20_000));
   }
-  return { ...check, state: "failed", ...last };
+  return { ...check, state: check.warnOnly ? "warning" : "failed", ...last, why: check.warnOnly ? `${last.why} (${check.warnOnly})` : last.why };
 }
 
 const results = [];
 for (const c of CHECKS) {
   const r = await runOne(c);
   results.push(r);
-  const tag = r.state === "ok" ? "ok  " : r.state === "skipped" ? "skip" : "FAIL";
+  const tag = { ok: "ok  ", skipped: "skip", warning: "warn", failed: "FAIL" }[r.state];
   console.log(`${tag} ${r.group} · ${r.name}${r.state === "ok" ? ` (${r.ms} ms)` : ` — ${r.why}`}`);
 }
 
 const failed = results.filter((r) => r.state === "failed");
-const icon = { ok: "✅", failed: "❌", skipped: "⏭️" };
+const icon = { ok: "✅", failed: "❌", skipped: "⏭️", warning: "⚠️" };
 const shown = (r) => r.hideUrl || [].concat(r.used || r.url)[0];
 const lines = [
-  failed.length ? `**${failed.length} of ${results.length} data sources failed** on ${new Date().toISOString().slice(0, 16).replace("T", " ")} UTC.` : `All ${results.length} data sources answered.`,
+  (failed.length ? `**${failed.length} of ${results.length} data sources failed** on ${new Date().toISOString().slice(0, 16).replace("T", " ")} UTC.` : `All data sources passed.`) +
+    (results.some((r) => r.state === "warning") ? " ⚠️ marks a source checked only for information." : ""),
   "",
   "| | Source | Check | Result |",
   "|---|---|---|---|",
