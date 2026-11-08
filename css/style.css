@@ -1163,3 +1163,31 @@ a.near-row .near-text b { color: var(--accent); }
 .nw-districts .nw-soon .rank-val { color: #00838f; }
 :root[data-theme="dark"] .nw-districts .nw-wet .rank-val { color: #64b5f6; }
 :root[data-theme="dark"] .nw-districts .nw-soon .rank-val { color: #4dd0e1; }
+
+/* Data saver picker */
+.rm-saver { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; color: var(--muted); margin: 8px 0; }
+.rm-saver select { flex: 1; min-width: 0; }
+.rm-options .rm-saver { flex: 1 1 100%; margin: 0; }
+
+/* Radar rain */
+.rr-check .rr-high .rank-val { color: #c62828; }
+.rr-check .rr-low .rank-val { color: #1565c0; }
+.rr-row { cursor: default; }
+:root[data-theme="dark"] .rr-check .rr-high .rank-val { color: #ef9a9a; }
+:root[data-theme="dark"] .rr-check .rr-low .rank-val { color: #90caf9; }
+
+/* Waterlogging risk by zone */
+.wl-row { cursor: default; border-left: 4px solid transparent; }
+.wl-why { grid-column: 1 / -1; color: var(--muted); font-size: 0.75rem; }
+.wl-high { border-left-color: #d32f2f; }
+.wl-high .rank-val { color: #d32f2f; }
+.wl-medium { border-left-color: #f9a825; }
+.wl-medium .rank-val { color: #b26a00; }
+.wl-low { border-left-color: #43a047; }
+.wl-low .rank-val { color: #2e7d32; }
+:root[data-theme="dark"] .wl-high .rank-val { color: #ef9a9a; }
+:root[data-theme="dark"] .wl-medium .rank-val { color: #ffd54f; }
+:root[data-theme="dark"] .wl-low .rank-val { color: #a5d6a7; }
+
+/* Rain records */
+a.rec-row { text-decoration: none; color: var(--fg); }

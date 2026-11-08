@@ -53,6 +53,23 @@ A small static web app for Chennai weather watchers. A home page and the ☰ men
   out. Frames step every 10 minutes over 3 hours; each radar gives its latest scan from the 30 minutes before,
   moved on along its storm track to the step's time, and the scans used are listed under the slider. Storm motion
   is each radar's own; the nowcast uses the nearest radar's.
+- **Radar rain** (`#radarrain`, `js/radarrain.js`): rain totals for the last 1, 3 or 6 hours from the combined
+  radar (Marshall–Palmer, Z = 200 R^1.6, dBZ capped at 55, every 10-minute step). Steps are kept in IndexedDB
+  (`myweather-radar`, 3.6 km grid) for 7 hours, so the 6-hour total fills in with use. District means use TN-SMART's
+  district outlines rasterised onto the grid. **Radar against gauges** compares the same hours with TN-SMART's
+  hourly gauges (suspect gauges left out): the share of the gauges' rain the radar saw, misses and false rain, by
+  district, and gauge dots on the map.
+- **Cyclone track** on the Radar map (`js/cyclonetrack.js`): IMD's map server layer `imd:Cyclone_Track_V` (filled only
+  while a system is active), coloured by stage. IMD doesn't publish the forecast cone as data.
+- **Waterlogging risk** (Flood spots, `js/waterlog.js`): each GCC zone low/medium/high from its TN-SMART zone gauges
+  (24 h, 3 h), radar rain due within the hour (only if the radar was just read), known flood spots and lakes
+  upstream over 90% full.
+- **Rain records** (`#records`): wettest days, spells (2.5 mm+ days in a row), months and hours for each district,
+  from TN-SMART's daily district means (from 11 Oct 2025, kept on the phone); days and spells open Rain spell
+  (`#spell?area=…&from=…&to=…`).
+- **Data saver** (`js/datasaver.js`, Auto / Saver / Full on the radar screens): reads each radar's latest picture
+  (about 0.8 MB) and lifts the rain out with the bare map saved from the last full loop; storm motion from that loop
+  if under 2 hours old. Auto saves on mobile data or with the phone's data saver.
 - **Rain nowcast** (`#nowcast`): will rain reach a place in the next 2 hours, from the Tamil Nadu mosaic. Pick a
   district, search a place name or pincode, use the phone's location or tap the map. Below, every TN district
   (at its centre) sorted by when rain arrives. **Use this place on Home** sends the place to Home's card.
@@ -195,6 +212,9 @@ The same list is on the app's **Info** screen (`js/info.js`); keep the two in st
   name, a pincode, your location or a spot on the map; every district is listed by when rain arrives.
 - Radar map: **Tamil Nadu (all 5 radars)** combines Chennai, Karaikal, Thiruvananthapuram, Kochi and Sriharikota
   into one map and loop, lining up their scan times.
+- **Radar rain** (1, 3 or 6 h totals from the combined radar, by district and spot) with a **radar against
+  gauges** check; **Cyclone track** on the Radar map; **Waterlogging risk** by Chennai zone on Flood spots;
+  **Rain records** by district; **Data saver** for the radar screens.
 
 ### v1.8 (8 Nov 2026, PRs #22–#23)
 - **Info** screen in the menu: the installed version and this version history.

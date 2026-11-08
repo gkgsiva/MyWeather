@@ -24,6 +24,8 @@ const RISK = [
 ];
 export const riskOf = (mm, rate) => RISK.find((r) => r.test(mm, rate || 0));
 
+import { zoneRisk } from "./waterlog.js";
+
 const $ = (id) => document.getElementById(id);
 const box = $("flood-map");
 const status = $("flood-status");
@@ -204,8 +206,52 @@ async function refresh() {
   );
 }
 
+// ---- Waterlogging risk by zone ----
+
+const LEVELS = { high: "High", medium: "Medium", low: "Low" };
+let zonesAt = 0;
+
+async function drawZones(force = false) {
+  if (!force && Date.now() - zonesAt < TTL) return;
+  zonesAt = Date.now();
+  const when = $("wl-when");
+  const list = $("wl-zones");
+  when.textContent = "Reading the zone rain gauges…";
+  try {
+    const zones = await zoneRisk();
+    const order = { high: 0, medium: 1, low: 2 };
+    zones.sort((a, b) => order[a.level] - order[b.level] || b.points - a.points || (b.rain24 ?? 0) - (a.rain24 ?? 0));
+    list.replaceChildren(
+      ...zones.map((z) => {
+        const li = document.createElement("li");
+        li.className = `rank-row wl-row wl-${z.level}`;
+        li.innerHTML = '<span class="rank-name"></span><span class="rank-val"></span><small class="wl-why"></small>';
+        li.querySelector(".rank-name").textContent = `Zone ${z.zone} · ${z.name}`;
+        li.querySelector(".rank-val").textContent = LEVELS[z.level];
+        li.querySelector(".wl-why").textContent = z.gauges
+          ? z.why.length
+            ? z.why.join(" · ")
+            : `${Math.round(z.rain24 ?? 0)} mm in 24 h`
+          : "No zone gauge reporting";
+        return li;
+      })
+    );
+    const high = zones.filter((z) => z.level === "high").length;
+    const med = zones.filter((z) => z.level === "medium").length;
+    when.textContent = `${high} zone${high === 1 ? "" : "s"} high, ${med} medium · as of ${new Date().toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "Asia/Kolkata" })} IST`;
+  } catch (e) {
+    zonesAt = 0;
+    when.textContent = /Failed to fetch|NetworkError|Load failed/.test(e.message)
+      ? "Couldn't read the zone gauges. Check the connection."
+      : `Couldn't work out the zones (${e.message}).`;
+  }
+}
+
 export function initFloods() {
-  $("flood-refresh").addEventListener("click", refresh);
+  $("flood-refresh").addEventListener("click", () => {
+    refresh();
+    drawZones(true);
+  });
   $("flood-add").addEventListener("submit", (e) => {
     e.preventDefault();
     const name = nameInput.value.trim();
@@ -239,4 +285,5 @@ export async function showFloods() {
   }
   draw();
   if (Date.now() - loadedAt > TTL) refresh();
+  drawZones();
 }

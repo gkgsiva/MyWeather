@@ -1,5 +1,5 @@
-// Single-page menu: #home, #digest, #forecast, #heat, #nowcast, #radar, #radarmap, #satellite, #lightning, #warnings, #wind, #cyclone,
-// #monsoon, #yoy, #rain, #season, #compare, #map, #gauges, #health, #spell, #floods, #lakes, #air, #sea, #wunderground, #blog. Each view's init runs the first time it is
+// Single-page menu: #home, #digest, #forecast, #heat, #nowcast, #radarrain, #radar, #radarmap, #satellite, #lightning, #warnings, #wind, #cyclone,
+// #monsoon, #yoy, #rain, #season, #compare, #map, #gauges, #health, #spell, #records, #floods, #lakes, #air, #sea, #wunderground, #blog. Each view's init runs the first time it is
 // shown, show every time, and hide when another view is opened.
 import { initHome, showHome } from "./home.js";
 import { initForecast, showForecast } from "./forecast.js";
@@ -21,8 +21,10 @@ import { initMap, showMap } from "./stationmap.js";
 import { initGauges, showGauges } from "./gauges.js";
 import { initRadarMap, showRadarMap, hideRadarMap } from "./radarmap.js";
 import { initNowcastView, showNowcastView } from "./nowcastview.js";
+import { initRadarRain, showRadarRain } from "./radarrain.js";
 import { initFloods, showFloods } from "./floods.js";
 import { initSpell, showSpell } from "./spell.js";
+import { initRecords, showRecords } from "./records.js";
 import { initLakes, showLakes } from "./lakes.js";
 import { initAir, showAir } from "./air.js";
 import { initSea, showSea } from "./sea.js";
@@ -39,6 +41,7 @@ const VIEWS = {
   forecast: { title: "MyWeather · Forecast", init: initForecast, show: showForecast },
   heat: { title: "MyWeather · Heat & humidity", init: initHeat, show: showHeat },
   nowcast: { title: "MyWeather · Rain nowcast", init: initNowcastView, show: showNowcastView },
+  radarrain: { title: "MyWeather · Radar rain", init: initRadarRain, show: showRadarRain },
   radar: { title: "MyWeather · Radars", show: showRadar },
   radarmap: { title: "MyWeather · Radar map", init: initRadarMap, show: showRadarMap, hide: hideRadarMap },
   satellite: { title: "MyWeather · Satellite", show: showSatellite },
@@ -55,6 +58,7 @@ const VIEWS = {
   gauges: { title: "MyWeather · TN rain gauges", init: initGauges, show: showGauges },
   health: { title: "MyWeather · Station health", init: initHealth, show: showHealth },
   spell: { title: "MyWeather · Rain spell", init: initSpell, show: showSpell },
+  records: { title: "MyWeather · Rain records", init: initRecords, show: showRecords },
   floods: { title: "MyWeather · Flood spots", init: initFloods, show: showFloods },
   lakes: { title: "MyWeather · Lakes", init: initLakes, show: showLakes },
   air: { title: "MyWeather · Air quality", init: initAir, show: showAir },
