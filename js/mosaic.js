@@ -57,7 +57,7 @@ const PPD_LON = (111.2 * Math.cos((11.4 * Math.PI) / 180)) / CELL_KM;
 const W = Math.round((BOX.lon1 - BOX.lon0) * PPD_LON);
 const H = Math.round((BOX.lat1 - BOX.lat0) * PPD_LAT);
 
-/** The grid, for screens that work on the mosaic (radar rain totals). */
+/** The grid, for screens that work on the mosaic. */
 export const GRID = { ...BOX, W, H, PPD_LAT, PPD_LON, CELL_KM, STEP_MIN };
 
 /** The mosaic as a Radar map "product" (same geometry fields). */
@@ -432,10 +432,6 @@ export async function frameImage(dbz) {
 export const MOSAIC_RADARS = () => RADARS.map((r) => ({ r, km: RANGE[r.code] || 240 }));
 
 let cache = null; // { at, promise, saver }
-const listeners = [];
-
-/** fn(mosaic) runs after every new build (radar rain totals keep its steps). */
-export const onMosaic = (fn) => listeners.push(fn);
 
 /**
  * Downloads all five radars and builds the mosaic, or reuses one under 8
@@ -450,7 +446,6 @@ export function buildMosaic({ force = false, onStep = () => {} } = {}) {
   if (!force && cache && Date.now() - cache.at < TTL && (saver || !cache.saver)) return cache.promise;
   const promise = build(onStep, saver);
   cache = { at: Date.now(), promise, saver };
-  promise.then((m) => listeners.forEach((fn) => fn(m))).catch(() => {});
   promise.catch(() => {
     if (cache?.promise === promise) cache = null;
   });

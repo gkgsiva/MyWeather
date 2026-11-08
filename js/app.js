@@ -1,4 +1,4 @@
-// Single-page menu: #home, #digest, #forecast, #heat, #nowcast, #radarrain, #radar, #radarmap, #satellite, #lightning, #warnings, #wind, #cyclone,
+// Single-page menu: #home, #digest, #forecast, #heat, #nowcast, #rainmap, #radar, #radarmap, #satellite, #lightning, #warnings, #wind, #cyclone,
 // #monsoon, #yoy, #rain, #season, #compare, #map, #gauges, #health, #spell, #records, #floods, #lakes, #air, #sea, #wunderground, #blog. Each view's init runs the first time it is
 // shown, show every time, and hide when another view is opened.
 import { initHome, showHome } from "./home.js";
@@ -21,7 +21,7 @@ import { initMap, showMap } from "./stationmap.js";
 import { initGauges, showGauges } from "./gauges.js";
 import { initRadarMap, showRadarMap, hideRadarMap } from "./radarmap.js";
 import { initNowcastView, showNowcastView } from "./nowcastview.js";
-import { initRadarRain, showRadarRain } from "./radarrain.js";
+import { initRainMap, showRainMap } from "./rainmap.js";
 import { initFloods, showFloods } from "./floods.js";
 import { initSpell, showSpell } from "./spell.js";
 import { initRecords, showRecords } from "./records.js";
@@ -41,7 +41,7 @@ const VIEWS = {
   forecast: { title: "MyWeather · Forecast", init: initForecast, show: showForecast },
   heat: { title: "MyWeather · Heat & humidity", init: initHeat, show: showHeat },
   nowcast: { title: "MyWeather · Rain nowcast", init: initNowcastView, show: showNowcastView },
-  radarrain: { title: "MyWeather · Radar rain", init: initRadarRain, show: showRadarRain },
+  rainmap: { title: "MyWeather · Rain map", init: initRainMap, show: showRainMap },
   radar: { title: "MyWeather · Radars", show: showRadar },
   radarmap: { title: "MyWeather · Radar map", init: initRadarMap, show: showRadarMap, hide: hideRadarMap },
   satellite: { title: "MyWeather · Satellite", show: showSatellite },

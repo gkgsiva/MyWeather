@@ -53,12 +53,11 @@ A small static web app for Chennai weather watchers. A home page and the ☰ men
   out. Frames step every 10 minutes over 3 hours; each radar gives its latest scan from the 30 minutes before,
   moved on along its storm track to the step's time, and the scans used are listed under the slider. Storm motion
   is each radar's own; the nowcast uses the nearest radar's.
-- **Radar rain** (`#radarrain`, `js/radarrain.js`): rain totals for the last 1, 3 or 6 hours from the combined
-  radar (Marshall–Palmer, Z = 200 R^1.6, dBZ capped at 55, every 10-minute step). Steps are kept in IndexedDB
-  (`myweather-radar`, 3.6 km grid) for 7 hours, so the 6-hour total fills in with use. District means use TN-SMART's
-  district outlines rasterised onto the grid. **Radar against gauges** compares the same hours with TN-SMART's
-  hourly gauges (suspect gauges left out): the share of the gauges' rain the radar saw, misses and false rain, by
-  district, and gauge dots on the map.
+- **Rain map** (`#rainmap`, `js/rainmap.js`): rain over the last 1, 3, 6, 12 or 24 hours from TN-SMART's hourly
+  gauges (suspect ones left out; a gauge needs 90% of the hours), filled in on a 2 km grid by inverse-distance
+  weighting from the gauges within 20 km, kept inside TN's district outlines. District figures are the mean of
+  their gauges and the wettest gauge. (A radar-based version read only about 7% of the gauges' rain, so it was
+  dropped.)
 - **Cyclone track** on the Radar map (`js/cyclonetrack.js`): IMD's map server layer `imd:Cyclone_Track_V` (filled only
   while a system is active), coloured by stage. IMD doesn't publish the forecast cone as data.
 - **Waterlogging risk** (Flood spots, `js/waterlog.js`): each GCC zone low/medium/high from its TN-SMART zone gauges
@@ -212,8 +211,7 @@ The same list is on the app's **Info** screen (`js/info.js`); keep the two in st
   name, a pincode, your location or a spot on the map; every district is listed by when rain arrives.
 - Radar map: **Tamil Nadu (all 5 radars)** combines Chennai, Karaikal, Thiruvananthapuram, Kochi and Sriharikota
   into one map and loop, lining up their scan times.
-- **Radar rain** (1, 3 or 6 h totals from the combined radar, by district and spot) with a **radar against
-  gauges** check; **Cyclone track** on the Radar map; **Waterlogging risk** by Chennai zone on Flood spots;
+- **Rain map** (1 to 24 h of rain filled in between the TN-SMART gauges, by district and spot); **Cyclone track** on the Radar map; **Waterlogging risk** by Chennai zone on Flood spots;
   **Rain records** by district; **Data saver** for the radar screens.
 
 ### v1.8 (8 Nov 2026, PRs #22–#23)

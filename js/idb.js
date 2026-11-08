@@ -1,6 +1,7 @@
-// A small IndexedDB key-value helper for the radar's saved data
-// ("myweather-radar": bg = each radar's bare map, rain = 10-minute radar rain
-// steps). Every call fails soft: a phone without IndexedDB just keeps nothing.
+// A small IndexedDB key-value helper for saved radar and records data
+// ("myweather-radar": bg = each radar's bare map for the data saver, misc =
+// storm motion and the Rain records figures). Every call fails soft: a phone
+// without IndexedDB just keeps nothing.
 const NAME = "myweather-radar";
 const STORES = ["bg", "rain", "misc"];
 

@@ -32,7 +32,7 @@
       <a href="#forecast" data-view="forecast">Forecast</a>
       <a href="#heat" data-view="heat">Heat &amp; humidity</a>
       <a href="#nowcast" data-view="nowcast">Rain nowcast</a>
-      <a href="#radarrain" data-view="radarrain">Radar rain</a>
+      <a href="#rainmap" data-view="rainmap">Rain map</a>
       <a href="#radar" data-view="radar">Radars</a>
       <a href="#radarmap" data-view="radarmap">Radar map</a>
       <a href="#satellite" data-view="satellite">Satellite</a>
@@ -458,43 +458,37 @@
         </p>
       </section>
 
-      <section id="view-radarrain" class="view" hidden>
-        <h2>Radar rain</h2>
-        <p class="note nw-intro">How much rain fell, estimated from all five IMD radars around Tamil Nadu, including between the gauges.</p>
+      <section id="view-rainmap" class="view" hidden>
+        <h2>Rain map</h2>
+        <p class="note nw-intro">How much rain fell across Tamil Nadu, filled in between TN-SMART's 1,500 rain gauges.</p>
         <form class="controls" onsubmit="return false">
           <label>
             Last
-            <select id="rr-hours">
+            <select id="rmap-hours">
               <option value="1">1 hour</option>
               <option value="3" selected>3 hours</option>
               <option value="6">6 hours</option>
+              <option value="12">12 hours</option>
+              <option value="24">24 hours</option>
             </select>
           </label>
-          <button id="rr-refresh" type="button">Refresh</button>
+          <button id="rmap-refresh" type="button">Refresh</button>
         </form>
-        <p id="rr-status" class="status" aria-live="polite"></p>
-        <div class="share-map" data-share="Radar rain" data-share-from="rr-when">
-          <div id="rr-map" class="station-map radar-map nw-map"></div>
-          <p id="rr-when" class="note"></p>
-          <p id="rr-legend" class="legend map-legend"></p>
-          <label class="rm-check snap-skip"><input id="rr-gauges" type="checkbox" checked /> Gauges against radar (red: radar high, blue: radar low)</label>
+        <p id="rmap-status" class="status" aria-live="polite"></p>
+        <div class="share-map" data-share="Rain map" data-share-from="rmap-when">
+          <div id="rmap-map" class="station-map radar-map nw-map"></div>
+          <p id="rmap-when" class="note"></p>
+          <p id="rmap-legend" class="legend map-legend"></p>
+          <label class="rm-check snap-skip"><input id="rmap-dots" type="checkbox" /> Show the gauges</label>
         </div>
-        <label class="rm-saver">Download <select id="rr-saver" data-saver></select></label>
-        <div data-share="Radar rain · districts" data-share-from="rr-when">
-          <h3>By district (mean · wettest spot)</h3>
-          <ul id="rr-districts" class="rank-list"></ul>
-        </div>
-        <div data-share="Radar against rain gauges" data-share-from="rr-when">
-          <h3>Radar against the rain gauges</h3>
-          <p id="rr-check-sum" class="note"></p>
-          <ul id="rr-check-list" class="rank-list rr-check"></ul>
+        <div data-share="Rain map · districts" data-share-from="rmap-when">
+          <h3>By district (mean of its gauges)</h3>
+          <ul id="rmap-districts" class="rank-list"></ul>
         </div>
         <p class="note">
-          Rain is worked out from the radar's reflectivity with the Marshall–Palmer formula (Z = 200 R<sup>1.6</sup>), every
-          10 minutes. IMD's MAX Z picture shows the strongest echo in the whole column, not at the ground, so the radar
-          often reads high in thunderstorms and low in light rain: the gauge check shows by how much today. Gauges are
-          TN-SMART's hourly gauges; suspect ones (Station health) are left out. The app keeps the radar steps it sees
-          for 7 hours, so the 6-hour total fills in as you use the radar screens.
+          Each spot takes the gauges within 20 km, the nearer ones counting more (inverse-distance weighting). Places
+          with no gauge that close are left blank. Gauges that miss more than one hour in ten, or that Station health
+          finds suspect, are left out. Rain gauges: TN-SMART (Tamil Nadu disaster management, RIMES), hourly.
         </p>
       </section>
 
