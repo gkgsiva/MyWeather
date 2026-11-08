@@ -18,6 +18,7 @@ import { RADARS } from "./radarmap.js";
 import { radarImageUrl, radarAnimationUrl } from "./stations.js";
 import { shareButton, shareName } from "./share.js";
 import { routeParams } from "./route.js";
+import { matchDistrict } from "./prefs.js";
 
 const AREA_KEY = "myweather.spell.area";
 const LOOK_BACK = 14;
@@ -492,11 +493,13 @@ async function sharePicture() {
 
 export function initSpell() {
   areaPick.replaceChildren(new Option("All Tamil Nadu", "all"), ...DISTRICTS.map((d) => new Option(d, d)));
-  let saved = "Chennai";
+  // Unless picked here, the home district from Settings.
+  const home = matchDistrict(areaPick.options) ?? "Chennai";
+  let saved = home;
   try {
     saved = localStorage.getItem(AREA_KEY) || saved;
   } catch {}
-  areaPick.value = saved === "all" || DISTRICTS.includes(saved) ? saved : "Chennai";
+  areaPick.value = saved === "all" || DISTRICTS.includes(saved) ? saved : home;
   toInput.max = fromInput.max = currentRainDay();
   areaPick.addEventListener("change", () => {
     try {

@@ -1,0 +1,82 @@
+name: Data sources
+
+# Checks every morning that the sites the app reads (IMD, TN-SMART, Chennai
+# Metro Water, Wunderground, Open-Meteo, the Kea blog) still answer with what
+# the app expects (scripts/check-sources.mjs). If any fail, an issue titled
+# "Data source check failed" is opened (or updated) so GitHub notifies you;
+# it is closed by itself once every source answers again.
+#
+# Chennai Metro Water's site often refuses servers outside India, so it is only
+# reported (⚠️); the TN-SMART reservoir report is checked for the lakes instead.
+#
+# Run it by hand from the Actions tab ("Run workflow") any time.
+# Optional secret WEATHER_API_KEY (the Wunderground key) adds the station check.
+
+on:
+  schedule:
+    - cron: "30 1 * * *" # 07:00 IST
+  workflow_dispatch:
+  pull_request:
+    paths: ["scripts/check-sources.mjs", ".github/workflows/data-sources.yml"]
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: data-sources
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Check the data sources
+        id: check
+        continue-on-error: true
+        env:
+          WEATHER_API_KEY: ${{ secrets.WEATHER_API_KEY }}
+          REPORT: report.md
+        run: node scripts/check-sources.mjs
+
+      - name: Summary
+        if: always()
+        run: cat report.md >> "$GITHUB_STEP_SUMMARY"
+
+      # Only the daily and hand-started runs open or close the issue; a pull
+      # request run just shows the result.
+      - name: Open or update the issue
+        if: steps.check.outcome == 'failure' && github.event_name != 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          printf '\n[Run log](%s)\n' "$RUN_URL" >> report.md
+          num=$(gh issue list --state open --search 'in:title "Data source check failed"' --json number --jq '.[0].number')
+          if [ -n "$num" ]; then
+            gh issue comment "$num" --body-file report.md
+          else
+            gh issue create --title "Data source check failed" --body-file report.md --assignee "${{ github.repository_owner }}" \
+              || gh issue create --title "Data source check failed" --body-file report.md
+          fi
+
+      - name: Close the issue when all sources are back
+        if: steps.check.outcome == 'success' && github.event_name != 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          num=$(gh issue list --state open --search 'in:title "Data source check failed"' --json number --jq '.[0].number')
+          if [ -n "$num" ]; then
+            gh issue close "$num" --comment "All data sources answer again. $(head -1 report.md)"
+          fi
+
+      - name: Fail the run if a source failed
+        if: steps.check.outcome == 'failure'
+        run: exit 1

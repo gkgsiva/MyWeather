@@ -132,13 +132,34 @@ main {
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
 }
 .menu[hidden] { display: none; }
+/* Screens grouped in sections, two to a row so the whole menu fits a phone
+   screen or nearly. Hidden screens (Settings → Menu) get [hidden]. */
+.menu-group { padding: 4px 12px 2px; }
+.menu-group[hidden] { display: none; }
+.menu-head {
+  margin: 6px 8px 2px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.menu-links {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px 6px;
+}
 .menu a {
-  padding: 12px 20px;
+  padding: 8px 10px;
   color: var(--fg);
   text-decoration: none;
-  font-size: 1.05rem;
+  font-size: 1rem;
   border-left: 4px solid transparent;
+  border-radius: 6px;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
+.menu a[hidden] { display: none; }
 .menu a:active { background: var(--grid); }
 .menu a[aria-current="page"] {
   border-left-color: var(--accent);
@@ -146,11 +167,24 @@ main {
   color: var(--accent);
   font-weight: 600;
 }
-.theme-btn {
-  align-self: flex-start;
+.menu-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
   margin: 8px 20px 0;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+}
+.theme-btn {
   background: var(--card);
   color: var(--accent);
+}
+.menu a.menu-edit {
+  padding: 8px 0;
+  border: 0;
+  color: var(--accent);
+  font-size: 0.95rem;
 }
 
 h1 { margin: 0; font-size: 1.6rem; }
@@ -1187,3 +1221,51 @@ a.near-row .near-text b { color: var(--accent); }
 
 /* Rain records */
 a.rec-row { text-decoration: none; color: var(--fg); }
+
+/* ---- Settings ---- */
+.set-card {
+  margin: 12px 0;
+  padding: 4px 14px 12px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+.set-card h3 { margin: 10px 0 8px; }
+.set-card .note { margin: 8px 0 0; }
+.set-menu h4 {
+  margin: 10px 0 4px;
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.set-menu-list {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px 8px;
+}
+.set-menu label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 6px 0;
+  font-size: 0.95rem;
+}
+.set-menu input { flex: none; width: 18px; height: 18px; margin: 0; }
+.set-menu label.locked { color: var(--muted); }
+#set-menu-all { margin-top: 8px; }
+.set-buttons { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.set-paste { margin-top: 10px; font-size: 0.9rem; }
+.set-paste summary { color: var(--accent); cursor: pointer; }
+.set-paste textarea {
+  box-sizing: border-box;
+  width: 100%;
+  margin-top: 8px;
+  padding: 8px;
+  font: 0.8rem/1.3 ui-monospace, monospace;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--fg);
+}

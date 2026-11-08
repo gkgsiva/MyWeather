@@ -24,10 +24,11 @@ import { loadLeaflet, isDark } from "./stationmap.js";
 import { decodeGif } from "./gif.js";
 import { IMD_RADAR_BASE, radarImageUrl } from "./stations.js";
 import { routeParams } from "./route.js";
-import { nowcastAt, headline, saveNowcast, distanceKm } from "./nowcast.js";
+import { nowcastAt, headline, saveNowcast, distanceKm, nowcastPlace, setNowcastPlace } from "./nowcast.js";
 import { MOSAIC, MOSAIC_RADARS, DBZ_BANDS, buildMosaic, frameImage } from "./mosaic.js";
 import { fetchTrack, trackLayer } from "./cyclonetrack.js";
 import { bindSaver } from "./datasaver.js";
+import { homePlace } from "./prefs.js";
 
 const STATION_KEY = "myweather.radarmap.station";
 const PRODUCT_KEY = "myweather.radarmap.product";
@@ -851,37 +852,15 @@ export function gridOf(p, mask, w, h) {
 
 // ---- Nowcast ----
 
-const PLACE_KEY = "myweather.nowcast.place"; // a spot tapped on the map
-const CHENNAI_PLACE = { lat: 13.08, lon: 80.27, name: "Chennai" };
 let last = null; // { r, p, grid, motion, time } of the latest loop
 let spotMarker = null;
 
-const readJson = (key) => {
-  try {
-    return JSON.parse(localStorage.getItem(key));
-  } catch {
-    return null;
-  }
-};
-
-// The place to nowcast for: a spot tapped on the map, else the phone's
-// position when Home's "Near you" is on, else Chennai.
-export function nowcastPlace() {
-  const picked = readJson(PLACE_KEY);
-  if (picked && typeof picked.lat === "number") return { lat: picked.lat, lon: picked.lon, name: picked.name || "Picked spot", picked: true };
-  const pos = readJson("myweather.home.gps") === true && readJson("myweather.home.pos");
-  if (pos && typeof pos.lat === "number") return { lat: pos.lat, lon: pos.lon, name: "Your location" };
-  return CHENNAI_PLACE;
-}
-
-/** Saves the spot to nowcast for ({ lat, lon, name }), or null to go back to your location or Chennai. */
-export function setNowcastPlace(p) {
-  try {
-    if (p) localStorage.setItem(PLACE_KEY, JSON.stringify({ lat: p.lat, lon: p.lon, name: p.name || "Picked spot" }));
-    else localStorage.removeItem(PLACE_KEY);
-  } catch {}
+// The place lives in js/nowcast.js (Home and the Rain nowcast screen use it
+// without loading this file); the pin here follows it.
+export { nowcastPlace, setNowcastPlace };
+window.addEventListener("myweather:nowcastplace", () => {
   if (map && last) drawNowcast();
-}
+});
 
 function drawNowcast() {
   const box = nowcastBox;
@@ -909,7 +888,7 @@ function drawNowcast() {
     const clear = document.createElement("button");
     clear.type = "button";
     clear.className = "linkish snap-skip";
-    clear.textContent = "Back to " + (readJson("myweather.home.gps") === true ? "my location" : "Chennai");
+    clear.textContent = "Back to " + (localStorage.getItem("myweather.home.gps") === "true" ? "my location" : homePlace().name);
     clear.addEventListener("click", () => setNowcastPlace(null));
     box.append(clear);
   }

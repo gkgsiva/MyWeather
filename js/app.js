@@ -1,71 +1,44 @@
-// Single-page menu: #home, #digest, #forecast, #heat, #nowcast, #rainmap, #radar, #radarmap, #satellite, #lightning, #warnings, #wind, #cyclone,
-// #monsoon, #yoy, #rain, #season, #compare, #map, #gauges, #health, #spell, #records, #floods, #lakes, #air, #sea, #wunderground, #blog. Each view's init runs the first time it is
-// shown, show every time, and hide when another view is opened.
-import { initHome, showHome } from "./home.js";
-import { initForecast, showForecast } from "./forecast.js";
-import { initHeat, showHeat } from "./heat.js";
-import { initDigest, showDigest } from "./digest.js";
-import { initYoy, showYoy } from "./yoy.js";
-import { initHealth, showHealth } from "./health.js";
-import { showRadar } from "./radar.js";
-import { showSatellite } from "./satellite.js";
-import { initLightning, showLightning } from "./lightning.js";
-import { showWarnings } from "./warnings.js";
-import { initWind, showWind, hideWind } from "./wind.js";
-import { initCyclone, showCyclone } from "./cyclone.js";
-import { initMonsoon, showMonsoon } from "./monsoon.js";
-import { initRain, showRain, hideRain } from "./rain.js";
-import { initSeason, showSeason, hideSeason } from "./season.js";
-import { initCompare, showCompare, hideCompare } from "./compare.js";
-import { initMap, showMap } from "./stationmap.js";
-import { initGauges, showGauges } from "./gauges.js";
-import { initRadarMap, showRadarMap, hideRadarMap } from "./radarmap.js";
-import { initNowcastView, showNowcastView } from "./nowcastview.js";
-import { initRainMap, showRainMap } from "./rainmap.js";
-import { initFloods, showFloods } from "./floods.js";
-import { initSpell, showSpell } from "./spell.js";
-import { initRecords, showRecords } from "./records.js";
-import { initLakes, showLakes } from "./lakes.js";
-import { initAir, showAir } from "./air.js";
-import { initSea, showSea } from "./sea.js";
-import { initWunderground, showWunderground } from "./wunderground.js";
-import { showBlog } from "./blog.js";
-import { initInfo } from "./info.js";
+// Single-page menu: one <section id="view-NAME"> per screen, opened by #NAME.
+// Each screen's code is loaded the first time it is opened (so the app starts
+// with only Home's code), its init runs once, show every time it is opened,
+// and hide when another screen is opened.
 import { initTheme } from "./theme.js";
 import { initPullToRefresh } from "./pull.js";
 import { initSnaps } from "./snap.js";
+import { hiddenViews } from "./prefs.js";
 
 const VIEWS = {
-  home: { title: "MyWeather", init: initHome, show: showHome },
-  digest: { title: "MyWeather · Morning digest", init: initDigest, show: showDigest },
-  forecast: { title: "MyWeather · Forecast", init: initForecast, show: showForecast },
-  heat: { title: "MyWeather · Heat & humidity", init: initHeat, show: showHeat },
-  nowcast: { title: "MyWeather · Rain nowcast", init: initNowcastView, show: showNowcastView },
-  rainmap: { title: "MyWeather · Rain map", init: initRainMap, show: showRainMap },
-  radar: { title: "MyWeather · Radars", show: showRadar },
-  radarmap: { title: "MyWeather · Radar map", init: initRadarMap, show: showRadarMap, hide: hideRadarMap },
-  satellite: { title: "MyWeather · Satellite", show: showSatellite },
-  lightning: { title: "MyWeather · Lightning", init: initLightning, show: showLightning },
-  warnings: { title: "MyWeather · Warnings", show: showWarnings },
-  wind: { title: "MyWeather · Wind & storms", init: initWind, show: showWind, hide: hideWind },
-  cyclone: { title: "MyWeather · Cyclones", init: initCyclone, show: showCyclone },
-  monsoon: { title: "MyWeather · Monsoon", init: initMonsoon, show: showMonsoon },
-  yoy: { title: "MyWeather · Year on year", init: initYoy, show: showYoy },
-  rain: { title: "MyWeather · Rain history", init: initRain, show: showRain, hide: hideRain },
-  season: { title: "MyWeather · Rain season", init: initSeason, show: showSeason, hide: hideSeason },
-  compare: { title: "MyWeather · Compare stations", init: initCompare, show: showCompare, hide: hideCompare },
-  map: { title: "MyWeather · Station map", init: initMap, show: showMap },
-  gauges: { title: "MyWeather · TN rain gauges", init: initGauges, show: showGauges },
-  health: { title: "MyWeather · Station health", init: initHealth, show: showHealth },
-  spell: { title: "MyWeather · Rain spell", init: initSpell, show: showSpell },
-  records: { title: "MyWeather · Rain records", init: initRecords, show: showRecords },
-  floods: { title: "MyWeather · Flood spots", init: initFloods, show: showFloods },
-  lakes: { title: "MyWeather · Lakes", init: initLakes, show: showLakes },
-  air: { title: "MyWeather · Air quality", init: initAir, show: showAir },
-  sea: { title: "MyWeather · Sea & tides", init: initSea, show: showSea },
-  wunderground: { title: "MyWeather · Wunderground", init: initWunderground, show: showWunderground },
-  blog: { title: "MyWeather · Kea Blog", show: showBlog },
-  info: { title: "MyWeather · Info", init: initInfo },
+  home: { title: "MyWeather", load: () => import("./home.js"), init: "initHome", show: "showHome" },
+  digest: { title: "MyWeather · Morning digest", load: () => import("./digest.js"), init: "initDigest", show: "showDigest" },
+  forecast: { title: "MyWeather · Forecast", load: () => import("./forecast.js"), init: "initForecast", show: "showForecast" },
+  heat: { title: "MyWeather · Heat & humidity", load: () => import("./heat.js"), init: "initHeat", show: "showHeat" },
+  nowcast: { title: "MyWeather · Rain nowcast", load: () => import("./nowcastview.js"), init: "initNowcastView", show: "showNowcastView" },
+  rainmap: { title: "MyWeather · Rain map", load: () => import("./rainmap.js"), init: "initRainMap", show: "showRainMap" },
+  radar: { title: "MyWeather · Radars", load: () => import("./radar.js"), show: "showRadar" },
+  radarmap: { title: "MyWeather · Radar map", load: () => import("./radarmap.js"), init: "initRadarMap", show: "showRadarMap", hide: "hideRadarMap" },
+  satellite: { title: "MyWeather · Satellite", load: () => import("./satellite.js"), show: "showSatellite" },
+  lightning: { title: "MyWeather · Lightning", load: () => import("./lightning.js"), init: "initLightning", show: "showLightning" },
+  warnings: { title: "MyWeather · Warnings", load: () => import("./warnings.js"), show: "showWarnings" },
+  wind: { title: "MyWeather · Wind & storms", load: () => import("./wind.js"), init: "initWind", show: "showWind", hide: "hideWind" },
+  cyclone: { title: "MyWeather · Cyclones", load: () => import("./cyclone.js"), init: "initCyclone", show: "showCyclone" },
+  monsoon: { title: "MyWeather · Monsoon", load: () => import("./monsoon.js"), init: "initMonsoon", show: "showMonsoon" },
+  yoy: { title: "MyWeather · Year on year", load: () => import("./yoy.js"), init: "initYoy", show: "showYoy" },
+  rain: { title: "MyWeather · Rain history", load: () => import("./rain.js"), init: "initRain", show: "showRain", hide: "hideRain" },
+  season: { title: "MyWeather · Rain season", load: () => import("./season.js"), init: "initSeason", show: "showSeason", hide: "hideSeason" },
+  compare: { title: "MyWeather · Compare stations", load: () => import("./compare.js"), init: "initCompare", show: "showCompare", hide: "hideCompare" },
+  map: { title: "MyWeather · Station map", load: () => import("./stationmap.js"), init: "initMap", show: "showMap" },
+  gauges: { title: "MyWeather · TN rain gauges", load: () => import("./gauges.js"), init: "initGauges", show: "showGauges" },
+  health: { title: "MyWeather · Station health", load: () => import("./health.js"), init: "initHealth", show: "showHealth" },
+  spell: { title: "MyWeather · Rain spell", load: () => import("./spell.js"), init: "initSpell", show: "showSpell" },
+  records: { title: "MyWeather · Rain records", load: () => import("./records.js"), init: "initRecords", show: "showRecords" },
+  floods: { title: "MyWeather · Flood spots", load: () => import("./floods.js"), init: "initFloods", show: "showFloods" },
+  lakes: { title: "MyWeather · Lakes", load: () => import("./lakes.js"), init: "initLakes", show: "showLakes" },
+  air: { title: "MyWeather · Air quality", load: () => import("./air.js"), init: "initAir", show: "showAir" },
+  sea: { title: "MyWeather · Sea & tides", load: () => import("./sea.js"), init: "initSea", show: "showSea" },
+  wunderground: { title: "MyWeather · Wunderground", load: () => import("./wunderground.js"), init: "initWunderground", show: "showWunderground" },
+  blog: { title: "MyWeather · Kea Blog", load: () => import("./blog.js"), show: "showBlog" },
+  settings: { title: "MyWeather · Settings", load: () => import("./settingsview.js"), init: "initSettings", show: "showSettings" },
+  info: { title: "MyWeather · Info", load: () => import("./info.js"), init: "initInfo" },
 };
 const started = new Set();
 
@@ -87,11 +60,31 @@ document.addEventListener("keydown", (e) => e.key === "Escape" && setMenu(false)
 // Picking the screen already shown fires no hashchange, so close here too.
 menuPanel.addEventListener("click", (e) => e.target.closest("a") && setMenu(false));
 let shown = "";
+const loaded = new Map(); // view → Promise of its module
 
-function route() {
+// Screens hidden on the Settings screen leave the menu (links to them from
+// other screens still work). A section with nothing left in it goes too.
+export function applyHiddenViews() {
+  const hidden = hiddenViews();
+  for (const a of menuPanel.querySelectorAll("a[data-view]")) a.hidden = hidden.has(a.dataset.view);
+  for (const g of menuPanel.querySelectorAll(".menu-group")) g.hidden = !g.querySelector("a[data-view]:not([hidden])");
+}
+window.addEventListener("myweather:menu", applyHiddenViews);
+
+function moduleOf(view) {
+  const v = VIEWS[view];
+  if (!v.load) return Promise.resolve({});
+  if (!loaded.has(view)) loaded.set(view, v.load());
+  return loaded.get(view);
+}
+
+async function route() {
   const name = location.hash.slice(1).split("?")[0];
   const view = VIEWS[name] ? name : "home";
-  if (shown && shown !== view) VIEWS[shown].hide?.();
+  if (shown && shown !== view) {
+    const prev = shown;
+    moduleOf(prev).then((m) => VIEWS[prev].hide && m[VIEWS[prev].hide]?.(), () => {});
+  }
   shown = view;
   for (const key of Object.keys(VIEWS)) {
     document.getElementById(`view-${key}`).hidden = key !== view;
@@ -104,12 +97,22 @@ function route() {
   viewName.textContent = view === "home" ? "" : menuPanel.querySelector(`[data-view="${view}"]`).textContent;
   setMenu(false);
   document.title = VIEWS[view].title;
+  window.scrollTo(0, 0);
+  let m;
+  try {
+    m = await moduleOf(view);
+  } catch (e) {
+    loaded.delete(view);
+    console.error(e);
+    return;
+  }
+  if (shown !== view) return; // another screen was opened while this one loaded
+  const v = VIEWS[view];
   if (!started.has(view)) {
     started.add(view);
-    VIEWS[view].init?.();
+    if (v.init) m[v.init]();
   }
-  VIEWS[view].show?.();
-  window.scrollTo(0, 0);
+  if (v.show) m[v.show]();
 }
 
 // Old links like ?city=cni&product=caz (no hash) open the radar.
@@ -138,5 +141,19 @@ initPullToRefresh(refreshView, {
   // Not while the menu is open, and not on the map (dragging pans it).
   canStart: (target) => menuPanel.hidden && !target.closest?.(".leaflet-container"),
 });
+applyHiddenViews();
 window.addEventListener("hashchange", route);
 route();
+// Once Home is up, load the other screens' code in the background while the
+// phone is idle, so the first tap on each opens as fast as before.
+const idle = window.requestIdleCallback || ((fn) => setTimeout(fn, 1500));
+window.addEventListener("load", () =>
+  setTimeout(() => idle(() => {
+    const queue = Object.keys(VIEWS).filter((v) => v !== shown);
+    const next = () => {
+      const v = queue.shift();
+      if (v) moduleOf(v).catch(() => loaded.delete(v)).finally(() => idle(next));
+    };
+    next();
+  }), 3000)
+);

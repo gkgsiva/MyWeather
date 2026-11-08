@@ -6,6 +6,7 @@ import { DEFAULT_PWS, pwsUrl } from "./pws-stations.js";
 import { WEATHER_API_KEY } from "./config.js";
 import { routeParams, IN_APP } from "./route.js";
 import { when } from "./offline.js";
+import { toTemp, tempUnit, toWind, windUnit } from "./prefs.js";
 
 const LIST_KEY = "myweather.pws.list";
 const API_KEY_KEY = "myweather.pws.apikey";
@@ -107,6 +108,8 @@ export async function fetchReading(id, key) {
 }
 
 function renderTable() {
+  $("pws-temp-unit").textContent = tempUnit();
+  $("pws-wind-unit").textContent = windUnit();
   tbody.replaceChildren(
     ...stations.map((s) => {
       const r = readings.get(s.id);
@@ -123,10 +126,10 @@ function renderTable() {
       name.textContent = s.name;
       cells.push(name);
       if (r && !(r instanceof Error)) {
-        const wind = `${fmt(m.windSpeed, 0)}/${fmt(m.windGust, 0)} ${compass(r.winddir)}`.trim();
+        const wind = `${fmt(toWind(m.windSpeed), 0)}/${fmt(toWind(m.windGust), 0)} ${compass(r.winddir)}`.trim();
         const when = new Date(r.epoch * 1000);
         const vals = [
-          fmt(m.temp),
+          fmt(toTemp(m.temp)),
           fmt(m.precipTotal),
           fmt(m.precipRate),
           wind,

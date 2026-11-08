@@ -15,6 +15,7 @@
 import { drawLines, drawBars } from "./chart.js";
 import { when } from "./offline.js";
 import { seasonByDistrict } from "./monsoon.js";
+import { matchDistrict } from "./prefs.js";
 
 const ARCHIVE = "https://archive-api.open-meteo.com/v1/archive";
 const FORECAST = "https://api.open-meteo.com/v1/forecast";
@@ -431,6 +432,8 @@ async function refresh(force = false) {
 
 export function initYoy() {
   areaPick.replaceChildren(...AREAS.map((a, i) => new Option(a[1], String(i))), new Option("Tamil Nadu (all districts)", TN));
+  // Unless picked here, the home district from Settings.
+  areaPick.value = matchDistrict(areaPick.options) ?? areaPick.options[0].value;
   try {
     const a = localStorage.getItem(AREA_KEY);
     if (a && [...areaPick.options].some((o) => o.value === a)) areaPick.value = a;

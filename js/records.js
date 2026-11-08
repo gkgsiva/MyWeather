@@ -14,6 +14,7 @@ import { gaugeFlags, skipSuspects, isSuspect } from "./health.js";
 import { idbGet, idbPut } from "./idb.js";
 import { drawBars } from "./chart.js";
 import { TN_DISTRICTS } from "./districts.js";
+import { homeDistrict } from "./prefs.js";
 
 const MEANS = "https://beta-tnsmart.rimes.int/Rainfall_Python_IDW/srg_arg/mean_rainfall_district_";
 const FIRST_DAY = "2025-10-11";
@@ -277,9 +278,9 @@ export function initRecords() {
   pick.replaceChildren(...TN_DISTRICTS.map(([n]) => new Option(n, n)));
   try {
     const a = localStorage.getItem(AREA_KEY);
-    pick.value = TN_DISTRICTS.some(([n]) => n === a) ? a : "Chennai";
+    pick.value = TN_DISTRICTS.some(([n]) => n === a) ? a : homeDistrict();
   } catch {
-    pick.value = "Chennai";
+    pick.value = homeDistrict();
   }
   pick.addEventListener("change", () => {
     try {

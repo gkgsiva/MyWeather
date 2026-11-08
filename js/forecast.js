@@ -4,6 +4,7 @@
 // the spot. The last forecast is kept on the phone for when the network drops.
 import { drawBars } from "./chart.js";
 import { when } from "./offline.js";
+import { toTemp, toWind, windUnit } from "./prefs.js";
 
 const CHENNAI = { lat: 13.0827, lon: 80.2707 };
 const SAVED_KEY = "myweather.forecast.last";
@@ -62,6 +63,9 @@ export const code = (c) => CODES[c] || ["", "–"];
 const COMPASS = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
 const compass = (deg) => (typeof deg === "number" ? COMPASS[Math.round(deg / 45) % 8] : "");
 const r0 = (v) => (typeof v === "number" ? String(Math.round(v)) : "–");
+// Temperatures and wind in the units picked in Settings.
+const t0 = (c) => r0(toTemp(c));
+const w0 = (kmh) => r0(toWind(kmh));
 const mm = (v) => (typeof v !== "number" ? "–" : v === 0 ? "0" : v < 10 ? v.toFixed(1) : String(Math.round(v)));
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -82,14 +86,14 @@ function renderNow(c) {
   $("fc-now").innerHTML = "";
   const big = document.createElement("div");
   big.className = "now-big";
-  big.textContent = `${icon} ${r0(c.temperature_2m)}°`;
+  big.textContent = `${icon} ${t0(c.temperature_2m)}°`;
   const desc = document.createElement("div");
   desc.className = "now-desc";
   desc.innerHTML = `<strong></strong><span></span>`;
   desc.firstChild.textContent = text;
   desc.lastChild.textContent =
-    `Feels ${r0(c.apparent_temperature)}° · Humidity ${r0(c.relative_humidity_2m)}% · ` +
-    `Wind ${r0(c.wind_speed_10m)} km/h ${compass(c.wind_direction_10m)}` +
+    `Feels ${t0(c.apparent_temperature)}° · Humidity ${r0(c.relative_humidity_2m)}% · ` +
+    `Wind ${w0(c.wind_speed_10m)} ${windUnit()} ${compass(c.wind_direction_10m)}` +
     (c.precipitation > 0 ? ` · Rain ${mm(c.precipitation)} mm this hour` : "");
   $("fc-now").append(big, desc);
 }
@@ -109,7 +113,7 @@ function renderHourly(h) {
       cls: p >= 70 ? "wet" : "",
       text:
         `${label}${h.time[i].slice(0, 10) !== h.time[start].slice(0, 10) ? " tomorrow" : ""} · ${r0(p)}% chance of rain, ` +
-        `${mm(h.precipitation[i])} mm · ${r0(h.temperature_2m[i])}° · ${code(h.weather_code[i])[1]}`,
+        `${mm(h.precipitation[i])} mm · ${t0(h.temperature_2m[i])}° · ${code(h.weather_code[i])[1]}`,
     });
   }
   const wettest = bars.reduce((a, b) => ((b.value ?? -1) > (a?.value ?? -1) ? b : a), null);
@@ -141,9 +145,9 @@ function renderDaily(d) {
       q(".fc-day small").textContent = `${date.getDate()} ${MONTHS[date.getMonth()]}`;
       q(".fc-icon").textContent = icon;
       q(".fc-text span").textContent = text;
-      q(".fc-text small").textContent = `Wind ${r0(d.wind_speed_10m_max[i])}, gusts ${r0(d.wind_gusts_10m_max[i])} km/h`;
-      q(".fc-temp b").textContent = `${r0(d.temperature_2m_max[i])}°`;
-      q(".fc-temp small").textContent = `${r0(d.temperature_2m_min[i])}°`;
+      q(".fc-text small").textContent = `Wind ${w0(d.wind_speed_10m_max[i])}, gusts ${w0(d.wind_gusts_10m_max[i])} ${windUnit()}`;
+      q(".fc-temp b").textContent = `${t0(d.temperature_2m_max[i])}°`;
+      q(".fc-temp small").textContent = `${t0(d.temperature_2m_min[i])}°`;
       q(".fc-rain b").textContent = `${r0(p)}%`;
       q(".fc-rain small").textContent = `${mm(d.precipitation_sum[i])} mm`;
       if (p >= 70) li.classList.add("wet");

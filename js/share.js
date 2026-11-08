@@ -7,7 +7,7 @@
 // and opens Android's share sheet. In a browser the Web Share API is used if
 // it can share files; otherwise the picture is downloaded.
 
-const EXT = { "image/gif": "gif", "image/png": "png", "image/jpeg": "jpg", "image/webp": "webp" };
+const EXT = { "image/gif": "gif", "image/png": "png", "image/jpeg": "jpg", "image/webp": "webp", "application/json": "json" };
 
 function toBase64(blob) {
   return new Promise((resolve, reject) => {
@@ -27,7 +27,7 @@ export function shareName(what, type) {
 }
 
 /**
- * Shares one picture with a caption. Resolves to "shared", "downloaded" or
+ * Shares one picture (or the Settings backup, a JSON file) with a caption. Resolves to "shared", "downloaded" or
  * "cancelled"; throws if nothing could be done.
  */
 export async function shareImage({ blob, name, text }) {
