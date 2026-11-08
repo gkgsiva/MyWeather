@@ -63,6 +63,9 @@ main {
   max-width: 900px;
   margin: 0 auto;
   padding: 0 16px 32px;
+  /* Keep Leaflet's z-indexes (400-1000) inside the page so maps stay
+     under the header, the menu and its backdrop. */
+  isolation: isolate;
 }
 
 /* Header bar in a strong colour, with a hamburger that opens the menu. */
