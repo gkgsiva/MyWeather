@@ -219,7 +219,7 @@ secret and is skipped without it.
 
 The same list is on the app's **Info** screen (`js/info.js`); keep the two in step.
 
-### v1.9
+### v1.9 (8 Nov 2026, PRs #25–#27)
 - **Rain nowcast** screen: will rain reach any place in Tamil Nadu in the next 2 hours? Pick a district, a place
   name, a pincode, your location or a spot on the map; every district is listed by when rain arrives.
 - Radar map: **Tamil Nadu (all 5 radars)** combines Chennai, Karaikal, Thiruvananthapuram, Kochi and Sriharikota
