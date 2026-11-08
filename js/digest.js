@@ -21,13 +21,18 @@ const AREA_KEY = "myweather.digest.area";
 // IMD's warning map spells these districts differently from its rainfall pages.
 const WARN_NAME = { RANIPET: "RANIPPETTAI", THIRUCHIRAPPALLI: "THIRUCHIRAPALLI", TUTICORIN: "THOOTHUKUDI", TIRUPATTUR: "TIRUPPATTAR" };
 // Districts that draw water from the Chennai lakes.
-const LAKE_AREAS = new Set(["CHENNAI", "THIRUVALLUR", "KANCHEEPURAM", "CHENGALPATTU"]);
+const LAKE_AREAS = new Set(["CHENNAI", "THIRUVALLUR", "KANCHEEPURAM", "CHENGALPATTU", "KTCC"]);
 const areaPick = document.getElementById("dg-area");
-// The district shown: { imd, name, lat, lon }.
-const area = () => {
-  const a = AREAS[Number(areaPick.value)] || AREAS[0];
-  return { imd: a[0], name: a[1], lat: a[2], lon: a[3] };
-};
+// "KTCC": Kancheepuram, Tiruvallur, Chennai and Chengalpattu side by side.
+const KTCC = ["CHENNAI", "KANCHEEPURAM", "CHENGALPATTU", "THIRUVALLUR"];
+const SHORT = { CHENNAI: "Chennai", KANCHEEPURAM: "Kanchi", CHENGALPATTU: "Chengalpet", THIRUVALLUR: "Tiruvallur" };
+const toArea = (a) => ({ imd: a[0], name: a[1], short: SHORT[a[0]] || a[1], lat: a[2], lon: a[3] });
+const isGroup = () => areaPick.value === "ktcc";
+// The districts shown: one, or the KTCC four.
+const areas = () =>
+  isGroup() ? KTCC.map((n) => toArea(AREAS.find((a) => a[0] === n))) : [toArea(AREAS[Number(areaPick.value)] || AREAS[0])];
+// The place the card is named after (KTCC: the group, at Chennai).
+const area = () => (isGroup() ? { ...areas()[0], imd: "KTCC", name: "Chennai region (KTCC)" } : areas()[0]);
 const TTL = 15 * 60 * 1000;
 
 const $ = (id) => document.getElementById(id);
@@ -75,6 +80,27 @@ async function rain() {
   const d = await getDay(day);
   const on = d.gauges.filter((g) => typeof g[4] === "number" && g[4] >= 0 && g[4] < 600);
   if (!on.length) throw new Error("no gauge data yet");
+  const period0 = `${niceDay(shiftDay(day, -1))} 8:30 AM to ${niceDay(day)} 8:30 AM`;
+  if (isGroup()) {
+    const rows = areas().map((A) => {
+      const g = on.filter((x) => imdDistrict(x[0]) === A.imd);
+      const avg = g.length ? g.reduce((a, x) => a + x[4], 0) / g.length : null;
+      const top = g.reduce((a, x) => (!a || x[4] > a[4] ? x : a), null);
+      return { A, avg, top, n: g.length };
+    });
+    const best = rows.map((r) => r.top).filter(Boolean).reduce((a, x) => (!a || x[4] > a[4] ? x : a), null);
+    fill(
+      "rain",
+      `<table class="dg-table"><tr><th></th><th>Average</th><th>Wettest gauge</th></tr>${rows
+        .map((r) => `<tr><th>${esc(r.A.short)}</th><td><b>${mm(r.avg)}</b> mm</td><td>${r.top && r.top[4] > 0 ? `${esc(r.top[1])} ${mm(r.top[4])}` : "–"}</td></tr>`)
+        .join("")}</table>
+       ${best && best[4] > 0 ? `<p>Wettest in KTCC: <b>${esc(best[1])}</b> (${esc(best[0])}) ${mm(best[4])} mm</p>` : ""}
+       <small>${period0} · TN-SMART gauges</small>`,
+      `🌧️ Rain (${period0}): ` + rows.map((r) => `${r.A.short} ${mm(r.avg)} mm`).join(", ") + (best && best[4] > 0 ? `. Wettest ${best[1]} ${mm(best[4])} mm.` : "."),
+      rows.some((r) => r.avg >= 15.6) ? "dg-wet" : ""
+    );
+    return;
+  }
   const A = area();
   const ch = on.filter((g) => imdDistrict(g[0]) === A.imd);
   const avg = ch.length ? ch.reduce((a, g) => a + g[4], 0) / ch.length : null;
@@ -96,7 +122,29 @@ async function rain() {
   );
 }
 
+async function forecastGroup() {
+  const list = areas();
+  const u = new URL(FORECAST_URL);
+  u.searchParams.set("latitude", list.map((a) => a.lat).join(","));
+  u.searchParams.set("longitude", list.map((a) => a.lon).join(","));
+  const res = await fetch(u);
+  const data = await res.json();
+  if (!res.ok || data.error) throw new Error(data.reason || `HTTP ${res.status}`);
+  const all = Array.isArray(data) ? data : [data];
+  const cell = (d, i) => `${code(d.weather_code[i])[0]} ${r0(d.temperature_2m_max[i])}° · ${r0(d.precipitation_probability_max[i])}%`;
+  fill(
+    "forecast",
+    `<table class="dg-table"><tr><th></th><th>Today</th><th>Tomorrow</th></tr>${list
+      .map((A, k) => `<tr><th>${esc(A.short)}</th><td>${cell(all[k].daily, 0)}</td><td>${cell(all[k].daily, 1)}</td></tr>`)
+      .join("")}</table><small>Top temperature and chance of rain · Open-Meteo</small>`,
+    "☁️ Today: " + list.map((A, k) => `${A.short} ${code(all[k].daily.weather_code[0])[0]} ${r0(all[k].daily.precipitation_probability_max[0])}%`).join(", ") +
+      ". Tomorrow: " + list.map((A, k) => `${A.short} ${r0(all[k].daily.precipitation_probability_max[1])}%`).join(", ") + ".",
+    all.some((x) => x.daily.precipitation_probability_max[0] >= 70) ? "dg-wet" : ""
+  );
+}
+
 async function forecast() {
+  if (isGroup()) return forecastGroup();
   const A = area();
   const u = new URL(FORECAST_URL);
   u.searchParams.set("latitude", A.lat);
@@ -117,7 +165,27 @@ async function forecast() {
   fill("forecast", t.html + n.html + `<small>Open-Meteo forecast for ${esc(A.name)}</small>`, `☁️ ${t.text}. ${n.text}.`, d.precipitation_probability_max[0] >= 70 ? "dg-wet" : "");
 }
 
+async function warningsGroup() {
+  const list = areas();
+  const all = await Promise.all(list.map((A) => districtOutlook(WARN_NAME[A.imd] || A.imd)));
+  const dot = (r) => (r ? `<span class="dg-dot" style="background:${r.color}" title="${esc(r.levelName)}"></span>` : "–");
+  const what = (r) => (r?.level ? esc(r.text || r.levelName) : "");
+  const top = Math.max(...all.flatMap((o) => [o.now?.level || 0, o.today?.level || 0, o.tomorrow?.level || 0]));
+  fill(
+    "warn",
+    `<table class="dg-table"><tr><th></th><th>Now</th><th>Today</th><th>Tomorrow</th></tr>${list
+      .map((A, k) => `<tr><th>${esc(A.short)}</th><td>${dot(all[k].now)}</td><td>${dot(all[k].today)}</td><td>${dot(all[k].tomorrow)}</td></tr>`)
+      .join("")}</table>` +
+      [...new Set(all.flatMap((o) => [what(o.now), what(o.today), what(o.tomorrow)]).filter(Boolean))].map((t) => `<p>${t}</p>`).join("") +
+      "<small>IMD district warnings · green none, yellow be aware, orange be prepared, red take action</small>",
+    "⚠️ IMD today: " + list.map((A, k) => `${A.short} ${all[k].today?.level ? all[k].today.levelName.split(" ")[0] : "none"}`).join(", ") +
+      ". Tomorrow: " + list.map((A, k) => `${A.short} ${all[k].tomorrow?.level ? all[k].tomorrow.levelName.split(" ")[0] : "none"}`).join(", ") + ".",
+    top >= 2 ? "dg-alert" : top === 1 ? "dg-watch" : ""
+  );
+}
+
 async function warnings() {
+  if (isGroup()) return warningsGroup();
   const A = area();
   const o = await districtOutlook(WARN_NAME[A.imd] || A.imd);
   const row = (label, r) =>
@@ -153,6 +221,17 @@ async function lakes() {
 
 async function monsoon() {
   const page = await seasonByDistrict();
+  if (isGroup()) {
+    const list = areas().map((A) => ({ A, a: page.areas[A.imd] }));
+    fill(
+      "monsoon",
+      `<table class="dg-table"><tr><th></th><th>Actual</th><th>Normal</th><th></th></tr>${list
+        .map(({ A, a }) => `<tr><th>${esc(A.short)}</th><td><b>${mm(a?.actual)}</b></td><td>${mm(a?.normal)}</td><td>${pct(a?.departure)}</td></tr>`)
+        .join("")}</table><small>mm since 1 Oct · IMD${page.date ? `, to ${page.date.split("-").reverse().join("-")}` : ""}</small>`,
+      "📈 NE monsoon so far: " + list.map(({ A, a }) => `${A.short} ${mm(a?.actual)} mm (${pct(a?.departure)})`).join(", ") + "."
+    );
+    return;
+  }
   const A = area();
   const a = page.areas[A.imd];
   if (!a) throw new Error(`no figure for ${A.name}`);
@@ -171,7 +250,7 @@ function sky() {
 function nowcast() {
   const n = loadNowcast();
   const sec = $("dg-nowcast");
-  if (!n || Date.now() - n.at > 30 * 60 * 1000 || (area().imd !== "CHENNAI" && n.place === "Chennai")) {
+  if (!n || Date.now() - n.at > 30 * 60 * 1000 || (!["CHENNAI", "KTCC"].includes(area().imd) && n.place === "Chennai")) {
     sec.hidden = true;
     delete lines.nowcast;
     return;
@@ -251,10 +330,11 @@ async function share() {
 }
 
 export function initDigest() {
-  areaPick.replaceChildren(...AREAS.map((a, i) => new Option(a[1], String(i))));
+  areaPick.replaceChildren(new Option("KTCC (Chennai, Kanchi, Chengalpet, Tiruvallur)", "ktcc"), ...AREAS.map((a, i) => new Option(a[1], String(i))));
+  areaPick.value = "0";
   try {
     const saved = localStorage.getItem(AREA_KEY);
-    if (saved && AREAS[Number(saved)]) areaPick.value = saved;
+    if (saved === "ktcc" || (saved && AREAS[Number(saved)])) areaPick.value = saved;
   } catch {}
   areaPick.addEventListener("change", () => {
     try {
