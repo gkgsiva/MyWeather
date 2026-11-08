@@ -58,7 +58,7 @@ const CODES = {
   96: ["⛈️", "Thunderstorm, hail"],
   99: ["⛈️", "Thunderstorm, hail"],
 };
-const code = (c) => CODES[c] || ["", "–"];
+export const code = (c) => CODES[c] || ["", "–"];
 const COMPASS = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
 const compass = (deg) => (typeof deg === "number" ? COMPASS[Math.round(deg / 45) % 8] : "");
 const r0 = (v) => (typeof v === "number" ? String(Math.round(v)) : "–");

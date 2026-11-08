@@ -10,9 +10,15 @@ A small static web app for Chennai weather watchers. A home page and the ☰ men
   nearest radar on the radar map, the nearest TN rain gauge (today's total) and gives sun and moon for that
   place. Picking a station by hand turns it off. The Android app asks for location permission the first time
   (`ACCESS_COARSE_LOCATION`/`FINE`, granted to the app's own page only).
+- **Morning digest** (`#digest`): one card for the day (IMD warnings for Chennai, today's and tomorrow's
+  forecast, the last rain day at the TN-SMART gauges, the monsoon so far, the lakes, sunrise and sunset, and the
+  radar nowcast when it is fresh). **Share on WhatsApp** sends it as a picture with the same summary as text.
 - **Forecast** (`#forecast`): Chennai's weather now, the chance of rain for each of the next 24 hours, and
   7 days ahead (high/low, rain chance, expected mm, wind). From [Open-Meteo](https://open-meteo.com/)
   (`api.open-meteo.com`, no key), which blends ECMWF, GFS and other models.
+- **Heat & humidity** (`#heat`): the heat index ("feels like", US weather service formula) and wet-bulb
+  temperature now and for the next 48 hours, with heat stress levels hour by hour and the hottest feel of each
+  day, from Open-Meteo (the phone's place when Near you is on). The home station's latest reading is shown too.
 - **Radars** (`#radar`): the current India Meteorological Department (IMD) Doppler radar image.
   - Choose a **city** (36 IMD radar stations) and a **product** (MAX (Z), PPI, rainfall intensity, etc.).
   - The image loads straight from IMD, e.g. `https://mausam.imd.gov.in/Radar/caz_cni.gif` for Chennai,
@@ -36,6 +42,11 @@ A small static web app for Chennai weather watchers. A home page and the ☰ men
   with an opacity slider. IMD's VVP wind-by-height chart is under the map. The plots sit on a latitude/longitude
   grid (or kilometres around the radar) measured on each image, re-spaced for Mercator. GIFs are decoded
   by `js/gif.js`. Needs the Android app for the CORS header.
+  **Rain nowcast**: from the storm movement, the app looks upstream of a place to say when the rain will reach it
+  ("Rain likely in about 40 min, for about 25 min"), up to 2 hours ahead. The place is Chennai, the phone's
+  position (Near you) or a spot tapped on the map. Home's **Rain coming?** card runs the same check on demand.
+  **Clouds (INSAT)** lays IMD's INSAT-3DS infrared picture (Asia sector, Mercator; grid measured Nov 2026) under
+  the radar echoes, see-through where the sky is clear.
 - **TN rain gauges** (`#gauges`): the Tamil Nadu government's ~1,500 automatic rain gauges (TN-SMART, with RIMES),
   hour by hour, from the JSON the public
   [hourly page](https://beta-tnsmart.rimes.int/index.php/RTDAS/Hourly_data_TNDRRA_c/public) reads
@@ -48,6 +59,10 @@ A small static web app for Chennai weather watchers. A home page and the ☰ men
   its district's average and IMD's weekly district normal (`rainfallinformation.php?msg=W`; 30 days is that ×30/7).
   Past days are downloaded once (~0.7 MB each) and kept in IndexedDB (`js/gaugedays.js`, shared with Rain spell).
   `#gauges?gauge=<district>|<gauge>` opens one gauge.
+- **Station health** (`#health`): Wunderground stations and TN-SMART gauges that are offline or sending readings
+  that don't add up (impossible values, day totals that don't match their hours, stuck readings, or far from every
+  neighbour). Suspect readings are greyed or marked **?** on the maps and left out of averages and rankings; a
+  switch here (and on the gauges screen) turns that off.
 - **Rain spell** (`#spell`): the latest run of rain days (at least 2.5 mm on average over the area in the last two
   weeks, plus a lighter day either side) for a district (Chennai by default) or all Tamil Nadu, or any dates up
   to 31 days: average total, rain each day, the 10 wettest gauges, a map of every gauge's total, the radar (IMD's
@@ -81,6 +96,10 @@ A small static web app for Chennai weather watchers. A home page and the ☰ men
   [rainfall information](https://mausam.imd.gov.in/responsive/rainfallinformation.php) pages (district, state
   and subdivision, `?msg=C|M|W|D`), whose map data carries actual, normal and departure for each area. The app
   adds the missing CORS header.
+- **Year on year** (`#yoy`): this northeast monsoon (from 1 October) against the last 12 seasons to the same
+  day, for Chennai, every Tamil Nadu district and the state: running totals, each season's bar and a table of all
+  districts. From the ERA5 reanalysis via Open-Meteo's archive (one source for every year), with IMD's measured
+  figure alongside. Past seasons are kept on the phone.
 - **Rain history** (`#rain`): every saved station's rain for the last 7 days side by side, and per station
   (`#rain?id=ICHENN47&month=2026-11`) a daily chart for a month and a monthly chart for the last 12 months.
   The data is Wunderground's (`api.weather.com` `dailysummary/7day` and `history/daily`, with the same key as

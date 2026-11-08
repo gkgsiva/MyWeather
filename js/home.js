@@ -15,7 +15,8 @@ import { when } from "./offline.js";
 import { sunTimes, moonTimes, moonIllumination, phaseName, nextPhases } from "./astro.js";
 import { loadCoords } from "./stationmap.js";
 import { km } from "./floods.js";
-import { RADARS } from "./radarmap.js";
+import { RADARS, runNowcast, nowcastPlace } from "./radarmap.js";
+import { loadNowcast, headline } from "./nowcast.js";
 import { getDay, currentRainDay } from "./gaugedays.js";
 
 const FAV_KEY = "myweather.home.favs";
@@ -411,6 +412,67 @@ async function renderNear(fresh = false) {
   }
 }
 
+// ---- Rain coming (nowcast from the radar loop) ----
+
+const NOWCAST_FRESH = 20 * 60 * 1000;
+let nowcastBusy = false;
+
+function renderNowcast(msg) {
+  const body = $("home-nowcast-body");
+  const line = $("home-nowcast-status");
+  const s = loadNowcast();
+  const place = nowcastPlace();
+  const fresh = s && Date.now() - s.at < NOWCAST_FRESH;
+  body.replaceChildren();
+  const icon = document.createElement("span");
+  icon.className = "near-icon";
+  icon.setAttribute("aria-hidden", "true");
+  const text = document.createElement("span");
+  text.className = "near-text";
+  const b = document.createElement("b");
+  const small = document.createElement("small");
+  text.append(b, small);
+  body.append(icon, text);
+  if (s) {
+    const r = s.result;
+    icon.textContent = r.raining ? "🌧️" : r.eta !== null ? "☔" : "🌤️";
+    b.textContent = headline(r);
+    small.textContent =
+      `${s.place} · ${s.radar} radar, ${s.frame ? `scan of ${new Date(s.frame).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}` : `checked ${when(s.at)}`}` +
+      (fresh ? "" : " · old, check again");
+    body.classList.toggle("stale", !fresh);
+    body.classList.toggle("wet", r.raining || r.eta !== null);
+  } else {
+    icon.textContent = "📡";
+    b.textContent = `Will rain reach ${place.name === "Chennai" ? "Chennai" : "you"} in the next 2 hours?`;
+    small.textContent = "Tap Check radar: the app follows the rain on IMD's radar loop (1 to 5 MB).";
+  }
+  line.textContent = msg || "";
+  line.className = "strip-status";
+}
+
+async function checkNowcast() {
+  if (nowcastBusy) return;
+  nowcastBusy = true;
+  const btn = $("home-nowcast-btn");
+  btn.disabled = true;
+  renderNowcast("Reading the radar loop…");
+  try {
+    await runNowcast(nowcastPlace());
+    renderNowcast("Worked out by the app from the radar's last hour; rain can grow, fade or turn.");
+  } catch (e) {
+    renderNowcast(
+      /Failed to fetch|NetworkError|Load failed/.test(e.message)
+        ? "Couldn't read IMD's radar (only works inside the app)."
+        : `Couldn't check the radar (${e.message}).`
+    );
+    $("home-nowcast-status").className = "strip-status error";
+  } finally {
+    nowcastBusy = false;
+    btn.disabled = false;
+  }
+}
+
 // ---- Screen ----
 
 export function initHome() {
@@ -435,10 +497,12 @@ export function initHome() {
     renderNear(true);
   });
   $("home-refresh").addEventListener("click", refreshStrip);
+  $("home-nowcast-btn").addEventListener("click", checkNowcast);
 }
 
 export function showHome() {
   renderFavs();
+  if (!nowcastBusy) renderNowcast();
   if (!skyDay.startsWith(new Date().toDateString())) renderSky();
   if (!nearAt || Date.now() - nearAt > TTL) renderNear();
   if (Date.now() - loadedAt > TTL) refreshStrip();

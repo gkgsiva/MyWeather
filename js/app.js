@@ -1,8 +1,12 @@
-// Single-page menu: #home, #forecast, #radar, #radarmap, #satellite, #lightning, #warnings, #wind, #cyclone,
-// #monsoon, #rain, #season, #compare, #map, #gauges, #spell, #floods, #lakes, #air, #sea, #wunderground, #blog. Each view's init runs the first time it is
+// Single-page menu: #home, #digest, #forecast, #heat, #radar, #radarmap, #satellite, #lightning, #warnings, #wind, #cyclone,
+// #monsoon, #yoy, #rain, #season, #compare, #map, #gauges, #health, #spell, #floods, #lakes, #air, #sea, #wunderground, #blog. Each view's init runs the first time it is
 // shown, show every time, and hide when another view is opened.
 import { initHome, showHome } from "./home.js";
 import { initForecast, showForecast } from "./forecast.js";
+import { initHeat, showHeat } from "./heat.js";
+import { initDigest, showDigest } from "./digest.js";
+import { initYoy, showYoy } from "./yoy.js";
+import { initHealth, showHealth } from "./health.js";
 import { showRadar } from "./radar.js";
 import { showSatellite } from "./satellite.js";
 import { initLightning, showLightning } from "./lightning.js";
@@ -29,7 +33,9 @@ import { initSnaps } from "./snap.js";
 
 const VIEWS = {
   home: { title: "MyWeather", init: initHome, show: showHome },
+  digest: { title: "MyWeather · Morning digest", init: initDigest, show: showDigest },
   forecast: { title: "MyWeather · Forecast", init: initForecast, show: showForecast },
+  heat: { title: "MyWeather · Heat & humidity", init: initHeat, show: showHeat },
   radar: { title: "MyWeather · Radars", show: showRadar },
   radarmap: { title: "MyWeather · Radar map", init: initRadarMap, show: showRadarMap, hide: hideRadarMap },
   satellite: { title: "MyWeather · Satellite", show: showSatellite },
@@ -38,11 +44,13 @@ const VIEWS = {
   wind: { title: "MyWeather · Wind & storms", init: initWind, show: showWind, hide: hideWind },
   cyclone: { title: "MyWeather · Cyclones", init: initCyclone, show: showCyclone },
   monsoon: { title: "MyWeather · Monsoon", init: initMonsoon, show: showMonsoon },
+  yoy: { title: "MyWeather · Year on year", init: initYoy, show: showYoy },
   rain: { title: "MyWeather · Rain history", init: initRain, show: showRain, hide: hideRain },
   season: { title: "MyWeather · Rain season", init: initSeason, show: showSeason, hide: hideSeason },
   compare: { title: "MyWeather · Compare stations", init: initCompare, show: showCompare, hide: hideCompare },
   map: { title: "MyWeather · Station map", init: initMap, show: showMap },
   gauges: { title: "MyWeather · TN rain gauges", init: initGauges, show: showGauges },
+  health: { title: "MyWeather · Station health", init: initHealth, show: showHealth },
   spell: { title: "MyWeather · Rain spell", init: initSpell, show: showSpell },
   floods: { title: "MyWeather · Flood spots", init: initFloods, show: showFloods },
   lakes: { title: "MyWeather · Lakes", init: initLakes, show: showLakes },
