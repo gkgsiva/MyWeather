@@ -11,7 +11,7 @@
 // last days of this season are filled from Open-Meteo's forecast service.
 //
 // Past seasons never change, so they are kept on the phone after the first
-// download (about 12 small requests).
+// download (one small request a season).
 import { drawLines, drawBars } from "./chart.js";
 import { when } from "./offline.js";
 import { seasonByDistrict } from "./monsoon.js";
@@ -20,7 +20,7 @@ const ARCHIVE = "https://archive-api.open-meteo.com/v1/archive";
 const FORECAST = "https://api.open-meteo.com/v1/forecast";
 const SAVED_KEY = "myweather.yoy.season."; // + year: { at, rain: [[mm per day] per area] }
 const AREA_KEY = "myweather.yoy.area";
-const PAST = 12; // seasons
+const FIRST = 2000; // the first season shown (ERA5 goes back much further)
 const TTL = 60 * 60 * 1000;
 
 // [IMD's name, shown name, lat, lon]: the middle of each district (from
@@ -323,13 +323,20 @@ function drawYears(c) {
     $("yoy-bars"),
     $("yoy-bars-readout"),
     c.rows.map((r) => ({
-      tick: `'${String(r.year).slice(2)}`,
+      tick: r.year % 5 === 0 || r.year === current ? `'${String(r.year).slice(2)}` : "",
       value: r.toDate,
       cls: r.year === current ? "this" : "",
       text:
         `${r.year}: ${mm(r.toDate)} mm by ${upTo}` + (r.whole !== null && r.year !== current ? ` · ${mm(r.whole)} mm in the whole season` : ""),
     })),
-    `Rain from 1 Oct to ${upTo} each season. Tap a bar.`,
+    `Rain from 1 Oct to ${upTo} each season. Wettest whole seasons: ` +
+      [...c.past]
+        .filter((r) => r.whole !== null)
+        .sort((a, b) => b.whole - a.whole)
+        .slice(0, 3)
+        .map((r) => `${r.year} (${mm(r.whole)} mm)`)
+        .join(", ") +
+      ". Tap a bar.",
     { peak: (v) => mm(v) }
   );
 }
@@ -383,24 +390,28 @@ async function refresh(force = false) {
         draw();
       })
       .catch(() => {});
-  const years = Array.from({ length: PAST + 1 }, (_, i) => current - PAST + i);
+  const years = Array.from({ length: current - FIRST + 1 }, (_, i) => current - i); // newest first
   const got = {};
   let failed = 0;
   let lastError = "";
+  let done = 0;
   try {
-    for (const [k, y] of years.entries()) {
-      if (!readSaved(y) || y === current) status.textContent = `Loading season ${y} (${k + 1} of ${years.length})…`;
-      try {
-        got[y] = await loadSeason(y, force);
-      } catch (e) {
-        failed++;
-        lastError = e.message;
+    // Three at a time; past seasons come from the phone after the first time.
+    let next = 0;
+    const worker = async () => {
+      while (next < years.length) {
+        const y = years[next++];
+        try {
+          got[y] = await loadSeason(y, force);
+        } catch (e) {
+          failed++;
+          lastError = e.message;
+        }
+        done++;
+        if (done < years.length) status.textContent = `Loading seasons… ${done} of ${years.length}`;
       }
-      if (k === years.length - 1 || (Object.keys(got).length && !seasons)) {
-        seasons = { ...got };
-        draw();
-      }
-    }
+    };
+    await Promise.all([worker(), worker(), worker()]);
     seasons = got;
     if (!Object.keys(got).length) {
       status.textContent = /Failed to fetch|NetworkError|Load failed/.test(lastError)

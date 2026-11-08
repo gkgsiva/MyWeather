@@ -1104,3 +1104,6 @@ a.near-row .near-text b { color: var(--accent); }
 .radar-map .leaflet-image-layer.rm-cloud-layer { image-rendering: auto; }
 .controls label.rm-check { flex-direction: row; align-items: center; flex-basis: 100%; gap: 8px; }
 .controls label.rm-check input { width: auto; flex: none; }
+.heat-search { flex: 1 1 200px; }
+.heat-results li { list-style: none; }
+.heat-results { padding: 0; margin: 0 0 8px; }

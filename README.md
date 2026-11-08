@@ -96,7 +96,7 @@ A small static web app for Chennai weather watchers. A home page and the ☰ men
   [rainfall information](https://mausam.imd.gov.in/responsive/rainfallinformation.php) pages (district, state
   and subdivision, `?msg=C|M|W|D`), whose map data carries actual, normal and departure for each area. The app
   adds the missing CORS header.
-- **Year on year** (`#yoy`): this northeast monsoon (from 1 October) against the last 12 seasons to the same
+- **Year on year** (`#yoy`): this northeast monsoon (from 1 October) against every season since 2000 to the same
   day, for Chennai, every Tamil Nadu district and the state: running totals, each season's bar and a table of all
   districts. From the ERA5 reanalysis via Open-Meteo's archive (one source for every year), with IMD's measured
   figure alongside. Past seasons are kept on the phone.
