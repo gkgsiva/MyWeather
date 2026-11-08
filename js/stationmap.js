@@ -8,6 +8,7 @@
 // OpenStreetMap tiles, darkened to match a dark theme.
 import { loadStations, apiKey, fetchReading, loadLast } from "./wunderground.js";
 import { when } from "./offline.js";
+import { toTemp, tempUnit } from "./prefs.js";
 import { pwsFlags, isSuspect, skipSuspects } from "./health.js";
 
 const COORDS_KEY = "myweather.pws.coords";
@@ -78,10 +79,11 @@ function renderLegend(mode) {
     ...m.scale.map(([, c, label]) => {
       const s = document.createElement("span");
       s.style.setProperty("--level", c);
-      s.textContent = label;
+      // Temperature bands in °F when picked in Settings.
+      s.textContent = mode === "temp" && tempUnit() === "°F" ? label.replace(/\d+/g, (n) => Math.round(toTemp(Number(n)))) : label;
       return s;
     }),
-    Object.assign(document.createElement("small"), { textContent: m.unit })
+    Object.assign(document.createElement("small"), { textContent: mode === "temp" ? tempUnit() : m.unit })
   );
 }
 
@@ -177,7 +179,7 @@ function draw() {
     const stale = obs && Date.now() - obs.epoch * 1000 > 60 * 60 * 1000;
     const icon = L.divIcon({
       className: "",
-      html: `<span class="pin${stale ? " stale" : ""}${obs ? "" : " off"}${suspect ? " suspect" : ""}" style="background:${c};color:${LIGHT.has(c) ? "#111" : "#fff"}">${obs ? fmt(v) : "–"}${suspect ? "?" : ""}</span>`,
+      html: `<span class="pin${stale ? " stale" : ""}${obs ? "" : " off"}${suspect ? " suspect" : ""}" style="background:${c};color:${LIGHT.has(c) ? "#111" : "#fff"}">${obs ? fmt(mode === "temp" ? toTemp(v) : v) : "–"}${suspect ? "?" : ""}</span>`,
       iconSize: null,
     });
     const marker = L.marker(pos, { icon, title: names, keyboard: true });
@@ -188,7 +190,7 @@ function draw() {
     pop.innerHTML = `<strong></strong><span></span><small></small><a></a><a></a>`;
     pop.querySelector("strong").textContent = names;
     pop.querySelector("span").textContent = obs
-      ? `Rain ${fmt(mm.precipTotal)} mm today · ${fmt(mm.precipRate)} mm/h now · ${fmt(mm.temp)}°C`
+      ? `Rain ${fmt(mm.precipTotal)} mm today · ${fmt(mm.precipRate)} mm/h now · ${fmt(toTemp(mm.temp))}${tempUnit()}`
       : r === null
         ? "Offline, no recent data"
         : "No reading";

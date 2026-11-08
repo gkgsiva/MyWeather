@@ -27,37 +27,66 @@
     </header>
     <div id="menu-backdrop" class="menu-backdrop" hidden></div>
     <nav id="menu-panel" class="menu" aria-label="Main menu" hidden>
-      <a href="#home" data-view="home">Home</a>
-      <a href="#digest" data-view="digest">Morning digest</a>
-      <a href="#forecast" data-view="forecast">Forecast</a>
-      <a href="#heat" data-view="heat">Heat &amp; humidity</a>
-      <a href="#nowcast" data-view="nowcast">Rain nowcast</a>
-      <a href="#rainmap" data-view="rainmap">Rain map</a>
-      <a href="#radar" data-view="radar">Radars</a>
-      <a href="#radarmap" data-view="radarmap">Radar map</a>
-      <a href="#satellite" data-view="satellite">Satellite</a>
-      <a href="#lightning" data-view="lightning">Lightning</a>
-      <a href="#warnings" data-view="warnings">Warnings</a>
-      <a href="#wind" data-view="wind">Wind &amp; storms</a>
-      <a href="#cyclone" data-view="cyclone">Cyclones</a>
-      <a href="#monsoon" data-view="monsoon">Monsoon</a>
-      <a href="#yoy" data-view="yoy">Year on year</a>
-      <a href="#rain" data-view="rain">Rain history</a>
-      <a href="#season" data-view="season">Rain season</a>
-      <a href="#compare" data-view="compare">Compare stations</a>
-      <a href="#map" data-view="map">Station map</a>
-      <a href="#gauges" data-view="gauges">TN rain gauges</a>
-      <a href="#health" data-view="health">Station health</a>
-      <a href="#spell" data-view="spell">Rain spell</a>
-      <a href="#records" data-view="records">Rain records</a>
-      <a href="#floods" data-view="floods">Flood spots</a>
-      <a href="#lakes" data-view="lakes">Lakes</a>
-      <a href="#air" data-view="air">Air quality</a>
-      <a href="#sea" data-view="sea">Sea &amp; tides</a>
-      <a href="#wunderground" data-view="wunderground">Wunderground</a>
-      <a href="#blog" data-view="blog">Kea Blog</a>
-      <a href="#info" data-view="info">Info</a>
-      <button id="theme-btn" type="button" class="theme-btn">Theme: Auto</button>
+      <div class="menu-group">
+        <h2 class="menu-head">Now</h2>
+        <div class="menu-links">
+          <a href="#home" data-view="home">Home</a>
+          <a href="#digest" data-view="digest">Morning digest</a>
+          <a href="#forecast" data-view="forecast">Forecast</a>
+          <a href="#heat" data-view="heat">Heat &amp; humidity</a>
+          <a href="#warnings" data-view="warnings">Warnings</a>
+          <a href="#air" data-view="air">Air quality</a>
+          <a href="#sea" data-view="sea">Sea &amp; tides</a>
+        </div>
+      </div>
+      <div class="menu-group">
+        <h2 class="menu-head">Radar &amp; sky</h2>
+        <div class="menu-links">
+          <a href="#nowcast" data-view="nowcast">Rain nowcast</a>
+          <a href="#radar" data-view="radar">Radars</a>
+          <a href="#radarmap" data-view="radarmap">Radar map</a>
+          <a href="#satellite" data-view="satellite">Satellite</a>
+          <a href="#lightning" data-view="lightning">Lightning</a>
+          <a href="#wind" data-view="wind">Wind &amp; storms</a>
+          <a href="#cyclone" data-view="cyclone">Cyclones</a>
+        </div>
+      </div>
+      <div class="menu-group">
+        <h2 class="menu-head">Rain</h2>
+        <div class="menu-links">
+          <a href="#rainmap" data-view="rainmap">Rain map</a>
+          <a href="#gauges" data-view="gauges">TN rain gauges</a>
+          <a href="#rain" data-view="rain">Rain history</a>
+          <a href="#season" data-view="season">Rain season</a>
+          <a href="#spell" data-view="spell">Rain spell</a>
+          <a href="#records" data-view="records">Rain records</a>
+          <a href="#yoy" data-view="yoy">Year on year</a>
+          <a href="#monsoon" data-view="monsoon">Monsoon</a>
+        </div>
+      </div>
+      <div class="menu-group">
+        <h2 class="menu-head">Lakes &amp; floods</h2>
+        <div class="menu-links">
+          <a href="#lakes" data-view="lakes">Lakes</a>
+          <a href="#floods" data-view="floods">Flood spots</a>
+        </div>
+      </div>
+      <div class="menu-group">
+        <h2 class="menu-head">Stations &amp; tools</h2>
+        <div class="menu-links">
+          <a href="#wunderground" data-view="wunderground">Wunderground</a>
+          <a href="#map" data-view="map">Station map</a>
+          <a href="#compare" data-view="compare">Compare stations</a>
+          <a href="#health" data-view="health">Station health</a>
+          <a href="#blog" data-view="blog">Kea Blog</a>
+          <a href="#settings" data-view="settings">Settings</a>
+          <a href="#info" data-view="info">Info</a>
+        </div>
+      </div>
+      <div class="menu-foot">
+        <button id="theme-btn" type="button" class="theme-btn">Theme: Auto</button>
+        <a href="#settings?menu" class="menu-edit">Choose screens…</a>
+      </div>
     </nav>
 
     <main>
@@ -307,6 +336,12 @@
             <a class="card" href="#blog">
               <strong>Kea Blog</strong>
               <span>Latest posts from the Kea Weather Blog</span>
+            </a>
+          </li>
+          <li>
+            <a class="card" href="#settings">
+              <strong>Settings</strong>
+              <span>Home district, units, default radar, data saver, theme, menu, and backup of your favourites</span>
             </a>
           </li>
           <li>
@@ -1395,10 +1430,10 @@
               <thead>
                 <tr>
                   <th scope="col">Station</th>
-                  <th scope="col">Temp<br /><small>°C</small></th>
+                  <th scope="col">Temp<br /><small id="pws-temp-unit">°C</small></th>
                   <th scope="col">Rain<br /><small>today mm</small></th>
                   <th scope="col">Rate<br /><small>mm/h</small></th>
-                  <th scope="col">Wind<br /><small>/ gust km/h</small></th>
+                  <th scope="col">Wind<br /><small>/ gust <span id="pws-wind-unit">km/h</span></small></th>
                   <th scope="col">At</th>
                 </tr>
               </thead>
@@ -1472,6 +1507,106 @@
         <div id="blog-reader" hidden>
           <p class="frame-bar"><a href="#blog">← All posts</a></p>
           <iframe id="blog-frame" class="site-frame" title="Kea Weather Blog"></iframe>
+        </div>
+      </section>
+
+      <!-- Settings -->
+      <section id="view-settings" class="view" hidden>
+        <h2>Settings</h2>
+        <p class="note">Saved on this phone. Each screen can still pick its own place; these are the starting choices.</p>
+
+        <div class="set-card">
+          <h3>Home district</h3>
+          <form class="controls" onsubmit="return false">
+            <label>District
+              <select id="set-district"></select>
+            </label>
+          </form>
+          <p class="note">Used by Rain coming? and Sun and moon on Home (when Near you is off), Heat &amp; humidity,
+            Morning digest, Rain spell, Rain records and Year on year. Changing it also clears the district picked on
+            those screens.</p>
+        </div>
+
+        <div class="set-card">
+          <h3>Units</h3>
+          <form class="controls" onsubmit="return false">
+            <label>Temperature
+              <select id="set-temp">
+                <option value="c">°C</option>
+                <option value="f">°F</option>
+              </select>
+            </label>
+            <label>Wind
+              <select id="set-wind">
+                <option value="kmh">km/h</option>
+                <option value="kn">knots</option>
+                <option value="mph">mph</option>
+                <option value="ms">m/s</option>
+              </select>
+            </label>
+          </form>
+          <p class="note">For the station strip, Forecast, Morning digest, Heat &amp; humidity, Wind, Wunderground and the
+            Station map. Rain stays in mm, as IMD and TN-SMART give it; IMD's own wind classes stay in km/h.</p>
+        </div>
+
+        <div class="set-card">
+          <h3>Default radar</h3>
+          <form class="controls" onsubmit="return false">
+            <label>Radars screen
+              <select id="set-radar-city"></select>
+            </label>
+            <label>Picture
+              <select id="set-radar-product"></select>
+            </label>
+            <label>Radar map
+              <select id="set-radarmap"></select>
+            </label>
+          </form>
+        </div>
+
+        <div class="set-card">
+          <h3>Data and look</h3>
+          <form class="controls" onsubmit="return false">
+            <label>Combined radar
+              <select id="set-saver" data-saver></select>
+            </label>
+            <label>Theme
+              <select id="set-theme">
+                <option value="auto">Auto (follows the phone)</option>
+                <option value="dark">Dark</option>
+                <option value="light">Light</option>
+              </select>
+            </label>
+          </form>
+        </div>
+
+        <div class="set-card" id="set-menu-card">
+          <h3>Menu</h3>
+          <p class="note">Untick the screens you don't use. They leave the ☰ menu and Home's list; links to them from
+            other screens still work.</p>
+          <div id="set-menu" class="set-menu"></div>
+          <button id="set-menu-all" type="button" class="secondary small">Show all</button>
+        </div>
+
+        <div class="set-card">
+          <h3>Backup and restore</h3>
+          <p class="note">Your favourites, stations, flood spots, picked places and these settings, in one small file.
+            Save it to Drive or send it to yourself, then restore it on a new phone or after reinstalling. The
+            Wunderground API key and downloaded data are left out.</p>
+          <div class="set-buttons">
+            <button id="set-backup" type="button">Back up…</button>
+            <button id="set-restore" type="button" class="secondary">Restore from file…</button>
+            <input id="set-restore-file" type="file" accept="application/json,.json,text/plain" hidden />
+          </div>
+          <details class="set-paste">
+            <summary>Copy or paste as text</summary>
+            <textarea id="set-text" rows="5" spellcheck="false" placeholder="Paste a backup here"></textarea>
+            <div class="set-buttons">
+              <button id="set-copy" type="button" class="secondary small">Copy backup</button>
+              <button id="set-paste" type="button" class="secondary small">Restore pasted text</button>
+            </div>
+          </details>
+          <p id="set-status" class="status" aria-live="polite"></p>
         </div>
       </section>
 

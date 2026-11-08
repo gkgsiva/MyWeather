@@ -11,7 +11,7 @@
 import { gaugeKey, currentRainDay, niceDay, shiftDay, BASE } from "./gaugedays.js";
 import { loadStations, apiKey } from "./wunderground.js";
 import { fetchAll, loadCoords } from "./stationmap.js";
-import { km } from "./floods.js";
+import { km } from "./geo.js";
 
 const HOUR_RE = /^\d\d:\d\d [AP]M$/;
 export const SKIP_KEY = "myweather.health.skip"; // "0" shows suspect readings everywhere

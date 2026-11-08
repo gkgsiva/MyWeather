@@ -25,6 +25,15 @@ export const HISTORY = [
           "**Data saver**: the radar screens can read the latest pictures (0.8 MB) instead of the 3-hour loops (16 MB); Auto saves on mobile data.",
         ],
       ],
+      [
+        "Easier to use",
+        [
+          "**Simpler menu**: screens grouped into Now, Radar & sky, Rain, Lakes & floods, and Stations & tools, two to a row.",
+          "**Settings** screen: home district, °C or °F, wind in km/h, knots, mph or m/s, default radar, data saver, theme, which screens the menu shows, and **backup and restore** of your favourites, stations and places.",
+          "**Faster start**: each screen's code loads when it is first opened (Home now starts with a quarter of the code); the rest loads in the background.",
+          "A daily check that IMD, TN-SMART, the lakes page, Wunderground, Open-Meteo and the Kea blog still answer, so a broken source is spotted early.",
+        ],
+      ],
     ],
   },
   {

@@ -5,7 +5,7 @@ const ORDER = ["auto", "dark", "light"];
 const LABEL = { auto: "Theme: Auto", dark: "☾ Dark", light: "☀ Light" };
 const btn = document.getElementById("theme-btn");
 
-function current() {
+export function currentTheme() {
   try {
     const t = localStorage.getItem(KEY);
     return ORDER.includes(t) ? t : "auto";
@@ -21,13 +21,18 @@ function apply(theme) {
   btn.title = theme === "auto" ? "Theme follows the phone. Tap for Dark." : `Theme: ${theme}. Tap to change.`;
 }
 
+/** Sets "auto", "dark" or "light" (also from the Settings screen). */
+export function setTheme(theme) {
+  try {
+    localStorage.setItem(KEY, theme);
+  } catch {}
+  apply(theme);
+  window.dispatchEvent(new Event("myweather:theme"));
+}
+
 export function initTheme() {
-  apply(current());
+  apply(currentTheme());
   btn.addEventListener("click", () => {
-    const next = ORDER[(ORDER.indexOf(current()) + 1) % ORDER.length];
-    try {
-      localStorage.setItem(KEY, next);
-    } catch {}
-    apply(next);
+    setTheme(ORDER[(ORDER.indexOf(currentTheme()) + 1) % ORDER.length]);
   });
 }

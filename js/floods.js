@@ -25,6 +25,7 @@ const RISK = [
 export const riskOf = (mm, rate) => RISK.find((r) => r.test(mm, rate || 0));
 
 import { zoneRisk } from "./waterlog.js";
+import { km } from "./geo.js";
 
 const $ = (id) => document.getElementById(id);
 const box = $("flood-map");
@@ -58,14 +59,8 @@ function saveMine(spots) {
   } catch {}
 }
 
-export function km(a, b) {
-  const R = 6371;
-  const rad = Math.PI / 180;
-  const dLat = (b[0] - a[0]) * rad;
-  const dLon = (b[1] - a[1]) * rad;
-  const h = Math.sin(dLat / 2) ** 2 + Math.cos(a[0] * rad) * Math.cos(b[0] * rad) * Math.sin(dLon / 2) ** 2;
-  return 2 * R * Math.asin(Math.sqrt(h));
-}
+// Kept here too for the screens that import it from this file.
+export { km };
 
 // Stations with a position and today's reading.
 function stationPoints() {

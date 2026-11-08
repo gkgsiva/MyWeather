@@ -11,7 +11,10 @@
 // The last answer is kept on the phone, so Home can show it without
 // downloading the loop again.
 
+import { homePlace } from "./prefs.js";
+
 const SAVED_KEY = "myweather.nowcast.last";
+const PLACE_KEY = "myweather.nowcast.place"; // a spot picked on a map or by search
 const STEP_MIN = 5;
 const MAX_MIN = 120;
 const KM_PER_DEG = 111.2;
@@ -165,4 +168,37 @@ export function loadNowcast() {
   } catch {
     return null;
   }
+}
+
+// ---- The place to nowcast for ----
+
+const readJson = (key) => {
+  try {
+    return JSON.parse(localStorage.getItem(key));
+  } catch {
+    return null;
+  }
+};
+
+// A picked spot, else the phone's position when Home's "Near you" is on,
+// else the home district (Settings; Chennai unless changed).
+export function nowcastPlace() {
+  const picked = readJson(PLACE_KEY);
+  if (picked && typeof picked.lat === "number") return { lat: picked.lat, lon: picked.lon, name: picked.name || "Picked spot", picked: true };
+  const pos = readJson("myweather.home.gps") === true && readJson("myweather.home.pos");
+  if (pos && typeof pos.lat === "number") return { lat: pos.lat, lon: pos.lon, name: "Your location" };
+  return homePlace();
+}
+
+/**
+ * Saves the spot to nowcast for ({ lat, lon, name }), or null to go back to
+ * your location or the home district. The radar map redraws its pin on the
+ * "myweather:nowcastplace" event.
+ */
+export function setNowcastPlace(p) {
+  try {
+    if (p) localStorage.setItem(PLACE_KEY, JSON.stringify({ lat: p.lat, lon: p.lon, name: p.name || "Picked spot" }));
+    else localStorage.removeItem(PLACE_KEY);
+  } catch {}
+  window.dispatchEvent(new Event("myweather:nowcastplace"));
 }

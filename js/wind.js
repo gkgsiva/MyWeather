@@ -11,6 +11,7 @@
 import { loadLeaflet, addTiles } from "./stationmap.js";
 import { routeParams } from "./route.js";
 import { when } from "./offline.js";
+import { toWind, windUnit } from "./prefs.js";
 
 const LAT0 = 5;
 const LAT1 = 21;
@@ -251,17 +252,17 @@ function render() {
   const parts = [];
   if (!Number.isNaN(cs)) {
     parts.push(
-      `<p><b>Chennai:</b> ${Math.round(cs)} km/h from the ${fromDir(data.u[t][c], data.v[t][c])}, gusts ${Math.round(
-        data.g[t][c]
-      )} km/h · ${Math.round(data.p[t][c])} hPa</p>`
+      `<p><b>Chennai:</b> ${Math.round(toWind(cs))} ${windUnit()} from the ${fromDir(data.u[t][c], data.v[t][c])}, gusts ${Math.round(
+        toWind(data.g[t][c])
+      )} ${windUnit()} · ${Math.round(data.p[t][c])} hPa</p>`
     );
   }
   if (ex.wind) {
     const [, colour, , name] = band(ex.wind.speed);
     parts.push(
       `<p><b>Strongest on the map:</b> <span class="wind-chip" style="--c:${colour}"></span>${Math.round(
-        ex.wind.speed
-      )} km/h (gusts ${Math.round(ex.wind.gust)}) near ${latLon(ex.wind.pos)}${ex.wind.speed >= 31 ? `, ${name.toLowerCase()} strength` : ""}</p>`
+        toWind(ex.wind.speed)
+      )} ${windUnit()} (gusts ${Math.round(toWind(ex.wind.gust))}) near ${latLon(ex.wind.pos)}${ex.wind.speed >= 31 ? `, ${name.toLowerCase()} strength` : ""}</p>`
     );
   }
   if (ex.low) {

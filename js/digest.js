@@ -16,6 +16,7 @@ import { sunTimes } from "./astro.js";
 import { loadNowcast, headline } from "./nowcast.js";
 import { snapBlock } from "./snap.js";
 import { shareImage, shareName } from "./share.js";
+import { toTemp, matchDistrict } from "./prefs.js";
 
 const AREA_KEY = "myweather.digest.area";
 // IMD's warning map spells these districts differently from its rainfall pages.
@@ -131,7 +132,7 @@ async function forecastGroup() {
   const data = await res.json();
   if (!res.ok || data.error) throw new Error(data.reason || `HTTP ${res.status}`);
   const all = Array.isArray(data) ? data : [data];
-  const cell = (d, i) => `${code(d.weather_code[i])[0]} ${r0(d.temperature_2m_max[i])}° · ${r0(d.precipitation_probability_max[i])}%`;
+  const cell = (d, i) => `${code(d.weather_code[i])[0]} ${r0(toTemp(d.temperature_2m_max[i]))}° · ${r0(d.precipitation_probability_max[i])}%`;
   fill(
     "forecast",
     `<table class="dg-table"><tr><th></th><th>Today</th><th>Tomorrow</th></tr>${list
@@ -156,8 +157,8 @@ async function forecast() {
   const day = (i, label) => {
     const [icon, text] = code(d.weather_code[i]);
     return {
-      html: `<div class="dg-day"><span class="dg-day-icon">${icon}</span><span><b>${label}</b> ${esc(text)}<br><small>${r0(d.temperature_2m_max[i])}° / ${r0(d.temperature_2m_min[i])}° · rain ${r0(d.precipitation_probability_max[i])}%, ${mm(d.precipitation_sum[i])} mm</small></span></div>`,
-      text: `${label} ${icon} ${text}, ${r0(d.temperature_2m_max[i])}°/${r0(d.temperature_2m_min[i])}°, rain ${r0(d.precipitation_probability_max[i])}% (${mm(d.precipitation_sum[i])} mm)`,
+      html: `<div class="dg-day"><span class="dg-day-icon">${icon}</span><span><b>${label}</b> ${esc(text)}<br><small>${r0(toTemp(d.temperature_2m_max[i]))}° / ${r0(toTemp(d.temperature_2m_min[i]))}° · rain ${r0(d.precipitation_probability_max[i])}%, ${mm(d.precipitation_sum[i])} mm</small></span></div>`,
+      text: `${label} ${icon} ${text}, ${r0(toTemp(d.temperature_2m_max[i]))}°/${r0(toTemp(d.temperature_2m_min[i]))}°, rain ${r0(d.precipitation_probability_max[i])}% (${mm(d.precipitation_sum[i])} mm)`,
     };
   };
   const t = day(0, "Today");
@@ -331,7 +332,8 @@ async function share() {
 
 export function initDigest() {
   areaPick.replaceChildren(new Option("KTCC (Chennai, Kanchi, Chengalpet, Tiruvallur)", "ktcc"), ...AREAS.map((a, i) => new Option(a[1], String(i))));
-  areaPick.value = "0";
+  // Unless picked here, the home district from Settings.
+  areaPick.value = matchDistrict(areaPick.options) ?? "0";
   try {
     const saved = localStorage.getItem(AREA_KEY);
     if (saved === "ktcc" || (saved && AREAS[Number(saved)])) areaPick.value = saved;

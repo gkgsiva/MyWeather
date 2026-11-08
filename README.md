@@ -197,10 +197,22 @@ those pages that pass the gesture to MyWeather. The station map is left out, sin
 **Offline:** the last radar image for each city and product, the lightning map, the station readings and positions, the cyclone
 list, the lake table, and the last forecast, monsoon figures, air quality and sea forecast are kept on the phone and shown, with the time they were saved, when the network drops.
 
-**Dark mode:** the theme follows the phone; the **Theme** button at the bottom of the menu (☰) switches between Auto, Dark and Light.
+**Dark mode:** the theme follows the phone; the **Theme** button at the bottom of the menu (☰), or **Settings**, switches between Auto, Dark and Light.
+
+**Settings** (menu → Stations & tools): home district, units (°C/°F; km/h, knots, mph, m/s), default radar, data saver, theme, which screens the menu shows ("Choose screens…" at the bottom of the menu), and backup and restore of your favourites, stations and places as a small JSON file (the API key is left out).
 
 The app is meant for the Android app on a phone. Wunderground pages can only be shown in a frame there:
 the app drops Wunderground's no-framing headers and blocks requests to common ad servers.
+
+## Data source check
+
+`.github/workflows/data-sources.yml` runs `scripts/check-sources.mjs` every morning at 07:00 IST. It fetches each
+source the app reads (IMD radar, satellite, lightning, rainfall and cyclone pages and map server; TN-SMART gauges
+and district files; Chennai Metro Water lake levels; Wunderground; Open-Meteo; the Kea blog) and checks the answer
+looks as the app expects. If any fail, it opens an issue **Data source check failed** (or adds the day's report to
+it), and closes the issue once everything answers again. Run it any time from **Actions → Data sources → Run
+workflow**, or locally with `node scripts/check-sources.mjs`. The Wunderground check uses the `WEATHER_API_KEY`
+secret and is skipped without it.
 
 ## Version history
 
@@ -213,6 +225,9 @@ The same list is on the app's **Info** screen (`js/info.js`); keep the two in st
   into one map and loop, lining up their scan times.
 - **Rain map** (1 to 24 h of rain filled in between the TN-SMART gauges, by district and spot); **Cyclone track** on the Radar map; **Waterlogging risk** by Chennai zone on Flood spots;
   **Rain records** by district; **Data saver** for the radar screens.
+- **Simpler menu** in sections (Now, Radar & sky, Rain, Lakes & floods, Stations & tools); **Settings** screen
+  (home district, units, default radar, data saver, theme, choose the menu's screens, backup and restore);
+  **faster start** (screens load on first use); a daily **data source check** (see below).
 
 ### v1.8 (8 Nov 2026, PRs #22–#23)
 - **Info** screen in the menu: the installed version and this version history.

@@ -14,11 +14,14 @@ import { loadStations, apiKey, fetchReading, loadLast } from "./wunderground.js"
 import { when } from "./offline.js";
 import { sunTimes, moonTimes, moonIllumination, phaseName, nextPhases } from "./astro.js";
 import { loadCoords, addTiles, loadLeaflet } from "./stationmap.js";
-import { km } from "./floods.js";
-import { RADARS, runNowcast, nowcastPlace, setNowcastPlace } from "./radarmap.js";
 import { searchPlaces } from "./places.js";
-import { loadNowcast, headline } from "./nowcast.js";
-import { getDay, currentRainDay } from "./gaugedays.js";
+import { loadNowcast, headline, nowcastPlace, setNowcastPlace } from "./nowcast.js";
+import { km } from "./geo.js";
+import { homePlace, toTemp, tempUnit, toWind, windUnit, hiddenViews } from "./prefs.js";
+// The radar map's code (the radar list and the loop reader) and the gauges
+// are loaded only when Home needs them, so the app opens faster.
+const radarMap = () => import("./radarmap.js");
+const gaugeDays = () => import("./gaugedays.js");
 
 const FAV_KEY = "myweather.home.favs";
 const STATION_KEY = "myweather.home.station";
@@ -89,6 +92,9 @@ function renderFavs() {
   favCards.hidden = !favs.length;
   favHint.hidden = favs.length > 0;
   paintStars(favs);
+  // Screens hidden in Settings → Menu leave "All screens" too (pinned ones stay pinned).
+  const hidden = hiddenViews();
+  for (const a of allCards.querySelectorAll("a.card")) a.closest("li").hidden = hidden.has(a.getAttribute("href").slice(1));
 }
 
 function toggleFav(href) {
@@ -174,16 +180,16 @@ function renderStrip(obs) {
   const main = mainStation();
   stripBody.href = main ? `#wunderground?id=${encodeURIComponent(main.id)}` : "#wunderground";
   if (!obs) {
-    stripBody.replaceChildren(stat("–", "°C"), stat("–", "mm today"), stat("–", "mm/h now"), stat("–", "km/h"));
+    stripBody.replaceChildren(stat("–", tempUnit()), stat("–", "mm today"), stat("–", "mm/h now"), stat("–", windUnit()));
     stripBody.classList.remove("wet");
     return;
   }
   const m = obs.metric || {};
   stripBody.replaceChildren(
-    stat(fmt(m.temp), "°C"),
+    stat(fmt(toTemp(m.temp)), tempUnit()),
     stat(fmt(m.precipTotal), "mm today"),
     stat(fmt(m.precipRate), "mm/h now"),
-    stat(`${fmt(m.windSpeed, 0)} ${compass(obs.winddir)}`.trim(), "km/h wind"),
+    stat(`${fmt(toWind(m.windSpeed), 0)} ${compass(obs.winddir)}`.trim(), `${windUnit()} wind`),
     stat(typeof obs.humidity === "number" ? `${Math.round(obs.humidity)}%` : "–", "humidity")
   );
   stripBody.classList.toggle("wet", m.precipRate > 0);
@@ -254,7 +260,7 @@ const dayMonth = (d) => d.toLocaleDateString([], { day: "numeric", month: "short
 
 function skyPlace() {
   const pos = gpsOn() && read(POS_KEY, null);
-  return pos ? { lat: pos.lat, lon: pos.lon, name: "Your location" } : { ...CHENNAI, name: "Chennai" };
+  return pos ? { lat: pos.lat, lon: pos.lon, name: "Your location" } : homePlace();
 }
 
 function renderSky() {
@@ -368,6 +374,7 @@ async function renderNear(fresh = false) {
   const here = [pos.lat, pos.lon];
   const rows = [];
   // Radar: the nearest of the radars on the radar map.
+  const { RADARS } = await radarMap();
   const radar = RADARS.map((r) => ({ r, d: km(here, [r.lat, r.lon]) })).sort((a, b) => a.d - b.d)[0];
   rows.push(
     radar.d < 300
@@ -389,6 +396,7 @@ async function renderNear(fresh = false) {
   if (station && mainStation()?.id === station.s.id && stationPick.value !== station.s.id) refreshStrip();
   if (skyDay.split("|")[1] !== `${pos.lat.toFixed(2)},${pos.lon.toFixed(2)}`) renderSky();
   try {
+    const { getDay, currentRainDay } = await gaugeDays();
     const day = await getDay(currentRainDay());
     let best = null;
     for (const g of day.gauges) {
@@ -461,6 +469,7 @@ async function checkNowcast() {
   btn.disabled = true;
   renderNowcast("Reading the radar loop…");
   try {
+    const { runNowcast } = await radarMap();
     await runNowcast(nowcastPlace());
     renderNowcast("Worked out by the app from the radar's last hour; rain can grow, fade or turn.");
   } catch (e) {

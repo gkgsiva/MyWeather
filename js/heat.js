@@ -12,8 +12,9 @@
 import { drawLines } from "./chart.js";
 import { when } from "./offline.js";
 import { AREAS } from "./yoy.js";
-import { km } from "./floods.js";
+import { km } from "./geo.js";
 import { searchPlaces } from "./places.js";
+import { toTemp, tempUnit, homePlace } from "./prefs.js";
 
 const CHENNAI = { lat: 13.0827, lon: 80.2707, name: "Chennai" };
 const SAVED_KEY = "myweather.heat.last";
@@ -91,7 +92,7 @@ function place() {
     const p = JSON.parse(localStorage.getItem(PLACE_KEY));
     if (p && typeof p.lat === "number") return p;
   } catch {}
-  return gpsPlace() || CHENNAI;
+  return gpsPlace() || homePlace();
 }
 
 function setPlace(p) {
@@ -110,7 +111,7 @@ function fillPicker() {
   try {
     saved = JSON.parse(localStorage.getItem(PLACE_KEY));
   } catch {}
-  const opts = [new Option(gpsPlace() ? "Your location" : "Chennai", "auto")];
+  const opts = [new Option(gpsPlace() ? "Your location" : homePlace().name, "auto")];
   const isDistrict = saved && AREAS.some((a) => a[1] === saved.name);
   if (saved && !isDistrict) opts.push(new Option(saved.name, "saved"));
   opts.push(...AREAS.map((a, i) => new Option(`${a[1]} district`, String(i))));
@@ -169,6 +170,9 @@ const url = (p) =>
   });
 
 const r0 = (v) => (typeof v === "number" ? String(Math.round(v)) : "–");
+// Shown in the temperature unit picked in Settings (worked out in °C).
+const T = (c) => r0(toTemp(c));
+const T1 = (c) => (typeof c === "number" ? toTemp(c).toFixed(1) : "–");
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const localNow = () => new Date(Date.now() + 5.5 * 3600 * 1000).toISOString().slice(0, 13) + ":00";
 const hourLabel = (iso) => {
@@ -204,14 +208,14 @@ function renderNow(data, where) {
       <span><small>Wet bulb</small><b></b></span>
     </div>
     <p class="heat-advice"></p>`;
-  box.querySelector(".heat-big b").textContent = `${r0(hi)}°`;
+  box.querySelector(".heat-big b").textContent = `${T(hi)}°`;
   const [air, hum, wet] = box.querySelectorAll(".heat-facts b");
-  air.textContent = `${r0(c.temperature_2m)}°`;
+  air.textContent = `${T(c.temperature_2m)}°`;
   hum.textContent = `${r0(c.relative_humidity_2m)}%`;
-  wet.textContent = `${typeof wb === "number" ? wb.toFixed(1) : "–"}°`;
+  wet.textContent = `${T1(wb)}°`;
   const advice = box.querySelector(".heat-advice");
   advice.append(levelBadge(hi), ` ${l ? l.advice : ""}`);
-  if (wb >= 31) advice.append(" Wet bulb above 31°: sweating barely cools the body.");
+  if (wb >= 31) advice.append(` Wet bulb above ${T(31)}°: sweating barely cools the body.`);
   $("heat-place").textContent = `${where.name} · forecast model for the hour, not a measurement`;
 }
 
@@ -237,7 +241,7 @@ function renderStation() {
   box.hidden = false;
   box.replaceChildren(
     Object.assign(document.createElement("b"), { textContent: `Measured at ${obs.neighborhood || obs.stationID}: ` }),
-    `${r0(m.temp)}° and ${r0(obs.humidity)}% humidity, feels like ${r0(hi)}° `,
+    `${T(m.temp)}° and ${r0(obs.humidity)}% humidity, feels like ${T(hi)}° `,
     levelBadge(hi),
     Object.assign(document.createElement("small"), { textContent: ` · ${when(obs.epoch * 1000)}` })
   );
@@ -259,11 +263,11 @@ function renderHours(h) {
     if (k === idx.length || h.time[idx[k]].slice(0, 10) !== h.time[idx[dayStart]].slice(0, 10)) {
       let top = dayStart;
       for (let j = dayStart; j < k; j++) if ((hi[j] ?? -99) > (hi[top] ?? -99)) top = j;
-      if (typeof hi[top] === "number" && k - dayStart >= 4) marks.push({ at: top, value: hi[top], label: `${r0(hi[top])}°` });
+      if (typeof hi[top] === "number" && k - dayStart >= 4) marks.push({ at: top, value: toTemp(hi[top]), label: `${T(hi[top])}°` });
       dayStart = k;
     }
   }
-  const all = [...temp, ...hi].filter((v) => typeof v === "number");
+  const all = [...temp, ...hi].map(toTemp).filter((v) => typeof v === "number");
   // Whole degrees on the 4 grid lines.
   const min = Math.floor(Math.min(...all)) - 1;
   const max = min + 4 * Math.ceil((Math.max(...all) + 2 - min) / 4);
@@ -273,8 +277,8 @@ function renderHours(h) {
     {
       count: idx.length,
       series: [
-        { values: temp, cls: "air" },
-        { values: hi, cls: "feels" },
+        { values: temp.map(toTemp), cls: "air" },
+        { values: hi.map(toTemp), cls: "feels" },
       ],
       ticks: idx.map((i, k) => (k % 6 === 0 ? { at: k, label: k === 0 ? "now" : hourLabel(h.time[i]) } : null)).filter(Boolean),
       points: idx.map((i, k) => {
@@ -283,15 +287,15 @@ function renderHours(h) {
         return {
           at: k,
           text:
-            `${k === 0 ? "Now" : `${day} ${hourLabel(h.time[i])}`} · air ${r0(temp[k])}°, humidity ${r0(h.relative_humidity_2m[i])}%, ` +
-            `feels ${r0(hi[k])}° (${l ? l.name : "–"}) · wet bulb ${typeof wb[k] === "number" ? wb[k].toFixed(1) : "–"}°` +
+            `${k === 0 ? "Now" : `${day} ${hourLabel(h.time[i])}`} · air ${T(temp[k])}°, humidity ${r0(h.relative_humidity_2m[i])}%, ` +
+            `feels ${T(hi[k])}° (${l ? l.name : "–"}) · wet bulb ${T1(wb[k])}°` +
             (typeof h.uv_index?.[i] === "number" && h.uv_index[i] >= 1 ? ` · UV ${Math.round(h.uv_index[i])}` : ""),
         };
       }),
       marks,
     },
     "Tap the chart for any hour.",
-    { unit: "°C", min, max, now: 0 }
+    { unit: tempUnit(), min, max, now: 0 }
   );
   // A strip of the heat-stress level hour by hour.
   const strip = $("heat-strip");
@@ -338,10 +342,10 @@ function renderDays(data) {
       li.querySelector(".fc-day small").textContent = `${date.getDate()}/${date.getMonth() + 1}`;
       li.querySelector(".heat-day-text span").append(levelBadge(d.hi));
       li.querySelector(".heat-day-text small").textContent =
-        `${d.hours ? `${d.hours} h at 32°+ feel` : "No hours at 32°+ feel"} · peak ${hourLabel(d.at)} · wet bulb up to ${d.wb.toFixed(1)}°` +
+        `${d.hours ? `${d.hours} h at ${T(32)}°+ feel` : `No hours at ${T(32)}°+ feel`} · peak ${hourLabel(d.at)} · wet bulb up to ${T1(d.wb)}°` +
         (typeof uv[k] === "number" ? ` · UV ${Math.round(uv[k])}` : "");
-      li.querySelector(".fc-temp b").textContent = `${r0(d.hi)}°`;
-      li.querySelector(".fc-temp small").textContent = `air ${r0(d.t)}°`;
+      li.querySelector(".fc-temp b").textContent = `${T(d.hi)}°`;
+      li.querySelector(".fc-temp small").textContent = `air ${T(d.t)}°`;
       return li;
     })
   );

@@ -17,6 +17,7 @@ import android.view.WindowInsets;
 import android.widget.FrameLayout;
 import android.widget.Toast;
 import android.webkit.GeolocationPermissions;
+import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebResourceResponse;
@@ -135,6 +136,8 @@ public class MainActivity extends Activity {
         SHARE_TYPES.put("image/png", ".png");
         SHARE_TYPES.put("image/jpeg", ".jpg");
         SHARE_TYPES.put("image/webp", ".webp");
+        // The Settings screen's backup file.
+        SHARE_TYPES.put("application/json", ".json");
     }
 
     private WebView webView;
@@ -284,6 +287,23 @@ public class MainActivity extends Activity {
                         Manifest.permission.ACCESS_COARSE_LOCATION,
                         Manifest.permission.ACCESS_FINE_LOCATION }, REQUEST_LOCATION);
             }
+
+            // "Restore from file" on the Settings screen: Android's file picker.
+            @Override
+            public boolean onShowFileChooser(WebView view, ValueCallback<Uri[]> callback, FileChooserParams params) {
+                if (pendingFiles != null) pendingFiles.onReceiveValue(null);
+                pendingFiles = callback;
+                Intent pick = new Intent(Intent.ACTION_GET_CONTENT)
+                        .addCategory(Intent.CATEGORY_OPENABLE)
+                        .setType("*/*");
+                try {
+                    startActivityForResult(pick, REQUEST_FILE);
+                } catch (ActivityNotFoundException e) {
+                    pendingFiles = null;
+                    return false;
+                }
+                return true;
+            }
         });
 
         listenToPage();
@@ -299,6 +319,18 @@ public class MainActivity extends Activity {
     }
 
     private static final int REQUEST_LOCATION = 41;
+    private static final int REQUEST_FILE = 42;
+    private ValueCallback<Uri[]> pendingFiles;
+
+    @Override
+    @SuppressWarnings("deprecation")
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode != REQUEST_FILE || pendingFiles == null) return;
+        Uri uri = resultCode == RESULT_OK && data != null ? data.getData() : null;
+        pendingFiles.onReceiveValue(uri != null ? new Uri[] { uri } : null);
+        pendingFiles = null;
+    }
     private String pendingGeoOrigin;
     private GeolocationPermissions.Callback pendingGeoCallback;
 
@@ -376,7 +408,7 @@ public class MainActivity extends Activity {
             String text = msg.optString("text");
             if (!text.isEmpty()) send.putExtra(Intent.EXTRA_TEXT, text);
             send.setClipData(ClipData.newRawUri("", uri));
-            Intent chooser = Intent.createChooser(send, "Share picture");
+            Intent chooser = Intent.createChooser(send, type.startsWith("image/") ? "Share picture" : "Save or send the backup");
             runOnUiThread(() -> {
                 try {
                     startActivity(chooser);
