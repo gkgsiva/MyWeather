@@ -13,6 +13,7 @@ import { drawLines } from "./chart.js";
 import { when } from "./offline.js";
 import { AREAS } from "./yoy.js";
 import { km } from "./floods.js";
+import { searchPlaces } from "./places.js";
 
 const CHENNAI = { lat: 13.0827, lon: 80.2707, name: "Chennai" };
 const SAVED_KEY = "myweather.heat.last";
@@ -118,40 +119,13 @@ function fillPicker() {
   return p;
 }
 
-async function getJson(u) {
-  const res = await fetch(u);
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  return res.json();
-}
-
-// A place name (Open-Meteo's place list) or a 6-digit pincode (OpenStreetMap's Nominatim).
-async function search(q) {
-  if (/^\d{6}$/.test(q)) {
-    const list = await getJson(
-      `https://nominatim.openstreetmap.org/search?${new URLSearchParams({ postalcode: q, countrycodes: "in", format: "json", addressdetails: "1", limit: "3" })}`
-    );
-    return list.map((r) => {
-      const a = r.address || {};
-      const where = a.suburb || a.city_district || a.village || a.town || a.city || a.county || "";
-      return { lat: Number(r.lat), lon: Number(r.lon), name: `${q}${where ? ` ${where}` : ""}`, detail: r.display_name };
-    });
-  }
-  const data = await getJson(`https://geocoding-api.open-meteo.com/v1/search?${new URLSearchParams({ name: q, count: "6", countryCode: "IN", language: "en" })}`);
-  return (data.results || []).map((r) => ({
-    lat: r.latitude,
-    lon: r.longitude,
-    name: r.name,
-    detail: [r.admin3, r.admin2, r.admin1].filter(Boolean).join(", "),
-  }));
-}
-
 async function runSearch() {
   const q = $("heat-q").value.trim();
   const list = $("heat-results");
   if (!q) return;
   list.replaceChildren(Object.assign(document.createElement("li"), { textContent: "Searching…" }));
   try {
-    const found = await search(q);
+    const found = await searchPlaces(q);
     if (!found.length) {
       list.replaceChildren(Object.assign(document.createElement("li"), { textContent: "No place found. Try a nearby town or another spelling." }));
       return;
