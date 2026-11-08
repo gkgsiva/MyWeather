@@ -164,6 +164,14 @@ The app adds a **MyWeather** home-screen widget with the latest IMD Chennai rada
 **Widgets** → **MyWeather** to add it; it can be resized. Android refreshes it about every
 30 minutes, **↻** fetches it right away, and tapping the image opens the Chennai radar in the app.
 
+### Rain & temperature widget
+
+A second widget, **Rain & temperature**, shows the main Wunderground station from the Home
+screen: temperature, rain so far today, rain rate now, wind, humidity and the reading time.
+It uses the same station and API key as the app, so open MyWeather once after adding it
+(and again after picking another station on Home). It refreshes about every 30 minutes,
+**↻** reads it right away, and tapping it opens Home.
+
 ### Signing with your own key
 
 Without signing secrets the APK is signed with a throwaway debug key, so a newer APK
