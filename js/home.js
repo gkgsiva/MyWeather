@@ -13,9 +13,10 @@
 import { loadStations, apiKey, fetchReading, loadLast } from "./wunderground.js";
 import { when } from "./offline.js";
 import { sunTimes, moonTimes, moonIllumination, phaseName, nextPhases } from "./astro.js";
-import { loadCoords } from "./stationmap.js";
+import { loadCoords, addTiles, loadLeaflet } from "./stationmap.js";
 import { km } from "./floods.js";
-import { RADARS, runNowcast, nowcastPlace } from "./radarmap.js";
+import { RADARS, runNowcast, nowcastPlace, setNowcastPlace } from "./radarmap.js";
+import { searchPlaces } from "./places.js";
 import { loadNowcast, headline } from "./nowcast.js";
 import { getDay, currentRainDay } from "./gaugedays.js";
 
@@ -420,8 +421,10 @@ let nowcastBusy = false;
 function renderNowcast(msg) {
   const body = $("home-nowcast-body");
   const line = $("home-nowcast-status");
-  const s = loadNowcast();
   const place = nowcastPlace();
+  let s = loadNowcast();
+  // A check made for another spot doesn't answer for this one.
+  if (s && (Math.abs(s.lat - place.lat) > 0.005 || Math.abs(s.lon - place.lon) > 0.005)) s = null;
   const fresh = s && Date.now() - s.at < NOWCAST_FRESH;
   body.replaceChildren();
   const icon = document.createElement("span");
@@ -444,7 +447,7 @@ function renderNowcast(msg) {
     body.classList.toggle("wet", r.raining || r.eta !== null);
   } else {
     icon.textContent = "📡";
-    b.textContent = `Will rain reach ${place.name === "Chennai" ? "Chennai" : "you"} in the next 2 hours?`;
+    b.textContent = `Will rain reach ${place.name === "Your location" ? "you" : place.name} in the next 2 hours?`;
     small.textContent = "Tap Check radar: the app follows the rain on IMD's radar loop (1 to 5 MB).";
   }
   line.textContent = msg || "";
@@ -473,6 +476,104 @@ async function checkNowcast() {
   }
 }
 
+// ---- Spot for "Rain coming?": search a place or pincode, or tap the map ----
+
+let L = null; // Leaflet, loaded when the picker first opens
+let ncMap = null;
+let ncPin = null;
+let ncPending = null; // { lat, lon, name } chosen in the panel, saved on "Check this spot"
+
+function movePin(p) {
+  ncPending = p;
+  $("home-nc-ok").textContent = `Check ${p.name === "Picked spot" ? "this spot" : p.name}`;
+  if (!ncMap) return;
+  const ll = [p.lat, p.lon];
+  if (ncPin) ncPin.setLatLng(ll);
+  else
+    ncPin = L.marker(ll, {
+      icon: L.divIcon({ className: "", html: '<span class="nc-pin">📍</span>', iconSize: null }),
+      interactive: false,
+    }).addTo(ncMap);
+}
+
+async function openSpotPicker(open) {
+  const panel = $("home-nc-pick");
+  panel.hidden = !open;
+  $("home-nc-spot").setAttribute("aria-expanded", String(open));
+  if (!open) return;
+  try {
+    L = L || (await loadLeaflet());
+  } catch {
+    $("home-nc-map").textContent = "Couldn't load the map. Search a place instead.";
+    return;
+  }
+  const place = nowcastPlace();
+  $("home-nc-auto").textContent = gpsOn() ? "Use my location" : "Back to Chennai";
+  $("home-nc-auto").hidden = !place.picked;
+  if (!ncMap) {
+    const box = $("home-nc-map");
+    ncMap = L.map(box, { zoomControl: true }).setView([place.lat, place.lon], 11);
+    addTiles(L, ncMap, box);
+    ncMap.on("click", (e) => movePin({ lat: e.latlng.lat, lon: e.latlng.lng, name: "Picked spot" }));
+  } else {
+    ncMap.invalidateSize();
+    ncMap.setView([place.lat, place.lon], Math.max(ncMap.getZoom(), 11));
+  }
+  movePin({ lat: place.lat, lon: place.lon, name: place.name });
+  ncPending = null; // nothing new picked yet
+}
+
+async function runSpotSearch() {
+  const q = $("home-nc-q").value.trim();
+  const list = $("home-nc-results");
+  if (!q) return;
+  const li = (text) => Object.assign(document.createElement("li"), { textContent: text });
+  list.replaceChildren(li("Searching…"));
+  try {
+    const found = await searchPlaces(q);
+    if (!found.length) return list.replaceChildren(li("No place found. Try a nearby area or another spelling."));
+    list.replaceChildren(
+      ...found.map((f) => {
+        const row = document.createElement("li");
+        const b = document.createElement("button");
+        b.type = "button";
+        b.className = "rank-row";
+        b.innerHTML = '<span class="rank-name"></span>';
+        b.querySelector("span").textContent = f.detail ? `${f.name} · ${f.detail}` : f.name;
+        b.addEventListener("click", () => {
+          list.replaceChildren();
+          $("home-nc-q").value = "";
+          movePin({ lat: f.lat, lon: f.lon, name: f.name });
+          ncMap?.setView([f.lat, f.lon], 13);
+        });
+        row.append(b);
+        return row;
+      })
+    );
+  } catch (e) {
+    list.replaceChildren(
+      li(/Failed to fetch|NetworkError|Load failed/.test(e.message) ? "Couldn't search just now. Check the connection." : `Couldn't search (${e.message}).`)
+    );
+  }
+}
+
+function useSpot(p) {
+  setNowcastPlace(p);
+  openSpotPicker(false);
+  renderNowcast();
+  checkNowcast();
+}
+
+function initSpotPicker() {
+  $("home-nc-spot").addEventListener("click", () => openSpotPicker($("home-nc-pick").hidden));
+  $("home-nc-go").addEventListener("click", runSpotSearch);
+  $("home-nc-q").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") runSpotSearch();
+  });
+  $("home-nc-ok").addEventListener("click", () => (ncPending ? useSpot(ncPending) : (openSpotPicker(false), checkNowcast())));
+  $("home-nc-auto").addEventListener("click", () => useSpot(null));
+}
+
 // ---- Screen ----
 
 export function initHome() {
@@ -498,6 +599,7 @@ export function initHome() {
   });
   $("home-refresh").addEventListener("click", refreshStrip);
   $("home-nowcast-btn").addEventListener("click", checkNowcast);
+  initSpotPicker();
 }
 
 export function showHome() {
