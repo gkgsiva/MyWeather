@@ -414,7 +414,7 @@ function drawPws(d) {
   const all = d.pws;
   const on = all.filter((s) => typeof s.total === "number").sort((a, b) => b.total - a.total || a.name.localeCompare(b.name));
   const off = all.filter((s) => typeof s.total !== "number");
-  $("dr-title").innerHTML = `CHENNAI WEATHER STATIONS <b>|</b> <strong>RAINFALL</strong>`;
+  $("dr-title").innerHTML = `WUNDERGROUND STATIONS <b>|</b> <strong>RAINFALL</strong>`;
   $("dr-sub").textContent = `${d.line(" • ")} • RAINFALL IN mm`;
   if (!on.length) {
     $("dr-panels").innerHTML = `<p class="dr-empty">None of the ${all.length} stations sent readings for this time.</p>`;

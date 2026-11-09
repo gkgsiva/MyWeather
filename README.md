@@ -90,7 +90,11 @@ A small static web app for Chennai weather watchers. A home page and the ☰ men
   shows rain so far), shared as a picture: Tamil Nadu or KTCC top 20/30/50/100 places (source GCC for "Z nn" gauges,
   else TNDRRA; highest rainfall; districts with most places), or the districts you pick (KTCC to start; up to 8), one
   coloured panel each with rank, gauge, bar and mm. Period: the rain day, or the last 1/3/6/12/24 hours up to the
-  latest hour any gauge reported (reaching into the day before when needed). One or two columns. From the same TN-SMART hourly file, so TNDRRA's manual taluk and IMD gauges aren't included.
+  latest hour any gauge reported (reaching into the day before when needed). One or two columns.
+  The **Wunderground stations** card (`js/pwsrain.js`) ranks the saved personal weather stations over the same
+  periods from their 5-minute readings (`observations/all/1day` for today, `history/all` for earlier days; the rain
+  in a window is the sum of the rises in `precipTotal`, which counts from local midnight). A rain day takes two
+  requests per station, spaced for the 30-a-minute limit; finished rain days are kept on the phone. From the same TN-SMART hourly file, so TNDRRA's manual taluk and IMD gauges aren't included.
 - **Station health** (`#health`): Wunderground stations and TN-SMART gauges that are offline or sending readings
   that don't add up (impossible values, day totals that don't match their hours, stuck readings, or far from every
   neighbour). Suspect readings are greyed or marked **?** on the maps and left out of averages and rankings; a
@@ -226,7 +230,8 @@ The same list is on the app's **Info** screen (`js/info.js`); keep the two in st
 
 ### v1.10 (upcoming)
 - **Rainfall cards** (Rain menu), to share as a picture for the 24 hours ending 8:30 AM: Tamil Nadu or KTCC top
-  places (with the highest rainfall and the districts with most places), or a coloured panel per district you pick.
+  places (with the highest rainfall and the districts with most places), a coloured panel per district you pick, or
+  your Wunderground stations; for the rain day or the last 1 to 24 hours.
 - Shared pictures carry a **© gkgsiva** watermark (`js/share.js` `watermark()`; animated GIF loops are sent unchanged).
 
 ### v1.9 (8 Nov 2026, PRs #25–#27)
