@@ -5,6 +5,18 @@ import { APP_VERSION } from "./version.js";
 
 export const HISTORY = [
   {
+    version: "1.10",
+    date: "upcoming",
+    groups: [
+      [
+        "New",
+        [
+          "**District rainfall** card: the wettest TN-SMART gauges of the districts you pick (Chennai and KTCC to start), ranked in one coloured panel per district for the 24 hours ending 8:30 AM, with bars and a source line, to share as a picture. One or two columns, top 10, 15, 20 or all.",
+        ],
+      ],
+    ],
+  },
+  {
     version: "1.9",
     date: "8 Nov 2026",
     groups: [

@@ -56,6 +56,7 @@
         <div class="menu-links">
           <a href="#rainmap" data-view="rainmap">Rain map</a>
           <a href="#gauges" data-view="gauges">TN rain gauges</a>
+          <a href="#distrank" data-view="distrank">District rainfall</a>
           <a href="#rain" data-view="rain">Rain history</a>
           <a href="#season" data-view="season">Rain season</a>
           <a href="#spell" data-view="spell">Rain spell</a>
@@ -288,6 +289,12 @@
             <a class="card" href="#gauges">
               <strong>TN rain gauges</strong>
               <span>All of Tamil Nadu's 1,500 rain gauges hour by hour: map, table and charts</span>
+            </a>
+          </li>
+          <li>
+            <a class="card" href="#distrank">
+              <strong>District rainfall</strong>
+              <span>The wettest gauges of the districts you pick, ranked in coloured panels, to share as a picture</span>
             </a>
           </li>
           <li>
@@ -1203,6 +1210,62 @@
           From the Tamil Nadu government's TN-SMART rain gauges. A spell is the latest run of rain days (8:30 AM to
           8:30 AM) with at least 2.5 mm on average over the area in the last two weeks; change the dates to see
           another. Days are kept on the phone once downloaded (about 0.7 MB each).
+        </p>
+      </section>
+
+      <!-- District rainfall -->
+      <section id="view-distrank" class="view" hidden>
+        <h2>District rainfall</h2>
+        <form class="controls" onsubmit="return false">
+          <label>
+            Rain day ending 8:30 AM on
+            <span class="dr-day">
+              <button id="dr-prev" type="button" class="secondary small" aria-label="Day before">‹</button>
+              <input id="dr-date" type="date" />
+              <button id="dr-next" type="button" class="secondary small" aria-label="Day after">›</button>
+            </span>
+          </label>
+          <label>
+            Stations per district
+            <select id="dr-top">
+              <option value="10">Top 10</option>
+              <option value="15">Top 15</option>
+              <option value="20">Top 20</option>
+              <option value="0">All with rain</option>
+            </select>
+          </label>
+          <button id="dr-refresh" type="button">Refresh</button>
+        </form>
+        <details class="dr-picker">
+          <summary>Districts: <span id="dr-pick-count"></span></summary>
+          <div class="dr-presets">
+            <button id="dr-ktcc" type="button" class="secondary small">Chennai + KTCC</button>
+            <button id="dr-home" type="button" class="secondary small">Home district</button>
+            <button id="dr-clear" type="button" class="secondary small">Clear</button>
+          </div>
+          <div id="dr-pick" class="dr-chips"></div>
+          <p class="note">Up to 8 districts; the panels follow the order you pick them in.</p>
+        </details>
+        <label class="dr-check"><input id="dr-wide" type="checkbox" /> Two columns (a wider picture; scroll sideways)</label>
+        <p id="dr-status" class="status" aria-live="polite"></p>
+        <div data-share="District rainfall" data-share-from="dr-sub">
+          <div class="chart-head snap-skip"><strong>Ranking card</strong></div>
+          <div id="dr-scroll" class="dr-scroll">
+            <div id="dr-card" class="dr-card" hidden>
+              <header class="dr-banner">
+                <p id="dr-title" class="dr-title"></p>
+                <p id="dr-sub" class="dr-sub"></p>
+              </header>
+              <div id="dr-panels" class="dr-panels"></div>
+              <p class="dr-source">SOURCE: Tamil Nadu Disaster Risk Reduction Agency (TNDRRA), TN-SMART automatic rain gauges</p>
+            </div>
+          </div>
+        </div>
+        <p class="note">
+          Each panel ranks the district's TN-SMART automatic rain gauges by their rain over the rain day (8:30 AM to
+          8:30 AM), wettest first; the bars are scaled to the district's wettest gauge. Gauges Station health finds
+          suspect are left out (turn that off on TN rain gauges). TNDRRA's own bulletins also list manual taluk and IMD
+          gauges, which TN-SMART doesn't publish, so a few names in those bulletins won't be here.
         </p>
       </section>
 

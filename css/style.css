@@ -1269,3 +1269,54 @@ a.rec-row { text-decoration: none; color: var(--fg); }
   background: var(--bg);
   color: var(--fg);
 }
+
+/* District rainfall (#distrank) */
+.dr-day { display: flex; gap: 6px; align-items: center; }
+.dr-day input { flex: 1; min-width: 0; }
+.dr-picker { margin: 12px 0 4px; border: 1px solid var(--border); border-radius: 10px; padding: 8px 12px; background: var(--card); }
+.dr-picker summary { cursor: pointer; font-size: 0.9rem; }
+.dr-picker summary span { color: var(--accent); font-weight: 600; }
+.dr-presets { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0; }
+.dr-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.dr-chip { display: flex; align-items: center; gap: 4px; padding: 4px 8px; border: 1px solid var(--border); border-radius: 999px; font-size: 0.85rem; }
+.dr-chip:has(input:checked) { border-color: var(--accent); color: var(--accent); }
+.dr-chip input { margin: 0; }
+.dr-check { display: flex; align-items: center; gap: 8px; margin: 8px 0; font-size: 0.85rem; color: var(--muted); }
+.dr-scroll.dr-scrolls { overflow-x: auto; margin: 0 -16px; padding: 0 16px; }
+.snapping .dr-scroll { overflow: visible; margin: 0; padding: 0; }
+.snapping:has(.dr-wide) { width: max-content; }
+.dr-card {
+  --dr-ink: #1d2733;
+  --dr-row: #f2f5f8;
+  --dr-track: #e1e6ec;
+  background: #f4f7fa;
+  color: var(--dr-ink);
+  border-radius: 12px;
+  overflow: hidden;
+  font-variant-numeric: tabular-nums;
+}
+.dr-card.dr-wide { width: 720px; }
+.dr-banner { background: #123a5c; color: #fff; padding: 12px 14px 14px; border-radius: 12px 12px 18px 18px; }
+.dr-title { margin: 0; font-size: 0.95rem; font-weight: 700; letter-spacing: 0.03em; line-height: 1.35; }
+.dr-title b { opacity: 0.8; padding: 0 2px; }
+.dr-title strong { font-size: 1.15rem; }
+.dr-sub { margin: 6px 0 0; font-size: 0.7rem; letter-spacing: 0.04em; opacity: 0.9; }
+.dr-panels { display: grid; grid-template-columns: 1fr; gap: 10px; padding: 10px 8px; }
+.dr-wide .dr-panels { grid-template-columns: 1fr 1fr; }
+.dr-panel { background: #fff; border-radius: 10px 10px 6px 6px; overflow: hidden; border: 1px solid #dfe5eb; }
+.dr-head { margin: 0; padding: 9px 12px; background: var(--dr); color: #fff; font-size: 1rem; letter-spacing: 0.04em; }
+.dr-cols, .dr-list li { display: grid; grid-template-columns: 26px minmax(0, 1fr) 64px 40px; gap: 8px; align-items: center; }
+.dr-cols { padding: 8px 8px 4px; font-size: 0.66rem; font-weight: 700; color: #6b7785; letter-spacing: 0.05em; text-transform: uppercase; }
+.dr-cols span:last-child { grid-column: 3 / 5; text-align: right; }
+.dr-list { list-style: none; margin: 0; padding: 0 6px 4px; }
+.dr-list li { padding: 5px 4px; border-radius: 6px; font-size: 0.82rem; }
+.dr-list li:nth-child(odd) { background: var(--dr-row); }
+.dr-rank { color: var(--dr); font-weight: 700; }
+.dr-name { overflow-wrap: anywhere; line-height: 1.25; }
+.dr-top .dr-name { font-weight: 700; }
+.dr-bar { height: 6px; background: var(--dr-track); border-radius: 3px; overflow: hidden; }
+.dr-bar i { display: block; height: 100%; background: var(--dr); border-radius: 3px; }
+.dr-mm { font-weight: 700; text-align: right; }
+.dr-empty { margin: 0; padding: 14px 12px; font-size: 0.85rem; color: #5d6773; }
+.dr-foot { margin: 0; padding: 4px 12px 8px; font-size: 0.7rem; color: #6b7785; }
+.dr-source { margin: 0; padding: 8px 12px 10px; background: #e3e9ef; font-size: 0.7rem; color: #4d5967; }
