@@ -232,7 +232,9 @@ The same list is on the app's **Info** screen (`js/info.js`); keep the two in st
 - **Rainfall cards** (Rain menu), to share as a picture for the 24 hours ending 8:30 AM: Tamil Nadu or KTCC top
   places (with the highest rainfall and the districts with most places), a coloured panel per district you pick, or
   your Wunderground stations; for the rain day or the last 1 to 24 hours.
-- Shared pictures carry a **© gkgsiva** watermark (`js/share.js` `watermark()`; animated GIF loops are sent unchanged).
+- Shared pictures carry a **© gkgsiva** watermark (`js/share.js` `watermark()`). IMD's pictures (radar, satellite,
+  lightning, warnings, Radar map, Rain nowcast, Rain spell; `imd: true` or `data-share-imd`) get "Courtesy: India
+  Meteorological Department" and a plain "gkgsiva" instead. Animated GIF loops are sent unchanged, credit in the caption.
 
 ### v1.9 (8 Nov 2026, PRs #25–#27)
 - **Rain nowcast** screen: will rain reach any place in Tamil Nadu in the next 2 hours? Pick a district, a place

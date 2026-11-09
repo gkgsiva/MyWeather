@@ -476,7 +476,7 @@
           <button id="nw-gps" type="button" class="linkish">📍 Use my location</button>
         </div>
         <p id="nw-status" class="status" aria-live="polite"></p>
-        <div class="share-map" data-share="Rain nowcast" data-share-from="nw-place">
+        <div class="share-map" data-share="Rain nowcast" data-share-imd data-share-from="nw-place">
           <div id="nw-answer" class="nw-answer" aria-live="polite"></div>
           <div id="nw-map" class="station-map radar-map nw-map"></div>
           <p id="nw-place" class="note"></p>
@@ -641,13 +641,13 @@
           <button id="warn-refresh" type="button">Refresh</button>
         </form>
         <p id="warn-status" class="status" aria-live="polite"></p>
-        <div data-share="Warnings · Tamil Nadu" data-share-from="warn-period">
+        <div data-share="Warnings · Tamil Nadu" data-share-imd data-share-from="warn-period">
           <figure>
             <img id="warn-map" alt="" />
             <figcaption id="warn-legend" class="legend"></figcaption>
           </figure>
         </div>
-        <div data-share="Warnings · Tamil Nadu districts" data-share-from="warn-period">
+        <div data-share="Warnings · Tamil Nadu districts" data-share-imd data-share-from="warn-period">
           <h3>Districts</h3>
           <ul id="warn-list" class="warn-list"></ul>
         </div>
@@ -1130,7 +1130,7 @@
           <button id="rm-refresh" type="button">Refresh</button>
         </form>
         <p id="rm-status" class="status" aria-live="polite"></p>
-        <div class="share-map" data-share="Radar map" data-share-from="rm-station rm-product rm-time">
+        <div class="share-map" data-share="Radar map" data-share-imd data-share-from="rm-station rm-product rm-time">
           <div id="rm-map" class="station-map radar-map"></div>
           <div class="rm-player">
             <button id="rm-play" type="button" class="secondary small snap-skip" aria-label="Play the loop">▶</button>

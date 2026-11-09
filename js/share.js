@@ -26,10 +26,15 @@ export function shareName(what, type) {
   return `MyWeather-${what}-${stamp}.${EXT[type] || "img"}`;
 }
 
-// Every still picture shared from the app carries this mark in its bottom
-// right corner. Animated GIFs (IMD's radar and satellite loops) are sent as
-// they are: stamping them would mean re-encoding every frame.
+// Every still picture shared from the app carries a mark in its bottom right
+// corner: "© gkgsiva" on the app's own pictures; on IMD's radar, satellite,
+// lightning and warning pictures (IMD's property) a credit to IMD and a plain
+// "gkgsiva". Animated GIFs (IMD's radar and satellite loops) are sent as they
+// are, since stamping them would mean re-encoding every frame; their caption
+// carries the credit.
 export const WATERMARK = "© gkgsiva";
+export const IMD_MARK = "gkgsiva";
+export const IMD_CREDIT = "Courtesy: India Meteorological Department";
 const STAMPABLE = new Set(["image/png", "image/jpeg", "image/webp"]);
 
 async function decode(blob) {
@@ -46,7 +51,7 @@ async function decode(blob) {
 }
 
 /** The picture with the watermark; the original when it can't be drawn. */
-export async function watermark(blob) {
+export async function watermark(blob, { imd = false } = {}) {
   const type = blob.type || "image/png";
   if (!STAMPABLE.has(type)) return blob;
   try {
@@ -62,23 +67,32 @@ export async function watermark(blob) {
     img.close?.();
     const size = Math.max(11, Math.round(Math.min(w, h * 1.5) * 0.026));
     const pad = Math.round(size * 0.6);
-    g.font = `600 ${size}px ${getComputedStyle(document.body).fontFamily || "sans-serif"}`;
+    const family = getComputedStyle(document.body).fontFamily || "sans-serif";
     g.textAlign = "right";
     g.textBaseline = "alphabetic";
-    const x = w - pad;
-    const y = h - pad;
-    // Dark text on a light corner, white on a dark one, with a soft outline.
-    const tw = Math.ceil(g.measureText(WATERMARK).width);
-    const px = g.getImageData(Math.max(0, x - tw), Math.max(0, y - size), Math.min(w, tw), Math.min(h, size)).data;
-    let sum = 0;
-    for (let i = 0; i < px.length; i += 4) sum += 0.299 * px[i] + 0.587 * px[i + 1] + 0.114 * px[i + 2];
-    const light = sum / (px.length / 4) > 140;
     g.lineJoin = "round";
-    g.lineWidth = Math.max(2, size / 5);
-    g.strokeStyle = light ? "rgba(255, 255, 255, 0.7)" : "rgba(0, 0, 0, 0.45)";
-    g.strokeText(WATERMARK, x, y);
-    g.fillStyle = light ? "rgba(29, 35, 43, 0.75)" : "rgba(255, 255, 255, 0.9)";
-    g.fillText(WATERMARK, x, y);
+    const x = w - pad;
+    // Lines from the bottom up: [text, font size].
+    const lines = imd ? [[IMD_MARK, size], [IMD_CREDIT, Math.max(10, Math.round(size * 0.72))]] : [[WATERMARK, size]];
+    let y = h - pad;
+    for (const [text, px] of lines) {
+      g.font = `600 ${px}px ${family}`;
+      let fit = px;
+      // The credit may be wider than a small picture.
+      while (g.measureText(text).width > w - pad * 2 && fit > 8) g.font = `600 ${--fit}px ${family}`;
+      // Dark text on a light corner, white on a dark one, with a soft outline.
+      const tw = Math.max(1, Math.min(w, Math.ceil(g.measureText(text).width)));
+      const data = g.getImageData(Math.max(0, x - tw), Math.max(0, y - fit), tw, Math.max(1, Math.min(h, fit))).data;
+      let sum = 0;
+      for (let i = 0; i < data.length; i += 4) sum += 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+      const light = sum / (data.length / 4) > 140;
+      g.lineWidth = Math.max(2, fit / 5);
+      g.strokeStyle = light ? "rgba(255, 255, 255, 0.7)" : "rgba(0, 0, 0, 0.45)";
+      g.strokeText(text, x, y);
+      g.fillStyle = light ? "rgba(29, 35, 43, 0.75)" : "rgba(255, 255, 255, 0.9)";
+      g.fillText(text, x, y);
+      y -= Math.round(fit * 1.25);
+    }
     const out = await new Promise((res) => c.toBlob(res, type, 0.92));
     return out || blob;
   } catch {
@@ -90,8 +104,9 @@ export async function watermark(blob) {
  * Shares one picture (or the Settings backup, a JSON file) with a caption. Resolves to "shared", "downloaded" or
  * "cancelled"; throws if nothing could be done.
  */
-export async function shareImage({ blob, name, text }) {
-  blob = await watermark(blob);
+export async function shareImage({ blob, name, text, imd = false }) {
+  blob = await watermark(blob, { imd });
+  if (imd && text && !text.includes(IMD_CREDIT)) text = `${text} ${IMD_CREDIT}.`;
   const type = blob.type || "image/png";
   const bridge = window.MyWeatherAndroid;
   if (bridge && typeof bridge.postMessage === "function") {

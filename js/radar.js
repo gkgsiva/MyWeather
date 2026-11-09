@@ -177,6 +177,7 @@ function shareRadar() {
     blob: shown.blob,
     name: shareName(`radar-${citySelect.value}`, shown.blob.type),
     text: `${city} radar, ${product}${loop}${time} (IMD). Shared from MyWeather.`,
+    imd: true,
   };
 }
 
