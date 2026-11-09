@@ -1320,3 +1320,34 @@ a.rec-row { text-decoration: none; color: var(--fg); }
 .dr-empty { margin: 0; padding: 14px 12px; font-size: 0.85rem; color: #5d6773; }
 .dr-foot { margin: 0; padding: 4px 12px 8px; font-size: 0.7rem; color: #6b7785; }
 .dr-source { margin: 0; padding: 8px 12px 10px; background: #e3e9ef; font-size: 0.7rem; color: #4d5967; }
+.dr-picker[hidden] { display: none; }
+/* Top-places cards */
+.dr-listcard .dr-panels { display: block; }
+.dr-tables { display: grid; grid-template-columns: 1fr; gap: 10px; }
+.dr-wide .dr-tables { grid-template-columns: 1fr 1fr; }
+.dr-table { background: #fff; border: 1px solid #dfe5eb; border-radius: 10px; overflow: hidden; }
+.dr-lcols, .dr-llist li { display: grid; grid-template-columns: 26px minmax(0, 1fr) 52px; gap: 8px; align-items: center; }
+.dr-src, .dr-dist, .dr-lcols span:nth-child(2), .dr-lcols span:nth-child(3) { display: none; }
+.dr-lcols { background: #1a6a88; color: #fff; padding: 8px; font-size: 0.66rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; }
+.dr-lcols span:last-child { text-align: right; }
+.dr-llist { list-style: none; margin: 0; padding: 4px 6px; --dr: #1a6a88; }
+.dr-llist li { padding: 4px; border-radius: 6px; font-size: 0.82rem; }
+.dr-llist li:nth-child(even) { background: var(--dr-row); }
+.dr-llist .dr-name small { display: block; font-size: 0.68rem; color: #6b7785; font-weight: 400; }
+.dr-llist .dr-mm { padding: 3px 6px; border-radius: 5px; }
+.dr-llist .dr-top .dr-rank { background: #d7ecf5; border-radius: 5px; text-align: center; }
+.dr-card.dr-wide.dr-listcard { width: 980px; }
+.dr-wide .dr-lcols, .dr-wide .dr-llist li { grid-template-columns: 24px 54px 108px minmax(0, 1fr) 50px; gap: 6px; }
+.dr-wide .dr-src, .dr-wide .dr-dist, .dr-wide .dr-lcols span { display: block; }
+.dr-wide .dr-src { font-size: 0.7rem; color: #4d5967; }
+.dr-wide .dr-dist { font-size: 0.78rem; overflow-wrap: anywhere; }
+.dr-wide .dr-llist .dr-name small { display: none; }
+.dr-boxes { display: grid; grid-template-columns: 1fr; gap: 10px; margin-top: 10px; }
+.dr-wide .dr-boxes { grid-template-columns: 1fr 1.6fr; }
+.dr-box { background: #123a5c; color: #fff; border-radius: 10px; padding: 10px 12px; }
+.dr-box > span { font-size: 0.75rem; opacity: 0.85; letter-spacing: 0.03em; }
+.dr-high strong { display: block; font-size: 1.6rem; color: #f9d71c; line-height: 1.2; }
+.dr-high p { margin: 2px 0 0; font-size: 0.85rem; }
+.dr-counts { list-style: none; margin: 6px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 0.82rem; }
+.dr-counts b { color: #f9d71c; margin-left: 2px; }
+.dr-listcard .dr-foot { padding: 6px 4px 0; }

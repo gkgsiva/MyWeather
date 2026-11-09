@@ -56,7 +56,7 @@
         <div class="menu-links">
           <a href="#rainmap" data-view="rainmap">Rain map</a>
           <a href="#gauges" data-view="gauges">TN rain gauges</a>
-          <a href="#distrank" data-view="distrank">District rainfall</a>
+          <a href="#distrank" data-view="distrank">Rainfall cards</a>
           <a href="#rain" data-view="rain">Rain history</a>
           <a href="#season" data-view="season">Rain season</a>
           <a href="#spell" data-view="spell">Rain spell</a>
@@ -293,8 +293,8 @@
           </li>
           <li>
             <a class="card" href="#distrank">
-              <strong>District rainfall</strong>
-              <span>The wettest gauges of the districts you pick, ranked in coloured panels, to share as a picture</span>
+              <strong>Rainfall cards</strong>
+              <span>The day's wettest gauges as a picture to share: Tamil Nadu or KTCC top 50, or a panel for each district you pick</span>
             </a>
           </li>
           <li>
@@ -1215,8 +1215,16 @@
 
       <!-- District rainfall -->
       <section id="view-distrank" class="view" hidden>
-        <h2>District rainfall</h2>
+        <h2>Rainfall cards</h2>
         <form class="controls" onsubmit="return false">
+          <label>
+            Card
+            <select id="dr-type">
+              <option value="districts">Districts you pick</option>
+              <option value="tn">Tamil Nadu top places</option>
+              <option value="ktcc">KTCC (Chennai) top places</option>
+            </select>
+          </label>
           <label>
             Rain day ending 8:30 AM on
             <span class="dr-day">
@@ -1225,7 +1233,16 @@
               <button id="dr-next" type="button" class="secondary small" aria-label="Day after">›</button>
             </span>
           </label>
-          <label>
+          <label id="dr-n-label">
+            Places
+            <select id="dr-n">
+              <option value="20">Top 20</option>
+              <option value="30">Top 30</option>
+              <option value="50">Top 50</option>
+              <option value="100">Top 100</option>
+            </select>
+          </label>
+          <label id="dr-top-label">
             Stations per district
             <select id="dr-top">
               <option value="10">Top 10</option>
@@ -1236,7 +1253,7 @@
           </label>
           <button id="dr-refresh" type="button">Refresh</button>
         </form>
-        <details class="dr-picker">
+        <details id="dr-picker" class="dr-picker">
           <summary>Districts: <span id="dr-pick-count"></span></summary>
           <div class="dr-presets">
             <button id="dr-ktcc" type="button" class="secondary small">Chennai + KTCC</button>
@@ -1248,7 +1265,7 @@
         </details>
         <label class="dr-check"><input id="dr-wide" type="checkbox" /> Two columns (a wider picture; scroll sideways)</label>
         <p id="dr-status" class="status" aria-live="polite"></p>
-        <div data-share="District rainfall" data-share-from="dr-sub">
+        <div data-share="Rainfall card" data-share-from="dr-title dr-sub">
           <div class="chart-head snap-skip"><strong>Ranking card</strong></div>
           <div id="dr-scroll" class="dr-scroll">
             <div id="dr-card" class="dr-card" hidden>
@@ -1262,8 +1279,10 @@
           </div>
         </div>
         <p class="note">
-          Each panel ranks the district's TN-SMART automatic rain gauges by their rain over the rain day (8:30 AM to
-          8:30 AM), wettest first; the bars are scaled to the district's wettest gauge. Gauges Station health finds
+          The cards rank TN-SMART's automatic rain gauges by their rain over the rain day (8:30 AM to 8:30 AM), wettest
+          first. KTCC is Chennai, Kancheepuram, Tiruvallur and Chengalpattu. Source GCC is a Greater Chennai Corporation
+          gauge (names starting "Z" and the zone number), TNDRRA the state's. In the district panels the bars are scaled
+          to the district's wettest gauge. Gauges Station health finds
           suspect are left out (turn that off on TN rain gauges). TNDRRA's own bulletins also list manual taluk and IMD
           gauges, which TN-SMART doesn't publish, so a few names in those bulletins won't be here.
         </p>

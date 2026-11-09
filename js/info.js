@@ -11,7 +11,7 @@ export const HISTORY = [
       [
         "New",
         [
-          "**District rainfall** card: the wettest TN-SMART gauges of the districts you pick (Chennai and KTCC to start), ranked in one coloured panel per district for the 24 hours ending 8:30 AM, with bars and a source line, to share as a picture. One or two columns, top 10, 15, 20 or all.",
+          "**Rainfall cards** to share as a picture, for the 24 hours ending 8:30 AM: **Tamil Nadu** or **KTCC (Chennai) top 20 to 100 places** (source, district, station, mm, the highest rainfall and the districts with most places), or **districts you pick** with a coloured panel each (rank, gauge, bar, mm). One or two columns.",
         ],
       ],
     ],

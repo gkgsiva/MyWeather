@@ -86,10 +86,10 @@ A small static web app for Chennai weather watchers. A home page and the ☰ men
   its district's average and IMD's weekly district normal (`rainfallinformation.php?msg=W`; 30 days is that ×30/7).
   Past days are downloaded once (~0.7 MB each) and kept in IndexedDB (`js/gaugedays.js`, shared with Rain spell).
   `#gauges?gauge=<district>|<gauge>` opens one gauge.
-- **District rainfall** (`#distrank`, `js/distrank.js`): a ranking card for the districts you pick (Chennai,
-  Kancheepuram, Tiruvallur and Chengalpattu to start; up to 8), one coloured panel each with rank, gauge, bar and mm
-  for the rain day ending 8:30 AM (the running day shows rain so far), and a TNDRRA source line; one or two columns,
-  shared as a picture. From the same TN-SMART hourly file, so TNDRRA's manual taluk and IMD gauges aren't included.
+- **Rainfall cards** (`#distrank`, `js/distrank.js`): ranking cards for the rain day ending 8:30 AM (the running day
+  shows rain so far), shared as a picture: Tamil Nadu or KTCC top 20/30/50/100 places (source GCC for "Z nn" gauges,
+  else TNDRRA; highest rainfall; districts with most places), or the districts you pick (KTCC to start; up to 8), one
+  coloured panel each with rank, gauge, bar and mm. One or two columns. From the same TN-SMART hourly file, so TNDRRA's manual taluk and IMD gauges aren't included.
 - **Station health** (`#health`): Wunderground stations and TN-SMART gauges that are offline or sending readings
   that don't add up (impossible values, day totals that don't match their hours, stuck readings, or far from every
   neighbour). Suspect readings are greyed or marked **?** on the maps and left out of averages and rankings; a
@@ -224,8 +224,8 @@ secret and is skipped without it.
 The same list is on the app's **Info** screen (`js/info.js`); keep the two in step.
 
 ### v1.10 (upcoming)
-- **District rainfall** card (Rain menu): the wettest TN-SMART gauges of the districts you pick, ranked in one
-  coloured panel per district for the 24 hours ending 8:30 AM, to share as a picture.
+- **Rainfall cards** (Rain menu), to share as a picture for the 24 hours ending 8:30 AM: Tamil Nadu or KTCC top
+  places (with the highest rainfall and the districts with most places), or a coloured panel per district you pick.
 
 ### v1.9 (8 Nov 2026, PRs #25–#27)
 - **Rain nowcast** screen: will rain reach any place in Tamil Nadu in the next 2 hours? Pick a district, a place
