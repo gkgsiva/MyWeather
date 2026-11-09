@@ -56,6 +56,7 @@
         <div class="menu-links">
           <a href="#rainmap" data-view="rainmap">Rain map</a>
           <a href="#gauges" data-view="gauges">TN rain gauges</a>
+          <a href="#distrank" data-view="distrank">Rainfall cards</a>
           <a href="#rain" data-view="rain">Rain history</a>
           <a href="#season" data-view="season">Rain season</a>
           <a href="#spell" data-view="spell">Rain spell</a>
@@ -291,6 +292,12 @@
             </a>
           </li>
           <li>
+            <a class="card" href="#distrank">
+              <strong>Rainfall cards</strong>
+              <span>The day's wettest gauges as a picture to share: Tamil Nadu or KTCC top 50, or a panel for each district you pick</span>
+            </a>
+          </li>
+          <li>
             <a class="card" href="#health">
               <strong>Station health</strong>
               <span>Offline stations and gauges, and readings that don't add up</span>
@@ -469,7 +476,7 @@
           <button id="nw-gps" type="button" class="linkish">📍 Use my location</button>
         </div>
         <p id="nw-status" class="status" aria-live="polite"></p>
-        <div class="share-map" data-share="Rain nowcast" data-share-from="nw-place">
+        <div class="share-map" data-share="Rain nowcast" data-share-imd data-share-from="nw-place">
           <div id="nw-answer" class="nw-answer" aria-live="polite"></div>
           <div id="nw-map" class="station-map radar-map nw-map"></div>
           <p id="nw-place" class="note"></p>
@@ -634,13 +641,13 @@
           <button id="warn-refresh" type="button">Refresh</button>
         </form>
         <p id="warn-status" class="status" aria-live="polite"></p>
-        <div data-share="Warnings · Tamil Nadu" data-share-from="warn-period">
+        <div data-share="Warnings · Tamil Nadu" data-share-imd data-share-from="warn-period">
           <figure>
             <img id="warn-map" alt="" />
             <figcaption id="warn-legend" class="legend"></figcaption>
           </figure>
         </div>
-        <div data-share="Warnings · Tamil Nadu districts" data-share-from="warn-period">
+        <div data-share="Warnings · Tamil Nadu districts" data-share-imd data-share-from="warn-period">
           <h3>Districts</h3>
           <ul id="warn-list" class="warn-list"></ul>
         </div>
@@ -1123,7 +1130,7 @@
           <button id="rm-refresh" type="button">Refresh</button>
         </form>
         <p id="rm-status" class="status" aria-live="polite"></p>
-        <div class="share-map" data-share="Radar map" data-share-from="rm-station rm-product rm-time">
+        <div class="share-map" data-share="Radar map" data-share-imd data-share-from="rm-station rm-product rm-time">
           <div id="rm-map" class="station-map radar-map"></div>
           <div class="rm-player">
             <button id="rm-play" type="button" class="secondary small snap-skip" aria-label="Play the loop">▶</button>
@@ -1203,6 +1210,95 @@
           From the Tamil Nadu government's TN-SMART rain gauges. A spell is the latest run of rain days (8:30 AM to
           8:30 AM) with at least 2.5 mm on average over the area in the last two weeks; change the dates to see
           another. Days are kept on the phone once downloaded (about 0.7 MB each).
+        </p>
+      </section>
+
+      <!-- District rainfall -->
+      <section id="view-distrank" class="view" hidden>
+        <h2>Rainfall cards</h2>
+        <form class="controls" onsubmit="return false">
+          <label>
+            Card
+            <select id="dr-type">
+              <option value="districts">Districts you pick</option>
+              <option value="tn">Tamil Nadu top places</option>
+              <option value="ktcc">KTCC (Chennai) top places</option>
+              <option value="pws">Wunderground stations</option>
+            </select>
+          </label>
+          <label>
+            Period
+            <select id="dr-period">
+              <option value="day">Rain day (24 h to 8:30 AM)</option>
+              <option value="1">Last 1 hour</option>
+              <option value="3">Last 3 hours</option>
+              <option value="6">Last 6 hours</option>
+              <option value="12">Last 12 hours</option>
+              <option value="24">Last 24 hours</option>
+            </select>
+          </label>
+          <label id="dr-day-label">
+            Rain day ending 8:30 AM on
+            <span class="dr-day">
+              <button id="dr-prev" type="button" class="secondary small" aria-label="Day before">‹</button>
+              <input id="dr-date" type="date" />
+              <button id="dr-next" type="button" class="secondary small" aria-label="Day after">›</button>
+            </span>
+          </label>
+          <label id="dr-n-label">
+            Places
+            <select id="dr-n">
+              <option value="20">Top 20</option>
+              <option value="30">Top 30</option>
+              <option value="50">Top 50</option>
+              <option value="100">Top 100</option>
+            </select>
+          </label>
+          <label id="dr-top-label">
+            Stations per district
+            <select id="dr-top">
+              <option value="10">Top 10</option>
+              <option value="15">Top 15</option>
+              <option value="20">Top 20</option>
+              <option value="0">All with rain</option>
+            </select>
+          </label>
+          <button id="dr-refresh" type="button">Refresh</button>
+        </form>
+        <details id="dr-picker" class="dr-picker">
+          <summary>Districts: <span id="dr-pick-count"></span></summary>
+          <div class="dr-presets">
+            <button id="dr-ktcc" type="button" class="secondary small">Chennai + KTCC</button>
+            <button id="dr-home" type="button" class="secondary small">Home district</button>
+            <button id="dr-clear" type="button" class="secondary small">Clear</button>
+          </div>
+          <div id="dr-pick" class="dr-chips"></div>
+          <p class="note">Up to 8 districts; the panels follow the order you pick them in.</p>
+        </details>
+        <label class="dr-check"><input id="dr-wide" type="checkbox" /> Two columns (a wider picture; scroll sideways)</label>
+        <p id="dr-status" class="status" aria-live="polite"></p>
+        <div data-share="Rainfall card" data-share-from="dr-title dr-sub">
+          <div class="chart-head snap-skip"><strong>Ranking card</strong></div>
+          <div id="dr-scroll" class="dr-scroll">
+            <div id="dr-card" class="dr-card" hidden>
+              <header class="dr-banner">
+                <p id="dr-title" class="dr-title"></p>
+                <p id="dr-sub" class="dr-sub"></p>
+              </header>
+              <div id="dr-panels" class="dr-panels"></div>
+              <p id="dr-source" class="dr-source">SOURCE: Tamil Nadu Disaster Risk Reduction Agency (TNDRRA), TN-SMART automatic rain gauges</p>
+            </div>
+          </div>
+        </div>
+        <p class="note">
+          The cards rank TN-SMART's automatic rain gauges by their rain over the rain day (8:30 AM to 8:30 AM), or over
+          the last 1 to 24 hours up to the latest hour reported, wettest first. The Wunderground card does the same for
+          the personal weather stations saved on the Wunderground screen, from their 5-minute readings (it needs the
+          Wunderground key; a past day takes about a minute the first time, as Wunderground allows 30 requests a minute). KTCC is Chennai, Kancheepuram, Tiruvallur and Chengalpattu. Source GCC is a Greater Chennai Corporation
+          gauge (names starting "Z" and the zone number), TNDRRA the state's. In the district panels the bars are scaled
+          to the district's wettest gauge. Gauges Station health finds
+          suspect are left out (turn that off on TN rain gauges). TNDRRA's own bulletins also list manual taluk and IMD
+          gauges, which TN-SMART doesn't publish, so a few names in those bulletins won't be here.
         </p>
       </section>
 

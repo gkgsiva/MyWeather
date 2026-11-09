@@ -86,6 +86,15 @@ A small static web app for Chennai weather watchers. A home page and the ☰ men
   its district's average and IMD's weekly district normal (`rainfallinformation.php?msg=W`; 30 days is that ×30/7).
   Past days are downloaded once (~0.7 MB each) and kept in IndexedDB (`js/gaugedays.js`, shared with Rain spell).
   `#gauges?gauge=<district>|<gauge>` opens one gauge.
+- **Rainfall cards** (`#distrank`, `js/distrank.js`): ranking cards for the rain day ending 8:30 AM (the running day
+  shows rain so far), shared as a picture: Tamil Nadu or KTCC top 20/30/50/100 places (source GCC for "Z nn" gauges,
+  else TNDRRA; highest rainfall; districts with most places), or the districts you pick (KTCC to start; up to 8), one
+  coloured panel each with rank, gauge, bar and mm. Period: the rain day, or the last 1/3/6/12/24 hours up to the
+  latest hour any gauge reported (reaching into the day before when needed). One or two columns.
+  The **Wunderground stations** card (`js/pwsrain.js`) ranks the saved personal weather stations over the same
+  periods from their 5-minute readings (`observations/all/1day` for today, `history/all` for earlier days; the rain
+  in a window is the sum of the rises in `precipTotal`, which counts from local midnight). A rain day takes two
+  requests per station, spaced for the 30-a-minute limit; finished rain days are kept on the phone. From the same TN-SMART hourly file, so TNDRRA's manual taluk and IMD gauges aren't included.
 - **Station health** (`#health`): Wunderground stations and TN-SMART gauges that are offline or sending readings
   that don't add up (impossible values, day totals that don't match their hours, stuck readings, or far from every
   neighbour). Suspect readings are greyed or marked **?** on the maps and left out of averages and rankings; a
@@ -218,6 +227,14 @@ secret and is skipped without it.
 ## Version history
 
 The same list is on the app's **Info** screen (`js/info.js`); keep the two in step.
+
+### v1.10 (9 Nov 2026, PR #28)
+- **Rainfall cards** (Rain menu), to share as a picture for the 24 hours ending 8:30 AM: Tamil Nadu or KTCC top
+  places (with the highest rainfall and the districts with most places), a coloured panel per district you pick, or
+  your Wunderground stations; for the rain day or the last 1 to 24 hours.
+- Shared pictures carry a **© gkgsiva** watermark (`js/share.js` `watermark()`). IMD's pictures (radar, satellite,
+  lightning, warnings, Radar map, Rain nowcast, Rain spell; `imd: true` or `data-share-imd`) get "Courtesy: India
+  Meteorological Department" and a plain "gkgsiva" instead. Animated GIF loops are sent unchanged, credit in the caption.
 
 ### v1.9 (8 Nov 2026, PRs #25–#27)
 - **Rain nowcast** screen: will rain reach any place in Tamil Nadu in the next 2 hours? Pick a district, a place

@@ -486,7 +486,7 @@ async function sharePicture() {
   const text =
     `Rain spell in ${r.area}, ${span(r.days[0], r.days[r.days.length - 1])}: ${fmt(r.total)} mm on average, ` +
     `${fmt(r.top[0].total)} mm at ${r.top[0].name}.`;
-  return { blob, name: shareName("rain-spell", "image/png"), text };
+  return { blob, name: shareName("rain-spell", "image/png"), text, imd: true };
 }
 
 // ---- Screen ----

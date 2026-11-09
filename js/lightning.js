@@ -373,7 +373,7 @@ function shareLightning() {
       const time = imdTime && !isNaN(Date.parse(imdTime)) ? ` (IMD lightning map, ${when(Date.parse(imdTime))})` : " (IMD lightning map)";
       const line = result ? headline(result, frame.all).replace(/\.$/, "") : "Lightning over India";
       const text = `${line}${time}. Shared from MyWeather.`;
-      resolve({ blob, name: shareName("lightning", "image/png"), text });
+      resolve({ blob, name: shareName("lightning", "image/png"), text, imd: true });
     }, "image/png")
   );
 }

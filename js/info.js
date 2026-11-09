@@ -5,6 +5,19 @@ import { APP_VERSION } from "./version.js";
 
 export const HISTORY = [
   {
+    version: "1.10",
+    date: "9 Nov 2026",
+    groups: [
+      [
+        "New",
+        [
+          "**Rainfall cards** to share as a picture, for the 24 hours ending 8:30 AM: **Tamil Nadu** or **KTCC (Chennai) top 20 to 100 places** (source, district, station, mm, the highest rainfall and the districts with most places), **districts you pick** with a coloured panel each (rank, gauge, bar, mm), or your **Wunderground stations**. For the rain day or the **last 1, 3, 6, 12 or 24 hours**. One or two columns.",
+          "Every picture you share now carries a **© gkgsiva** mark in its corner. IMD's radar, satellite, lightning and warning pictures carry **Courtesy: India Meteorological Department** and a plain gkgsiva instead (animated loops are sent as IMD made them, with the credit in the message).",
+        ],
+      ],
+    ],
+  },
+  {
     version: "1.9",
     date: "8 Nov 2026",
     groups: [

@@ -80,6 +80,7 @@ async function shareSatellite() {
     blob,
     name: shareName("satellite", blob.type),
     text: `INSAT satellite, ${item.name} (IMD). Shared from MyWeather.`,
+    imd: true,
   };
 }
 
