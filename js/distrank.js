@@ -19,6 +19,7 @@ const TOP_KEY = "myweather.distrank.top";
 const WIDE_KEY = "myweather.distrank.wide";
 const TYPE_KEY = "myweather.distrank.type";
 const N_KEY = "myweather.distrank.n";
+const PERIOD_KEY = "myweather.distrank.period";
 const KTCC = ["Chennai", "Kancheepuram", "Tiruvallur", "Chengalpattu"];
 // One colour per panel, in the order the districts were picked.
 const COLOURS = ["#1a6a88", "#6a58a6", "#1a876a", "#b0692f", "#b23a55", "#4f6e1e", "#2f4f9e", "#8a4f8f"];
@@ -56,6 +57,8 @@ const longDay = (day) =>
 let picked = [];
 const cache = new Map(); // day -> { rows, hours, at }
 let shownDay = "";
+// What the card shows: { rows: [{ district_name, station_name, total }], flags, line(sep), note }.
+let view = null;
 let userDay = false;
 let run = 0;
 
@@ -112,8 +115,105 @@ async function getDay(day, force) {
   return out;
 }
 
+// Hour labels of a rain day as clock times: 09:30 AM to 11:30 PM fall on the
+// day before the day it is named by, 12:30 AM to 08:30 AM on that day.
+function hourTime(day, label) {
+  const [, h, m, ap] = /^(\d\d):(\d\d) ([AP]M)$/.exec(label);
+  const hh = (Number(h) % 12) + (ap === "PM" ? 12 : 0);
+  const date = hh >= 9 ? shiftDay(day, -1) : day;
+  return new Date(`${date}T${String(hh).padStart(2, "0")}:${m}:00Z`); // IST clock, kept in UTC fields
+}
+const clock = (t) =>
+  t.toLocaleTimeString("en-IN", { hour: "numeric", minute: "2-digit", hour12: true, timeZone: "UTC" }).toUpperCase();
+const shortDate = (t) =>
+  t.toLocaleDateString("en-IN", { day: "2-digit", month: "long", year: "numeric", timeZone: "UTC" }).toUpperCase();
+
+function dayView(day, d) {
+  const running = day >= currentRainDay();
+  const upto = running ? lastHour(d) : "";
+  return {
+    rows: d.rows,
+    flags: d.flags,
+    line: (sep) =>
+      running
+        ? `SINCE 8:30 AM ${longDay(shiftDay(day, -1)).toUpperCase()}${upto ? `${sep}UP TO ${upto}` : ""}`
+        : `24 HOURS ENDING 8:30 AM${sep}${longDay(day).toUpperCase()}`,
+    note: running ? `The rain day is still running: the card shows the rain so far${upto ? `, up to ${upto}` : ""}.` : "",
+  };
+}
+
+// The last N hours up to the latest hour any gauge has reported, across the
+// running rain day and the one before it.
+function hoursView(n, days) {
+  const slots = []; // [day, data, hour label]
+  for (const [day, d] of days) if (d) for (const h of d.hours) slots.push([day, d, h]);
+  let end = slots.length - 1;
+  while (end >= 0 && !slots[end][1].rows.some((r) => typeof r[slots[end][2]] === "number")) end--;
+  if (end < 0) return null;
+  const win = slots.slice(Math.max(0, end - n + 1), end + 1);
+  const sums = new Map(); // key -> { district_name, station_name, total }
+  for (const [, d, h] of win) {
+    for (const r of d.rows) {
+      const k = gaugeKey(r);
+      const g = sums.get(k) || { district_name: r.district_name, station_name: r.station_name, total: null };
+      if (typeof r[h] === "number") g.total = (g.total || 0) + r[h];
+      sums.set(k, g);
+    }
+  }
+  const latest = slots[end][1];
+  const endT = hourTime(slots[end][0], slots[end][2]);
+  const startT = new Date(endT.getTime() - win.length * 3600 * 1000);
+  const span = win.length === 1 ? "1 HOUR" : `${win.length} HOURS`;
+  return {
+    rows: [...sums.values()],
+    flags: latest.flags,
+    line: (sep) =>
+      shortDate(startT) === shortDate(endT)
+        ? `${span}: ${clock(startT)} TO ${clock(endT)}${sep}${shortDate(endT)}`
+        : `${span}: ${clock(startT)} ${shortDate(startT)} TO ${clock(endT)} ${shortDate(endT)}`,
+    note:
+      win.length < n
+        ? `TN-SMART only has ${win.length} hours so far.`
+        : `The last ${span.toLowerCase()} reported, ${clock(startT).toLowerCase()} to ${clock(endT).toLowerCase()}. Chennai's gauges often report an hour or two late.`,
+  };
+}
+
+async function loadHours(n, force, my) {
+  let day = currentRainDay();
+  let cur = await getDay(day, force);
+  // Just after 8:30 AM the new day's file may not exist yet.
+  if (!cur) {
+    day = shiftDay(day, -1);
+    cur = await getDay(day, force);
+  }
+  const days = [[day, cur]];
+  // The day before too when the window reaches back past 8:30 AM.
+  const have = cur ? cur.hours.filter((h) => cur.rows.some((r) => typeof r[h] === "number")).length : 0;
+  if (have < n) days.unshift([shiftDay(day, -1), await getDay(shiftDay(day, -1), force)]);
+  if (my !== run) return;
+  view = hoursView(n, days);
+  if (!view) {
+    say("TN-SMART has no recent gauge readings.", true);
+    $("dr-card").hidden = true;
+    return;
+  }
+  say("");
+  draw();
+}
+
 async function load(force = false) {
   const my = ++run;
+  const period = $("dr-period").value;
+  $("dr-day-label").hidden = period !== "day";
+  if (period !== "day") {
+    say("Loading the rain gauges…");
+    try {
+      await loadHours(Number(period), force, my);
+    } catch (e) {
+      if (my === run) say(`Couldn't load the gauges (${e.message}). Check the connection and try again.`, true);
+    }
+    return;
+  }
   // The last finished rain day, unless a day was picked.
   let day = userDay && $("dr-date").value ? $("dr-date").value : shiftDay(currentRainDay(), -1);
   say("Loading the rain gauges…");
@@ -131,6 +231,7 @@ async function load(force = false) {
       $("dr-card").hidden = true;
       return;
     }
+    view = dayView(day, d);
     say("");
     draw();
   } catch (e) {
@@ -186,15 +287,6 @@ function panel(name, colour, d, top) {
     </section>`;
 }
 
-// Rain day words for the banner.
-function dayLine(d, sep) {
-  const running = shownDay >= currentRainDay();
-  const upto = running ? lastHour(d) : "";
-  return running
-    ? `SINCE 8:30 AM ${longDay(shiftDay(shownDay, -1)).toUpperCase()}${upto ? `${sep}UP TO ${upto}` : ""}`
-    : `24 HOURS ENDING 8:30 AM${sep}${longDay(shownDay).toUpperCase()}`;
-}
-
 // Rain in mm as a cell colour, as on the bulletins (light to deep green, then yellow, orange, red).
 function heat(v) {
   if (v >= 115.6) return ["#c62828", "#fff"];
@@ -216,7 +308,7 @@ function drawList(d, ktcc) {
     .sort((a, b) => b.total - a.total || a.station_name.localeCompare(b.station_name));
   const list = wet.slice(0, n);
   $("dr-title").innerHTML = `${area} <b>|</b> <strong>TOP ${list.length || n} RAINFALL</strong>`;
-  $("dr-sub").textContent = `${dayLine(d, " • ")} • RAINFALL IN mm`;
+  $("dr-sub").textContent = `${d.line(" • ")} • RAINFALL IN mm`;
   if (!list.length) {
     $("dr-panels").innerHTML = `<p class="dr-empty">No rain at any of the ${pool.length} gauges reporting.</p>`;
     return;
@@ -267,7 +359,7 @@ function drawList(d, ktcc) {
 
 function draw() {
   const card = $("dr-card");
-  const d = cache.get(shownDay);
+  const d = view;
   if (!d) return;
   const wide = $("dr-wide").checked;
   const type = $("dr-type").value;
@@ -277,8 +369,7 @@ function draw() {
   if (type !== "districts") {
     card.hidden = false;
     drawList(d, type === "ktcc");
-    const running = shownDay >= currentRainDay();
-    say(running ? "The rain day is still running: the card shows the rain so far." : "");
+    say(d.note);
     return;
   }
   if (!picked.length) {
@@ -288,12 +379,10 @@ function draw() {
   }
   card.hidden = false;
   const top = Number($("dr-top").value) || 0;
-  const running = shownDay >= currentRainDay();
-  const upto = running ? lastHour(d) : "";
   $("dr-title").innerHTML = `${picked.map((n) => esc(n.toUpperCase())).join(" <b>•</b> ")} <strong>RAINFALL</strong>`;
-  $("dr-sub").textContent = `${dayLine(d, " | ")} | RAINFALL IN mm`;
+  $("dr-sub").textContent = `${d.line(" | ")} | RAINFALL IN mm`;
   $("dr-panels").innerHTML = picked.map((n, i) => panel(n, COLOURS[i % COLOURS.length], d, top)).join("");
-  if (running) say(`The rain day is still running: the card shows the rain so far${upto ? `, up to ${upto}` : ""}.`);
+  say(d.note);
 }
 
 // ---- Screen ----
@@ -353,6 +442,13 @@ export function initDistRank() {
     draw();
   });
 
+  const period = $("dr-period");
+  period.value = String(read(PERIOD_KEY, "day"));
+  if (!period.value) period.value = "day";
+  period.addEventListener("change", () => {
+    write(PERIOD_KEY, period.value);
+    load();
+  });
   const date = $("dr-date");
   date.max = currentRainDay();
   date.addEventListener("change", () => {

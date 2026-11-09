@@ -11,7 +11,7 @@ export const HISTORY = [
       [
         "New",
         [
-          "**Rainfall cards** to share as a picture, for the 24 hours ending 8:30 AM: **Tamil Nadu** or **KTCC (Chennai) top 20 to 100 places** (source, district, station, mm, the highest rainfall and the districts with most places), or **districts you pick** with a coloured panel each (rank, gauge, bar, mm). One or two columns.",
+          "**Rainfall cards** to share as a picture, for the 24 hours ending 8:30 AM: **Tamil Nadu** or **KTCC (Chennai) top 20 to 100 places** (source, district, station, mm, the highest rainfall and the districts with most places), or **districts you pick** with a coloured panel each (rank, gauge, bar, mm). For the rain day or the **last 1, 3, 6, 12 or 24 hours**. One or two columns.",
         ],
       ],
     ],

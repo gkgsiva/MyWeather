@@ -1226,6 +1226,17 @@
             </select>
           </label>
           <label>
+            Period
+            <select id="dr-period">
+              <option value="day">Rain day (24 h to 8:30 AM)</option>
+              <option value="1">Last 1 hour</option>
+              <option value="3">Last 3 hours</option>
+              <option value="6">Last 6 hours</option>
+              <option value="12">Last 12 hours</option>
+              <option value="24">Last 24 hours</option>
+            </select>
+          </label>
+          <label id="dr-day-label">
             Rain day ending 8:30 AM on
             <span class="dr-day">
               <button id="dr-prev" type="button" class="secondary small" aria-label="Day before">‹</button>
@@ -1279,8 +1290,8 @@
           </div>
         </div>
         <p class="note">
-          The cards rank TN-SMART's automatic rain gauges by their rain over the rain day (8:30 AM to 8:30 AM), wettest
-          first. KTCC is Chennai, Kancheepuram, Tiruvallur and Chengalpattu. Source GCC is a Greater Chennai Corporation
+          The cards rank TN-SMART's automatic rain gauges by their rain over the rain day (8:30 AM to 8:30 AM), or over
+          the last 1 to 24 hours up to the latest hour reported, wettest first. KTCC is Chennai, Kancheepuram, Tiruvallur and Chengalpattu. Source GCC is a Greater Chennai Corporation
           gauge (names starting "Z" and the zone number), TNDRRA the state's. In the district panels the bars are scaled
           to the district's wettest gauge. Gauges Station health finds
           suspect are left out (turn that off on TN rain gauges). TNDRRA's own bulletins also list manual taluk and IMD
