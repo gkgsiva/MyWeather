@@ -13,6 +13,7 @@ import { BASE, currentRainDay, shiftDay, remember, gaugeKey } from "./gaugedays.
 import { gaugeFlags, skipSuspects } from "./health.js";
 import { TN_DISTRICTS } from "./districts.js";
 import { homeDistrict } from "./prefs.js";
+import { pwsRain, KeyError } from "./pwsrain.js";
 
 const PICK_KEY = "myweather.distrank.districts";
 const TOP_KEY = "myweather.distrank.top";
@@ -201,10 +202,62 @@ async function loadHours(n, force, my) {
   draw();
 }
 
+const istClock = (ms) => clock(new Date(ms + 5.5 * 3600 * 1000));
+const istDate = (ms) => shortDate(new Date(ms + 5.5 * 3600 * 1000));
+
+// The saved Wunderground stations (personal weather stations) over the same periods.
+async function loadPws(period, my) {
+  const now = Date.now();
+  let start, end, rainDay = "", line, note = "";
+  if (period === "day") {
+    let day = userDay && $("dr-date").value ? $("dr-date").value : shiftDay(currentRainDay(), -1);
+    if (day > currentRainDay()) day = currentRainDay();
+    $("dr-date").value = day;
+    start = Date.parse(`${shiftDay(day, -1)}T08:30:00+05:30`);
+    end = Math.min(now, Date.parse(`${day}T08:30:00+05:30`));
+    if (day < currentRainDay()) rainDay = day;
+    line = rainDay
+      ? (sep) => `24 HOURS ENDING 8:30 AM${sep}${longDay(day).toUpperCase()}`
+      : (sep) => `SINCE 8:30 AM ${longDay(shiftDay(day, -1)).toUpperCase()}${sep}UP TO ${istClock(end)}`;
+    if (!rainDay) note = "The rain day is still running: the card shows the rain so far.";
+  } else {
+    const n = Number(period);
+    end = now;
+    start = now - n * 3600 * 1000;
+    const span = n === 1 ? "1 HOUR" : `${n} HOURS`;
+    line = (sep) =>
+      istDate(start) === istDate(end)
+        ? `${span}: ${istClock(start)} TO ${istClock(end)}${sep}${istDate(end)}`
+        : `${span}: ${istClock(start)} ${istDate(start)} TO ${istClock(end)} ${istDate(end)}`;
+  }
+  say("Reading the Wunderground stations…");
+  try {
+    const list = await pwsRain(start, end, {
+      rainDay,
+      cancelled: () => my !== run,
+      onProgress: (done, total) => my === run && say(`Reading the Wunderground stations… ${done} of ${total}`),
+    });
+    if (!list || my !== run) return;
+    view = { pws: list, line, note };
+    say("");
+    draw();
+  } catch (e) {
+    if (my !== run) return;
+    say(
+      e instanceof KeyError
+        ? "This card needs the Wunderground API key: add it on the Wunderground screen under Manage stations."
+        : `Couldn't read the Wunderground stations (${e.message}).`,
+      true
+    );
+    $("dr-card").hidden = true;
+  }
+}
+
 async function load(force = false) {
   const my = ++run;
   const period = $("dr-period").value;
   $("dr-day-label").hidden = period !== "day";
+  if ($("dr-type").value === "pws") return loadPws(period, my);
   if (period !== "day") {
     say("Loading the rain gauges…");
     try {
@@ -357,15 +410,67 @@ function drawList(d, ktcc) {
     <p class="dr-foot">${notes.join(" · ")}</p>`;
 }
 
+function drawPws(d) {
+  const all = d.pws;
+  const on = all.filter((s) => typeof s.total === "number").sort((a, b) => b.total - a.total || a.name.localeCompare(b.name));
+  const off = all.filter((s) => typeof s.total !== "number");
+  $("dr-title").innerHTML = `CHENNAI WEATHER STATIONS <b>|</b> <strong>RAINFALL</strong>`;
+  $("dr-sub").textContent = `${d.line(" • ")} • RAINFALL IN mm`;
+  if (!on.length) {
+    $("dr-panels").innerHTML = `<p class="dr-empty">None of the ${all.length} stations sent readings for this time.</p>`;
+    return;
+  }
+  const row = (s, i) => {
+    const [bg, fg] = heat(s.total);
+    return `<li${i < 3 && s.total > 0 ? ' class="dr-top"' : ""}>
+        <span class="dr-rank">${String(i + 1).padStart(2, "0")}</span>
+        <span class="dr-src">WU</span>
+        <span class="dr-dist">${esc(s.id)}</span>
+        <span class="dr-name">${esc(s.name)}<small>${esc(s.id)} · Wunderground</small></span>
+        <span class="dr-mm" style="background:${bg};color:${fg}">${mm(s.total)}</span>
+      </li>`;
+  };
+  const head = `<div class="dr-lcols"><span>No.</span><span>Source</span><span>Station ID</span><span>Station</span><span>mm</span></div>`;
+  const half = Math.ceil(on.length / 2);
+  const parts = $("dr-wide").checked && on.length > 10 ? [on.slice(0, half), on.slice(half)] : [on];
+  let at = 0;
+  const tables = parts.map((part) => `<div class="dr-table">${head}<ol class="dr-llist">${part.map((s) => row(s, at++)).join("")}</ol></div>`).join("");
+  const top = on[0];
+  const wet = on.filter((s) => s.total > 0);
+  const mean = on.reduce((a, s) => a + s.total, 0) / on.length;
+  $("dr-panels").innerHTML = `<div class="dr-tables">${tables}</div>
+    <div class="dr-boxes">
+      <div class="dr-box dr-high">
+        <span>Highest rainfall</span>
+        <strong>${mm(top.total)} mm</strong>
+        <p>at ${esc(top.name)} (${esc(top.id)})</p>
+      </div>
+      <div class="dr-box">
+        <span>Stations</span>
+        <ul class="dr-counts"><li>Reporting <b>${on.length}</b></li><li>With rain <b>${wet.length}</b></li><li>Average <b>${mm(mean)} mm</b></li></ul>
+      </div>
+    </div>
+    <p class="dr-foot">${off.length ? `No readings: ${off.map((s) => esc(s.name)).join(", ")}` : `All ${all.length} stations reporting`}</p>`;
+}
+
 function draw() {
   const card = $("dr-card");
   const d = view;
   if (!d) return;
+  if (!!d.pws !== ($("dr-type").value === "pws")) return; // the other kind is still loading
   const wide = $("dr-wide").checked;
   const type = $("dr-type").value;
   card.classList.toggle("dr-wide", wide);
   card.classList.toggle("dr-listcard", type !== "districts");
   $("dr-scroll").classList.toggle("dr-scrolls", wide);
+  if (type === "pws") {
+    card.hidden = false;
+    drawPws(d);
+    $("dr-source").textContent = "SOURCE: Wunderground personal weather stations (the stations saved on MyWeather's Wunderground screen)";
+    say(d.note);
+    return;
+  }
+  $("dr-source").textContent = "SOURCE: Tamil Nadu Disaster Risk Reduction Agency (TNDRRA), TN-SMART automatic rain gauges";
   if (type !== "districts") {
     card.hidden = false;
     drawList(d, type === "ktcc");
@@ -419,7 +524,7 @@ export function initDistRank() {
   if (!type.value) type.value = "districts";
   const showControls = () => {
     const list = type.value !== "districts";
-    $("dr-n-label").hidden = !list;
+    $("dr-n-label").hidden = !list || type.value === "pws";
     $("dr-top-label").hidden = list;
     $("dr-picker").hidden = list;
   };
@@ -427,7 +532,7 @@ export function initDistRank() {
   type.addEventListener("change", () => {
     write(TYPE_KEY, type.value);
     showControls();
-    draw();
+    load();
   });
   const n = $("dr-n");
   n.value = String(read(N_KEY, 50));

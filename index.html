@@ -1223,6 +1223,7 @@
               <option value="districts">Districts you pick</option>
               <option value="tn">Tamil Nadu top places</option>
               <option value="ktcc">KTCC (Chennai) top places</option>
+              <option value="pws">Chennai weather stations (Wunderground)</option>
             </select>
           </label>
           <label>
@@ -1285,13 +1286,15 @@
                 <p id="dr-sub" class="dr-sub"></p>
               </header>
               <div id="dr-panels" class="dr-panels"></div>
-              <p class="dr-source">SOURCE: Tamil Nadu Disaster Risk Reduction Agency (TNDRRA), TN-SMART automatic rain gauges</p>
+              <p id="dr-source" class="dr-source">SOURCE: Tamil Nadu Disaster Risk Reduction Agency (TNDRRA), TN-SMART automatic rain gauges</p>
             </div>
           </div>
         </div>
         <p class="note">
           The cards rank TN-SMART's automatic rain gauges by their rain over the rain day (8:30 AM to 8:30 AM), or over
-          the last 1 to 24 hours up to the latest hour reported, wettest first. KTCC is Chennai, Kancheepuram, Tiruvallur and Chengalpattu. Source GCC is a Greater Chennai Corporation
+          the last 1 to 24 hours up to the latest hour reported, wettest first. The Wunderground card does the same for
+          the personal weather stations saved on the Wunderground screen, from their 5-minute readings (it needs the
+          Wunderground key; a past day takes about a minute the first time, as Wunderground allows 30 requests a minute). KTCC is Chennai, Kancheepuram, Tiruvallur and Chengalpattu. Source GCC is a Greater Chennai Corporation
           gauge (names starting "Z" and the zone number), TNDRRA the state's. In the district panels the bars are scaled
           to the district's wettest gauge. Gauges Station health finds
           suspect are left out (turn that off on TN rain gauges). TNDRRA's own bulletins also list manual taluk and IMD
