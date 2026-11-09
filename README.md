@@ -227,6 +227,7 @@ The same list is on the app's **Info** screen (`js/info.js`); keep the two in st
 ### v1.10 (upcoming)
 - **Rainfall cards** (Rain menu), to share as a picture for the 24 hours ending 8:30 AM: Tamil Nadu or KTCC top
   places (with the highest rainfall and the districts with most places), or a coloured panel per district you pick.
+- Shared pictures carry a **© gkgsiva** watermark (`js/share.js` `watermark()`; animated GIF loops are sent unchanged).
 
 ### v1.9 (8 Nov 2026, PRs #25–#27)
 - **Rain nowcast** screen: will rain reach any place in Tamil Nadu in the next 2 hours? Pick a district, a place

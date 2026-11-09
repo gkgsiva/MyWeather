@@ -26,11 +26,72 @@ export function shareName(what, type) {
   return `MyWeather-${what}-${stamp}.${EXT[type] || "img"}`;
 }
 
+// Every still picture shared from the app carries this mark in its bottom
+// right corner. Animated GIFs (IMD's radar and satellite loops) are sent as
+// they are: stamping them would mean re-encoding every frame.
+export const WATERMARK = "© gkgsiva";
+const STAMPABLE = new Set(["image/png", "image/jpeg", "image/webp"]);
+
+async function decode(blob) {
+  if (window.createImageBitmap) return createImageBitmap(blob);
+  const url = URL.createObjectURL(blob);
+  try {
+    const img = new Image();
+    img.src = url;
+    await img.decode();
+    return img;
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
+/** The picture with the watermark; the original when it can't be drawn. */
+export async function watermark(blob) {
+  const type = blob.type || "image/png";
+  if (!STAMPABLE.has(type)) return blob;
+  try {
+    const img = await decode(blob);
+    const w = img.width;
+    const h = img.height;
+    if (!w || !h) return blob;
+    const c = document.createElement("canvas");
+    c.width = w;
+    c.height = h;
+    const g = c.getContext("2d");
+    g.drawImage(img, 0, 0);
+    img.close?.();
+    const size = Math.max(11, Math.round(Math.min(w, h * 1.5) * 0.026));
+    const pad = Math.round(size * 0.6);
+    g.font = `600 ${size}px ${getComputedStyle(document.body).fontFamily || "sans-serif"}`;
+    g.textAlign = "right";
+    g.textBaseline = "alphabetic";
+    const x = w - pad;
+    const y = h - pad;
+    // Dark text on a light corner, white on a dark one, with a soft outline.
+    const tw = Math.ceil(g.measureText(WATERMARK).width);
+    const px = g.getImageData(Math.max(0, x - tw), Math.max(0, y - size), Math.min(w, tw), Math.min(h, size)).data;
+    let sum = 0;
+    for (let i = 0; i < px.length; i += 4) sum += 0.299 * px[i] + 0.587 * px[i + 1] + 0.114 * px[i + 2];
+    const light = sum / (px.length / 4) > 140;
+    g.lineJoin = "round";
+    g.lineWidth = Math.max(2, size / 5);
+    g.strokeStyle = light ? "rgba(255, 255, 255, 0.7)" : "rgba(0, 0, 0, 0.45)";
+    g.strokeText(WATERMARK, x, y);
+    g.fillStyle = light ? "rgba(29, 35, 43, 0.75)" : "rgba(255, 255, 255, 0.9)";
+    g.fillText(WATERMARK, x, y);
+    const out = await new Promise((res) => c.toBlob(res, type, 0.92));
+    return out || blob;
+  } catch {
+    return blob;
+  }
+}
+
 /**
  * Shares one picture (or the Settings backup, a JSON file) with a caption. Resolves to "shared", "downloaded" or
  * "cancelled"; throws if nothing could be done.
  */
 export async function shareImage({ blob, name, text }) {
+  blob = await watermark(blob);
   const type = blob.type || "image/png";
   const bridge = window.MyWeatherAndroid;
   if (bridge && typeof bridge.postMessage === "function") {
