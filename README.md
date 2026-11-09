@@ -228,7 +228,7 @@ secret and is skipped without it.
 
 The same list is on the app's **Info** screen (`js/info.js`); keep the two in step.
 
-### v1.10 (upcoming)
+### v1.10 (9 Nov 2026, PR #28)
 - **Rainfall cards** (Rain menu), to share as a picture for the 24 hours ending 8:30 AM: Tamil Nadu or KTCC top
   places (with the highest rainfall and the districts with most places), a coloured panel per district you pick, or
   your Wunderground stations; for the rain day or the last 1 to 24 hours.
