@@ -5,6 +5,18 @@ import { APP_VERSION } from "./version.js";
 
 export const HISTORY = [
   {
+    version: "1.11",
+    date: "not released yet",
+    groups: [
+      [
+        "New",
+        [
+          "**IMD daily report**: the Regional Meteorological Centre, Chennai's daily weather report as charts and tables. The day's highest rain and hottest and coolest places, Nungambakkam and Meenambakkam with departures and the local forecast, max and min at every IMD station, the wettest places, station and district rain this season against normal, the 7-day forecast, weather systems and the report's maps. **Over the days** charts any station report by report. It reads a few kilobytes, not the 6 MB PDF.",
+        ],
+      ],
+    ],
+  },
+  {
     version: "1.10",
     date: "9 Nov 2026",
     groups: [

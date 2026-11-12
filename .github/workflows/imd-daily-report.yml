@@ -1,0 +1,118 @@
+name: IMD daily report
+
+# Reads RMC Chennai's Daily Weather Report (a 6 MB PDF, issued in the
+# afternoon) and turns it into JSON for the app's "IMD daily report" screen
+# (scripts/imd_daily_report.py). The JSON and the report's map pages go to the
+# `data` branch, under daily-report/:
+#
+#   latest.json, YYYY-MM-DD.json, history.json, maps/1.jpg …
+#
+# The app reads them from raw.githubusercontent.com, so phones download a few
+# kilobytes instead of the PDF. The `data` branch is rewritten as a single
+# commit each time (the history lives in history.json and the dated files), so
+# the repository does not grow with every day's pictures.
+#
+# Runs a few times each afternoon; a run with the same PDF as last time does
+# nothing. Run it any time from Actions → IMD daily report → Run workflow.
+
+on:
+  schedule:
+    - cron: "45 8 * * *" # 14:15 IST
+    - cron: "45 10 * * *" # 16:15 IST
+    - cron: "30 13 * * *" # 19:00 IST
+  workflow_dispatch:
+  pull_request:
+    paths: ["scripts/imd_daily_report.py", ".github/workflows/imd-daily-report.yml"]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: imd-daily-report
+  cancel-in-progress: false
+
+env:
+  PDF_URL: https://mausam.imd.gov.in/chennai/mcdata/daily_weather_report.pdf
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install the PDF tools
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq poppler-utils
+          pip install --quiet "pdfplumber==0.11.*"
+
+      - name: Download the report
+        run: |
+          for i in 1 2 3 4; do
+            curl -sSfL --max-time 120 -A "Mozilla/5.0 (MyWeather report reader)" -o report.pdf "$PDF_URL" && break
+            echo "Retrying in $((i * 20)) s"; sleep $((i * 20))
+          done
+          test -s report.pdf
+          file report.pdf | grep -q PDF
+          sha256sum report.pdf | cut -d' ' -f1 > report.sha256
+          echo "PDF $(stat -c %s report.pdf) bytes, sha256 $(cat report.sha256)"
+
+      - name: Fetch the data branch
+        run: |
+          if git ls-remote --exit-code --heads origin data >/dev/null; then
+            git fetch --depth 1 origin data
+            git worktree add data FETCH_HEAD
+          else
+            mkdir -p data
+          fi
+          mkdir -p data/daily-report
+
+      - name: Read the report
+        id: read
+        run: |
+          if [ "$GITHUB_EVENT_NAME" != pull_request ] && cmp -s report.sha256 data/daily-report/pdf.sha256; then
+            echo "Same PDF as last time; nothing to do."
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          date=$(python3 scripts/imd_daily_report.py report.pdf data/daily-report)
+          cp report.sha256 data/daily-report/pdf.sha256
+          # Keep about 400 days of dated files.
+          find data/daily-report -maxdepth 1 -name '20*.json' | sort | head -n -400 | xargs -r rm
+          echo "Report of $date"
+          echo "date=$date" >> "$GITHUB_OUTPUT"
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+          {
+            echo "### IMD daily report $date"
+            python3 - <<'EOF'
+          import json
+          r = json.load(open("data/daily-report/latest.json"))
+          print(f"- {len(r['stations'])} stations, {len(r['districts']['rows'])} district rows, {len(r['forecast']['days'])} forecast rows, {len(r['maps'])} maps")
+          h = r["summary"].get("highestRain")
+          if h: print(f"- Highest rain: {h['place']} ({h['district']}) {h['mm']} mm")
+          EOF
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      # On a pull request the parser is only tried, never published.
+      - name: Publish to the data branch
+        if: steps.read.outputs.changed == 'true' && github.event_name != 'pull_request'
+        working-directory: data
+        run: |
+          rm -rf .git-new && mkdir .git-new
+          cp -r daily-report .git-new/
+          cat > .git-new/README.md <<'EOF'
+          Data for the MyWeather app, written by the "IMD daily report" workflow on main.
+          This branch is rewritten on every run; don't commit to it by hand.
+          EOF
+          cd .git-new
+          git init -q -b data
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -q -m "IMD daily report ${{ steps.read.outputs.date }}"
+          git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" data
