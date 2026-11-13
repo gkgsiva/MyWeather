@@ -19,6 +19,7 @@ const VIEWS = {
   satellite: { title: "MyWeather · Satellite", load: () => import("./satellite.js"), show: "showSatellite" },
   lightning: { title: "MyWeather · Lightning", load: () => import("./lightning.js"), init: "initLightning", show: "showLightning" },
   warnings: { title: "MyWeather · Warnings", load: () => import("./warnings.js"), show: "showWarnings" },
+  imdreport: { title: "MyWeather · IMD daily report", load: () => import("./imdreport.js"), init: "initImdReport", show: "showImdReport" },
   wind: { title: "MyWeather · Wind & storms", load: () => import("./wind.js"), init: "initWind", show: "showWind", hide: "hideWind" },
   cyclone: { title: "MyWeather · Cyclones", load: () => import("./cyclone.js"), init: "initCyclone", show: "showCyclone" },
   monsoon: { title: "MyWeather · Monsoon", load: () => import("./monsoon.js"), init: "initMonsoon", show: "showMonsoon" },

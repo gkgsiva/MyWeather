@@ -35,6 +35,7 @@
           <a href="#forecast" data-view="forecast">Forecast</a>
           <a href="#heat" data-view="heat">Heat &amp; humidity</a>
           <a href="#warnings" data-view="warnings">Warnings</a>
+          <a href="#imdreport" data-view="imdreport">IMD daily report</a>
           <a href="#air" data-view="air">Air quality</a>
           <a href="#sea" data-view="sea">Sea &amp; tides</a>
         </div>
@@ -235,6 +236,12 @@
             <a class="card" href="#warnings">
               <strong>Warnings</strong>
               <span>IMD nowcast and district warnings for Tamil Nadu</span>
+            </a>
+          </li>
+          <li>
+            <a class="card" href="#imdreport">
+              <strong>IMD daily report</strong>
+              <span>RMC Chennai's daily weather report as charts: station temperatures, rain, districts, forecast and maps</span>
             </a>
           </li>
           <li>
@@ -709,6 +716,130 @@
           From IMD's
           <a href="https://mausam.imd.gov.in/responsive/cycloneinformation.php" target="_blank" rel="noopener noreferrer">Cyclone Information</a>
           page (RSMC New Delhi).
+        </p>
+      </section>
+
+      <!-- IMD daily report -->
+      <section id="view-imdreport" class="view" hidden>
+        <h2>IMD daily report</h2>
+        <form class="controls" onsubmit="return false">
+          <label>
+            Report
+            <select id="ir-date"></select>
+          </label>
+          <button id="ir-refresh" type="button">Refresh</button>
+        </form>
+        <p id="ir-status" class="status" aria-live="polite"></p>
+        <div id="ir-body" hidden>
+          <div data-share="IMD daily report" data-share-from="ir-date">
+            <p id="ir-heading" class="note"></p>
+            <div id="ir-tiles" class="ir-tiles"></div>
+            <div id="ir-summary" class="ir-summary"></div>
+          </div>
+
+          <div data-share="IMD daily report · Chennai" data-share-from="ir-date">
+            <h3>Chennai</h3>
+            <div class="table-wrap"><table id="ir-chennai" class="readings ir-chennai"></table></div>
+            <p id="ir-chennai-note" class="note"></p>
+            <h4>Local forecast</h4>
+            <div id="ir-chn-fc" class="ir-fc"></div>
+          </div>
+
+          <div data-share="IMD daily report · max and min temperature" data-share-from="ir-date">
+            <div class="chart-head"><strong>Max and min temperature</strong></div>
+            <form class="controls" onsubmit="return false">
+              <label>
+                Order
+                <select id="ir-temp-sort"></select>
+              </label>
+            </form>
+            <div id="ir-temps" class="ir-db"></div>
+            <p class="note ir-legend">
+              <b class="ir-key ir-db-max"></b> max <b class="ir-key ir-db-min"></b> min in the 24 hours to 8:30 AM.
+              Coloured by departure from normal:
+              <span class="dep-hot2">3°+ above</span>, <span class="dep-hot1">1.6–3° above</span>,
+              <span class="dep-normal">normal</span>, <span class="dep-cold1">below</span>.
+            </p>
+          </div>
+
+          <div data-share="IMD daily report · rain in 24 hours" data-share-from="ir-date">
+            <h3>Rain in the 24 hours to 8:30 AM</h3>
+            <div id="ir-rain" class="ir-hbars"></div>
+            <p id="ir-rain-note" class="note"></p>
+          </div>
+
+          <div data-share="IMD daily report · station rain this season" data-share-from="ir-date">
+            <h3>Station rain since 1 October</h3>
+            <div id="ir-season" class="ir-hbars"></div>
+            <p class="note">Bar: rain so far; tick: normal for the date; % against normal. Colours are IMD's categories.</p>
+          </div>
+
+          <div data-share="IMD daily report · districts" data-share-from="ir-date">
+            <h3><span id="ir-dist-head">Season so far: rain against normal</span></h3>
+            <div id="ir-districts" class="ir-div"></div>
+          </div>
+
+          <details class="manage">
+            <summary>District table: the day and the season</summary>
+            <div data-share="IMD daily report · district table" data-share-from="ir-date">
+              <div class="table-wrap"><table id="ir-dist-table" class="readings ir-table"></table></div>
+              <p class="note">
+                Cat: LE large excess, E excess, N normal, D deficient, LD large deficient, NR no rain.
+              </p>
+            </div>
+          </details>
+
+          <details class="manage">
+            <summary>Station table: every figure</summary>
+            <div data-share="IMD daily report · stations" data-share-from="ir-date">
+              <div class="table-wrap"><table id="ir-stations" class="readings ir-table"></table></div>
+              <p class="note">
+                Wx is the weather at 8:30 AM: r rain, m mist, z haze, f fog, t thunderstorm, d drizzle.
+              </p>
+            </div>
+          </details>
+
+          <div data-share="IMD daily report · forecast" data-share-from="ir-date">
+            <h3>Forecast for Tamil Nadu and Puducherry</h3>
+            <ul id="ir-forecast" class="ir-fc-list"></ul>
+            <p id="ir-maxfc" class="note"></p>
+          </div>
+
+          <div data-share="IMD daily report · weather systems" data-share-from="ir-date">
+            <h3>Weather systems</h3>
+            <ul id="ir-synoptic" class="ir-synoptic"></ul>
+          </div>
+
+          <details class="manage">
+            <summary>Temperature changes and departures</summary>
+            <div id="ir-changes" class="ir-changes"></div>
+          </details>
+
+          <div data-share="IMD daily report · over the days" data-share-from="ir-hist-station ir-hist-what">
+            <h3>Over the days</h3>
+            <form class="controls" onsubmit="return false">
+              <label>
+                Station
+                <select id="ir-hist-station"></select>
+              </label>
+              <label>
+                Show
+                <select id="ir-hist-what"></select>
+              </label>
+            </form>
+            <svg id="ir-hist-chart" class="chart" role="group" aria-label="The station's figures report by report"></svg>
+            <p id="ir-hist-readout" class="readout" aria-live="polite"></p>
+            <p id="ir-hist-note" class="note"></p>
+          </div>
+
+          <h3>Maps from the report</h3>
+          <div id="ir-maps" class="ir-maps"></div>
+        </div>
+        <p class="note">
+          From the Regional Meteorological Centre, Chennai's
+          <a id="ir-pdf" href="#" target="_blank" rel="noopener noreferrer">Daily Weather Report (PDF, about 6 MB)</a>,
+          issued every afternoon with observations to 8:30 AM. A daily workflow reads it into small data files, so
+          the app doesn't download the PDF. Maps open on tap (about 150 KB each).
         </p>
       </section>
 

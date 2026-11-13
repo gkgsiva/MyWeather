@@ -117,6 +117,21 @@ A small static web app for Chennai weather watchers. A home page and the ☰ men
 - **Warnings** (`#warnings`): IMD's district-wise nowcast (next 3 hours) and 5-day warnings for Tamil Nadu and
   Puducherry, as a map and a district list (Chennai first). Both come from IMD's GeoServer at
   `reactjs.imd.gov.in`; the list needs the Android app, which adds the missing CORS header.
+- **IMD daily report** (`#imdreport`, `js/imdreport.js`): RMC Chennai's
+  [Daily Weather Report](https://mausam.imd.gov.in/chennai/mcdata/daily_weather_report.pdf) for Tamil Nadu,
+  Puducherry and Karaikal as charts and tables: the day's highlights (highest rain, hottest and coolest places),
+  Nungambakkam and Meenambakkam with departures and the local forecast, max and min at every IMD station coloured
+  by departure, the wettest places, station and district rain this season against normal, the full district and
+  station tables, the 7-day forecast, the weather systems, the temperature change tables, any station **over the
+  days**, and the report's maps (opened on tap, shared with IMD's credit). The PDF is about 6 MB, so the phone
+  doesn't read it: the **IMD daily report** workflow (`.github/workflows/imd-daily-report.yml`) runs at 14:15, 16:15
+  and 19:00 IST, reads it with `scripts/imd_daily_report.py` (pdfplumber reads the tables cell by cell, found by
+  their headings) and puts `latest.json`, a file per date, `history.json` and the map pictures on the `data` branch
+  under `daily-report/`. The app reads them from `raw.githubusercontent.com`. The `data` branch is rewritten as one
+  commit each run, so the repository doesn't grow; the history is in `history.json`. A run with the same PDF does
+  nothing; run it by hand from **Actions → IMD daily report → Run workflow**. Locally:
+  `pip install pdfplumber`, then `python3 scripts/imd_daily_report.py report.pdf out/` (needs `pdfimages` from
+  poppler-utils).
 - **Wind & storms** (`#wind`): moving wind particles over the Bay of Bengal (5–21°N, 78–94°E), coloured by IMD's
   depression and cyclone categories, with a slider through the next 2 days in 3-hour steps, the wind at Chennai,
   the strongest wind and the lowest pressure on the map (marked L below 1004 hPa). From Open-Meteo's forecast on a
@@ -227,6 +242,12 @@ secret and is skipped without it.
 ## Version history
 
 The same list is on the app's **Info** screen (`js/info.js`); keep the two in step.
+
+### v1.11 (not released yet)
+- **IMD daily report** (Now menu): RMC Chennai's daily weather report as charts and tables (highlights, Chennai,
+  station max/min, wettest places, station and district rain against normal, forecast, weather systems, the
+  report's maps) and each station over the days. A workflow reads the PDF every afternoon into small JSON files on
+  the `data` branch.
 
 ### v1.10 (9 Nov 2026, PR #28)
 - **Rainfall cards** (Rain menu), to share as a picture for the 24 hours ending 8:30 AM: Tamil Nadu or KTCC top
