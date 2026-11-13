@@ -1502,3 +1502,11 @@ h4 { margin: 12px 0 6px; font-size: 0.95rem; }
 .ir-tile:last-child:nth-child(odd) { grid-column: 1 / -1; }
 .ir-fc-temp small { font-size: 0.75rem; font-weight: 400; color: var(--muted); }
 .ir-db-track b:not([class*="dep-"]) { --dep: var(--muted); }
+.ir-stale {
+  margin: 8px 0;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, #f9a825 55%, var(--border));
+  background: color-mix(in srgb, #f9a825 14%, var(--card));
+  font-size: 0.85rem;
+}

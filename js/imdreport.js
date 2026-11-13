@@ -574,9 +574,34 @@ function renderHistory() {
 
 // ------------------------------------------------------------ loading
 
+// Today's date and the time of day in India, whatever the phone's time zone.
+function indiaNow() {
+  const d = new Date(Date.now() + 5.5 * 3600 * 1000);
+  return { date: d.toISOString().slice(0, 10), hour: d.getUTCHours() + d.getUTCMinutes() / 60 };
+}
+
+// A note when the newest report published is not today's. The workflow
+// reads the PDF at 2:15, 4:15 and 7 PM IST; IMD's file usually changes
+// around 3:45 PM.
+function renderStale(r) {
+  const note = $("ir-stale");
+  const now = indiaNow();
+  const isLatest = latest && r.date === latest.date;
+  if (!isLatest || !r.date || r.date >= now.date) {
+    note.hidden = true;
+    return;
+  }
+  note.textContent =
+    now.hour < 19.5
+      ? `Not updated today yet. IMD issues the report in the afternoon and the app usually has it by about 4:30 PM (7 PM at the latest). Showing ${longDate(r.date)}.`
+      : `Today's report hasn't come in. IMD may be late or the report may not be out today. Showing ${longDate(r.date)}.`;
+  note.hidden = false;
+}
+
 function render(r) {
   shownReport = r;
   $("ir-body").hidden = false;
+  renderStale(r);
   renderHighlights(r);
   renderChennai(r);
   renderTemps(r);

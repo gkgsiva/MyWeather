@@ -129,7 +129,10 @@ A small static web app for Chennai weather watchers. A home page and the ☰ men
   their headings) and puts `latest.json`, a file per date, `history.json` and the map pictures on the `data` branch
   under `daily-report/`. The app reads them from `raw.githubusercontent.com`. The `data` branch is rewritten as one
   commit each run, so the repository doesn't grow; the history is in `history.json`. A run with the same PDF does
-  nothing; run it by hand from **Actions → IMD daily report → Run workflow**. Locally:
+  nothing. If the PDF can't be downloaded or read, the 14:15 and 16:15 runs only leave a note and the next run tries
+  again; the 19:00 run (or one started by hand) fails, so GitHub emails you, and it warns when the newest report isn't
+  today's. A failure overwrites nothing, so the app keeps the last report; the screen says **Not updated today yet**
+  when the newest report is older than today (India time); run it by hand from **Actions → IMD daily report → Run workflow**. Locally:
   `pip install pdfplumber`, then `python3 scripts/imd_daily_report.py report.pdf out/` (needs `pdfimages` from
   poppler-utils).
 - **Wind & storms** (`#wind`): moving wind particles over the Bay of Bengal (5–21°N, 78–94°E), coloured by IMD's

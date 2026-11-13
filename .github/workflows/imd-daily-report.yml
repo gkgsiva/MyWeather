@@ -13,7 +13,12 @@ name: IMD daily report
 # the repository does not grow with every day's pictures.
 #
 # Runs a few times each afternoon; a run with the same PDF as last time does
-# nothing. Run it any time from Actions → IMD daily report → Run workflow.
+# nothing. If the PDF can't be downloaded or read, the 14:15 and 16:15 runs
+# only leave a note and let the next run try again; the 19:00 run (and a run
+# started by hand) fails, so GitHub sends an email. The 19:00 run also warns
+# when the newest report published is not today's. Nothing is overwritten on
+# a failure, so the app keeps the last good report.
+# Run it any time from Actions → IMD daily report → Run workflow.
 
 on:
   schedule:
@@ -33,6 +38,8 @@ concurrency:
 
 env:
   PDF_URL: https://mausam.imd.gov.in/chennai/mcdata/daily_weather_report.pdf
+  # The day's last chance: the 19:00 IST run, or any run not on the schedule.
+  LAST_RUN: ${{ github.event_name != 'schedule' || github.event.schedule == '30 13 * * *' }}
 
 jobs:
   report:
@@ -52,17 +59,30 @@ jobs:
           pip install --quiet "pdfplumber==0.11.*"
 
       - name: Download the report
+        id: dl
         run: |
+          ok=false
           for i in 1 2 3 4; do
-            curl -sSfL --max-time 120 -A "Mozilla/5.0 (MyWeather report reader)" -o report.pdf "$PDF_URL" && break
-            echo "Retrying in $((i * 20)) s"; sleep $((i * 20))
+            if curl -sSfL --max-time 120 -A "Mozilla/5.0 (MyWeather report reader)" -o report.pdf "$PDF_URL" \
+              && test -s report.pdf && file report.pdf | grep -q PDF; then
+              ok=true; break
+            fi
+            if [ $i -lt 4 ]; then echo "Retrying in $((i * 20)) s"; sleep $((i * 20)); fi
           done
-          test -s report.pdf
-          file report.pdf | grep -q PDF
+          echo "ok=$ok" >> "$GITHUB_OUTPUT"
+          if [ "$ok" != true ]; then
+            if [ "$LAST_RUN" = true ]; then
+              echo "::error::Couldn't download IMD's daily report PDF. The app keeps showing the last report."
+              exit 1
+            fi
+            echo "::notice::Couldn't download IMD's daily report PDF; the next run will try again."
+            exit 0
+          fi
           sha256sum report.pdf | cut -d' ' -f1 > report.sha256
           echo "PDF $(stat -c %s report.pdf) bytes, sha256 $(cat report.sha256)"
 
       - name: Fetch the data branch
+        if: steps.dl.outputs.ok == 'true'
         run: |
           if git ls-remote --exit-code --heads origin data >/dev/null; then
             git fetch --depth 1 origin data
@@ -74,13 +94,22 @@ jobs:
 
       - name: Read the report
         id: read
+        if: steps.dl.outputs.ok == 'true'
         run: |
           if [ "$GITHUB_EVENT_NAME" != pull_request ] && cmp -s report.sha256 data/daily-report/pdf.sha256; then
             echo "Same PDF as last time; nothing to do."
             echo "changed=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          date=$(python3 scripts/imd_daily_report.py report.pdf data/daily-report)
+          if ! date=$(python3 scripts/imd_daily_report.py report.pdf data/daily-report); then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            if [ "$LAST_RUN" = true ]; then
+              echo "::error::Couldn't read IMD's daily report PDF (see the log above). The app keeps showing the last report."
+              exit 1
+            fi
+            echo "::notice::Couldn't read IMD's daily report PDF; the next run will try again."
+            exit 0
+          fi
           cp report.sha256 data/daily-report/pdf.sha256
           # Keep about 400 days of dated files.
           find data/daily-report -maxdepth 1 -name '20*.json' | sort | head -n -400 | xargs -r rm
@@ -97,6 +126,15 @@ jobs:
           if h: print(f"- Highest rain: {h['place']} ({h['district']}) {h['mm']} mm")
           EOF
           } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Check the report is today's
+        if: steps.dl.outputs.ok == 'true' && env.LAST_RUN == 'true' && github.event_name != 'pull_request'
+        run: |
+          today=$(TZ=Asia/Kolkata date +%F)
+          have=$(python3 -c "import json; print(json.load(open('data/daily-report/latest.json'))['date'])" 2>/dev/null || echo none)
+          if [ "$have" != "$today" ]; then
+            echo "::warning::The newest IMD daily report is of $have, not today ($today). IMD may not have issued today's yet."
+          fi
 
       # On a pull request the parser is only tried, never published.
       - name: Publish to the data branch
