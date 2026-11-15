@@ -5,6 +5,27 @@ import { APP_VERSION } from "./version.js";
 
 export const HISTORY = [
   {
+    version: "1.14",
+    date: "15 Nov 2026",
+    groups: [
+      [
+        "New",
+        [
+          "**Season card** (Rain menu): Chennai's northeast monsoon so far against normal on one card to share. Nungambakkam, Meenambakkam and Chennai district from IMD's daily report, the running total and wettest days from TN-SMART's Chennai gauges, and the other KTCC districts and Tamil Nadu. The picture follows Settings → Shared pictures.",
+          "**Update notice**: when a newer MyWeather is on GitHub, a strip at the top offers its APK to download. **Check for updates** is on Info too.",
+          "**Problem log** (Info → Problem log): downloads that failed, pictures that didn't load and app errors over the last week, to send as text or copy when something isn't working. Keys and tokens are blanked.",
+        ],
+      ],
+      [
+        "Better",
+        [
+          "Every APK is now signed with the same release key, so later versions install over this one. **This once**, Android may refuse to install v1.14 over an older version: back up in Settings, uninstall the old app, install v1.14 and restore.",
+          "The daily data source check tries a failing source once more after 3 minutes, so a short outage no longer raises an alert.",
+        ],
+      ],
+    ],
+  },
+  {
     version: "1.13",
     date: "15 Nov 2026",
     groups: [
@@ -267,6 +288,32 @@ function rich(text) {
 
 export function initInfo() {
   const installed = APP_VERSION || "";
+  const upd = document.getElementById("info-update");
+  const updSay = document.getElementById("info-update-status");
+  upd.addEventListener("click", async () => {
+    upd.disabled = true;
+    updSay.className = "status";
+    updSay.textContent = "Asking GitHub…";
+    try {
+      const { checkNow } = await import("./update.js");
+      updSay.textContent = await checkNow();
+    } catch (e) {
+      updSay.className = "status error";
+      updSay.textContent = `Couldn't reach GitHub (${e.message || e}).`;
+    } finally {
+      upd.disabled = false;
+    }
+  });
+  // Five quick taps on the version line open the Problem log too.
+  let taps = [];
+  document.getElementById("info-version").addEventListener("click", () => {
+    const now = Date.now();
+    taps = [...taps.filter((t) => now - t < 3000), now];
+    if (taps.length >= 5) {
+      taps = [];
+      location.hash = "#errors";
+    }
+  });
   document.getElementById("info-version").textContent = installed
     ? `Version ${installed}`
     : "Development copy (not built from a release)";

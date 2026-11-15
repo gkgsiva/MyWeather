@@ -6,6 +6,10 @@ import { initTheme } from "./theme.js";
 import { initPullToRefresh } from "./pull.js";
 import { initSnaps } from "./snap.js";
 import { hiddenViews } from "./prefs.js";
+import { initProblemLog } from "./errlog.js";
+
+// First, so every download from here on is in the problem log.
+initProblemLog();
 
 const VIEWS = {
   home: { title: "MyWeather", load: () => import("./home.js"), init: "initHome", show: "showHome" },
@@ -26,6 +30,7 @@ const VIEWS = {
   yoy: { title: "MyWeather · Year on year", load: () => import("./yoy.js"), init: "initYoy", show: "showYoy" },
   rain: { title: "MyWeather · Rain history", load: () => import("./rain.js"), init: "initRain", show: "showRain", hide: "hideRain" },
   season: { title: "MyWeather · Rain season", load: () => import("./season.js"), init: "initSeason", show: "showSeason", hide: "hideSeason" },
+  seasoncard: { title: "MyWeather · Season card", load: () => import("./seasoncard.js"), init: "initSeasonCard", show: "showSeasonCard" },
   compare: { title: "MyWeather · Compare stations", load: () => import("./compare.js"), init: "initCompare", show: "showCompare", hide: "hideCompare" },
   map: { title: "MyWeather · Station map", load: () => import("./stationmap.js"), init: "initMap", show: "showMap" },
   gauges: { title: "MyWeather · TN rain gauges", load: () => import("./gauges.js"), init: "initGauges", show: "showGauges" },
@@ -41,6 +46,8 @@ const VIEWS = {
   blog: { title: "MyWeather · Kea Blog", load: () => import("./blog.js"), show: "showBlog" },
   settings: { title: "MyWeather · Settings", load: () => import("./settingsview.js"), init: "initSettings", show: "showSettings" },
   info: { title: "MyWeather · Info", load: () => import("./info.js"), init: "initInfo" },
+  // Not in the menu (Info → Problem log).
+  errors: { title: "MyWeather · Problem log", name: "Problem log", load: () => import("./errorsview.js"), init: "initErrors", show: "showErrors" },
 };
 const started = new Set();
 
@@ -96,7 +103,7 @@ async function route() {
     else a.removeAttribute("aria-current");
   }
   // Section name on the right of the header bar (none on Home).
-  viewName.textContent = view === "home" ? "" : menuPanel.querySelector(`[data-view="${view}"]`).textContent;
+  viewName.textContent = view === "home" ? "" : menuPanel.querySelector(`[data-view="${view}"]`)?.textContent ?? VIEWS[view].name ?? "";
   setMenu(false);
   document.title = VIEWS[view].title;
   window.scrollTo(0, 0);
@@ -149,6 +156,8 @@ route();
 // Once Home is up, load the other screens' code in the background while the
 // phone is idle, so the first tap on each opens as fast as before.
 const idle = window.requestIdleCallback || ((fn) => setTimeout(fn, 1500));
+// A newer release on GitHub shows a strip with its APK (js/update.js).
+window.addEventListener("load", () => setTimeout(() => import("./update.js").then((m) => m.initUpdateCheck()).catch(() => {}), 4000));
 window.addEventListener("load", () =>
   setTimeout(() => idle(() => {
     const queue = Object.keys(VIEWS).filter((v) => v !== shown);

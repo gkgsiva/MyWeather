@@ -14,8 +14,10 @@ name: Android APK
 #
 # Signing secrets (see README "Signing with your own key"). Without them the
 # APK is signed with a throwaway debug key, which installs fine but cannot be
-# updated in place by a later build signed with a different key. If the
-# keystore secret is set, the other three must be too, or the build fails.
+# updated in place by a later build signed with a different key.
+#   SIGNING_PASSWORD          alone is enough: the workflow makes the key once
+#                             and keeps it, locked, on the `signing` branch.
+# Or, with a keystore of your own (all four needed):
 #   ANDROID_KEYSTORE_BASE64   base64 of the .jks/.keystore file
 #   ANDROID_KEYSTORE_PASSWORD
 #   ANDROID_KEY_ALIAS
@@ -73,34 +75,91 @@ jobs:
       - name: Write app version
         run: printf 'export const APP_VERSION = "%s";\n' "${{ steps.version.outputs.name }}" > js/version.js
 
+      # Two ways to sign with a fixed release key (README "Signing with your own key"):
+      # 1. SIGNING_PASSWORD only (easiest, no computer needed). The first build
+      #    that sees it makes a keystore, locks it with that password
+      #    (AES-256, PBKDF2) and keeps the locked file on the `signing` branch;
+      #    every later build unlocks the same file. Without the password the
+      #    file is useless, so it can sit in this public repo.
+      # 2. The four ANDROID_* secrets with a keystore you made yourself.
+      # With neither, the debug key is used as before.
       - name: Set up signing key
         env:
           KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          SIGNING_PASSWORD: ${{ secrets.SIGNING_PASSWORD }}
+          GH_TOKEN: ${{ github.token }}
         run: |
-          if [ -z "$KEYSTORE_BASE64" ]; then
-            echo "::warning::No ANDROID_KEYSTORE_BASE64 secret; signing with a debug key. This APK will not install over one signed with your own key."
+          ks="$RUNNER_TEMP/release.keystore"
+          if [ -n "$KEYSTORE_BASE64" ]; then
+            missing=""
+            for v in ANDROID_KEYSTORE_PASSWORD ANDROID_KEY_ALIAS ANDROID_KEY_PASSWORD; do
+              [ -n "${!v}" ] || missing="$missing $v"
+            done
+            if [ -n "$missing" ]; then
+              echo "::error::ANDROID_KEYSTORE_BASE64 is set but these secrets are missing:$missing"
+              exit 1
+            fi
+            # Tolerate line breaks or spaces pasted into the secret.
+            echo "$KEYSTORE_BASE64" | tr -d ' \r\n' | base64 -d > "$ks"
+            echo "Signing with the release key from the ANDROID_* secrets."
+          elif [ -n "$SIGNING_PASSWORD" ]; then
+            if [ ${#SIGNING_PASSWORD} -lt 16 ]; then
+              echo "::error::SIGNING_PASSWORD is shorter than 16 characters. Use a long passphrase, e.g. five random words."
+              exit 1
+            fi
+            export ANDROID_KEYSTORE_PASSWORD="$SIGNING_PASSWORD" ANDROID_KEY_PASSWORD="$SIGNING_PASSWORD" ANDROID_KEY_ALIAS=myweather
+            locked="$RUNNER_TEMP/release.keystore.enc"
+            remote="https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+            if git ls-remote --exit-code --heads "$remote" signing >/dev/null; then
+              git fetch -q --depth 1 "$remote" signing
+              git show FETCH_HEAD:release.keystore.enc > "$locked"
+              if ! openssl enc -d -aes-256-cbc -pbkdf2 -iter 600000 -pass env:SIGNING_PASSWORD -in "$locked" -out "$ks"; then
+                echo "::error::Couldn't unlock release.keystore.enc on the signing branch with SIGNING_PASSWORD. Was the secret changed? Put the old password back."
+                exit 1
+              fi
+              echo "Signing with the release key from the signing branch."
+            elif [ "$GITHUB_EVENT_NAME" = pull_request ]; then
+              echo "::warning::No release key yet; it is made by the first build on main or a release. Using the debug key."
+              exit 0
+            else
+              echo "Making the release key (first build with SIGNING_PASSWORD)."
+              keytool -genkeypair -keystore "$ks" -storetype PKCS12 -alias myweather \
+                -keyalg RSA -keysize 3072 -validity 12000 \
+                -dname "CN=MyWeather, O=gkgsiva, C=IN" \
+                -storepass "$SIGNING_PASSWORD" -keypass "$SIGNING_PASSWORD" -noprompt
+              openssl enc -aes-256-cbc -salt -pbkdf2 -iter 600000 -pass env:SIGNING_PASSWORD -in "$ks" -out "$locked"
+              repo="$RUNNER_TEMP/signing-branch"
+              mkdir -p "$repo" && cp "$locked" "$repo/"
+              cat > "$repo/README.md" <<'EOF'
+          The MyWeather release signing key, locked with the SIGNING_PASSWORD
+          repository secret (openssl enc -aes-256-cbc -pbkdf2 -iter 600000).
+          Made and read by .github/workflows/android-apk.yml on main.
+          Don't delete this branch or change the secret: installed apps could
+          then no longer be updated in place.
+          EOF
+              (cd "$repo" && git init -q -b signing && git add -A \
+                && git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" commit -q -m "Release signing key (locked)" \
+                && git push -q "$remote" signing)
+              echo "::notice::Made a new release signing key and saved it (locked) on the signing branch."
+            fi
+          else
+            echo "::warning::No signing secrets; signing with a debug key. This APK will not install over one signed with your own key."
             exit 0
           fi
-          missing=""
-          for v in ANDROID_KEYSTORE_PASSWORD ANDROID_KEY_ALIAS ANDROID_KEY_PASSWORD; do
-            [ -n "${!v}" ] || missing="$missing $v"
-          done
-          if [ -n "$missing" ]; then
-            echo "::error::ANDROID_KEYSTORE_BASE64 is set but these secrets are missing:$missing"
+          if ! keytool -list -keystore "$ks" -storepass "$ANDROID_KEYSTORE_PASSWORD" -alias "$ANDROID_KEY_ALIAS" >/dev/null; then
+            echo "::error::Could not open the keystore with its password, or it has no key named $ANDROID_KEY_ALIAS."
             exit 1
           fi
-          # Tolerate line breaks or spaces pasted into the secret.
-          echo "$KEYSTORE_BASE64" | tr -d ' \r\n' | base64 -d > "$RUNNER_TEMP/release.keystore"
-          if ! keytool -list -keystore "$RUNNER_TEMP/release.keystore" \
-                -storepass "$ANDROID_KEYSTORE_PASSWORD" -alias "$ANDROID_KEY_ALIAS" >/dev/null; then
-            echo "::error::Could not open the keystore with ANDROID_KEYSTORE_PASSWORD, or it has no key named ANDROID_KEY_ALIAS."
-            exit 1
-          fi
-          echo "ANDROID_KEYSTORE_PATH=$RUNNER_TEMP/release.keystore" >> "$GITHUB_ENV"
-          echo "Signing with the release key from secrets."
+          # The build step reads these (secret values stay masked in the log).
+          {
+            echo "ANDROID_KEYSTORE_PATH=$ks"
+            echo "ANDROID_KEYSTORE_PASSWORD=$ANDROID_KEYSTORE_PASSWORD"
+            echo "ANDROID_KEY_PASSWORD=$ANDROID_KEY_PASSWORD"
+            echo "ANDROID_KEY_ALIAS=$ANDROID_KEY_ALIAS"
+          } >> "$GITHUB_ENV"
 
       # Builds the Wunderground API key into the app (js/config.js) when the
       # WEATHER_API_KEY repository secret is set. The key is never committed.
@@ -116,10 +175,6 @@ jobs:
 
       - name: Build APK
         working-directory: android
-        env:
-          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
-          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
           chmod +x gradlew
           ./gradlew --no-daemon assembleRelease \
