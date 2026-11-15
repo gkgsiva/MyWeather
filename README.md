@@ -246,6 +246,12 @@ secret and is skipped without it.
 
 The same list is on the app's **Info** screen (`js/info.js`); keep the two in step.
 
+### v1.13 (15 Nov 2026, PR #32)
+- **IMD daily report**: a **Not updated today yet** note when the newest report is older than today (India time).
+- The `imd-daily-report.yml` workflow: if the PDF can't be downloaded or read, the 14:15 and 16:15 IST runs only
+  leave a notice and the next run tries again; the 19:00 run (or a run started by hand) fails and emails, and warns
+  when the newest report isn't today's. A failure overwrites nothing.
+
 ### v1.12 (15 Nov 2026, PR #34)
 - Settings: **Shared pictures**. The watermark name (`myweather.settings.watermark`, `js/prefs.js` `watermarkName()`),
   "gkgsiva" by default: the app's own pictures get "© name"; IMD's pictures keep "Courtesy: India Meteorological

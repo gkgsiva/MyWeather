@@ -5,6 +5,19 @@ import { APP_VERSION } from "./version.js";
 
 export const HISTORY = [
   {
+    version: "1.13",
+    date: "15 Nov 2026",
+    groups: [
+      [
+        "Better",
+        [
+          "**IMD daily report** says **Not updated today yet** when the newest report isn't today's. IMD issues it in the afternoon, and the app usually has it by about 4:30 PM.",
+          "The daily report check now waits for its last try of the day (7 PM) before reporting a problem, so a slow IMD site in the afternoon no longer sends an alert.",
+        ],
+      ],
+    ],
+  },
+  {
     version: "1.12",
     date: "15 Nov 2026",
     groups: [
