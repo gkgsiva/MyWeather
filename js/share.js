@@ -27,13 +27,20 @@ export function shareName(what, type) {
 }
 
 // Every still picture shared from the app carries a mark in its bottom right
-// corner: "© gkgsiva" on the app's own pictures; on IMD's radar, satellite,
+// corner: "© <name>" on the app's own pictures; on IMD's radar, satellite,
 // lightning and warning pictures (IMD's property) a credit to IMD and a plain
-// "gkgsiva". Animated GIFs (IMD's radar and satellite loops) are sent as they
-// are, since stamping them would mean re-encoding every frame; their caption
-// carries the credit.
-export const WATERMARK = "© gkgsiva";
-export const IMD_MARK = "gkgsiva";
+// "<name>", never ©. The name is set in Settings (js/prefs.js
+// watermarkName(), "gkgsiva" by default); when it is cleared the app's own
+// pictures get no mark and IMD's keep only the credit. Animated GIFs (IMD's
+// radar and satellite loops) are sent as they are, since stamping them would
+// mean re-encoding every frame; their caption carries the credit.
+import { watermarkName } from "./prefs.js";
+
+/** The lines drawn on a picture, from the bottom up: [[text, size factor]]. */
+export function watermarkLines({ imd = false, name = watermarkName() } = {}) {
+  if (imd) return name ? [[name, 1], [IMD_CREDIT, 0.72]] : [[IMD_CREDIT, 0.72]];
+  return name ? [[`© ${name}`, 1]] : [];
+}
 export const IMD_CREDIT = "Courtesy: India Meteorological Department";
 const STAMPABLE = new Set(["image/png", "image/jpeg", "image/webp"]);
 
@@ -59,6 +66,8 @@ export async function watermark(blob, { imd = false } = {}) {
     const w = img.width;
     const h = img.height;
     if (!w || !h) return blob;
+    const marks = watermarkLines({ imd });
+    if (!marks.length) return blob;
     const c = document.createElement("canvas");
     c.width = w;
     c.height = h;
@@ -73,7 +82,7 @@ export async function watermark(blob, { imd = false } = {}) {
     g.lineJoin = "round";
     const x = w - pad;
     // Lines from the bottom up: [text, font size].
-    const lines = imd ? [[IMD_MARK, size], [IMD_CREDIT, Math.max(10, Math.round(size * 0.72))]] : [[WATERMARK, size]];
+    const lines = marks.map(([text, k]) => [text, k === 1 ? size : Math.max(10, Math.round(size * k))]);
     let y = h - pad;
     for (const [text, px] of lines) {
       g.font = `600 ${px}px ${family}`;

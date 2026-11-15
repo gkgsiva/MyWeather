@@ -1,13 +1,14 @@
 // Settings (#settings): home district, units, default radar, data saver,
-// theme, which screens the menu shows, and a backup of everything picked on
+// theme, the name on shared pictures, which screens the menu shows, and a backup of everything picked on
 // the phone (favourites, stations, places, settings) as one small JSON file.
 import { TN_DISTRICTS } from "./districts.js";
 import { homeDistrict, setHomeDistrict, units, setUnits, hiddenViews, setHiddenViews } from "./prefs.js";
+import { watermarkName, setWatermarkName, cleanWatermark, DEFAULT_WATERMARK } from "./prefs.js";
 import { STATIONS, PRODUCTS } from "./stations.js";
 import { RADARS } from "./radarmap.js";
 import { bindSaver } from "./datasaver.js";
 import { currentTheme, setTheme } from "./theme.js";
-import { shareImage } from "./share.js";
+import { shareImage, watermarkLines } from "./share.js";
 import { routeParams } from "./route.js";
 
 const $ = (id) => document.getElementById(id);
@@ -109,6 +110,40 @@ function initLook() {
   theme.addEventListener("change", () => setTheme(theme.value));
   // The theme button in the menu changes it too.
   window.addEventListener("myweather:theme", () => (theme.value = currentTheme()));
+}
+
+// ---- Name on shared pictures ----
+
+function showMarks(name) {
+  const put = (id, lines) => {
+    const el = $(id);
+    // Top line first, as it sits on the picture.
+    el.textContent = lines.length ? lines.map(([t]) => t).reverse().join(" / ") : "no mark";
+    el.className = lines.length ? "" : "none";
+  };
+  put("set-watermark-app", watermarkLines({ name }));
+  put("set-watermark-imd", watermarkLines({ imd: true, name }));
+}
+
+function initWatermark() {
+  const input = $("set-watermark");
+  input.value = watermarkName();
+  showMarks(input.value);
+  input.addEventListener("input", () => showMarks(cleanWatermark(input.value)));
+  const save = () => {
+    setWatermarkName(input.value);
+    input.value = watermarkName();
+    showMarks(input.value);
+    say(input.value ? `Shared pictures now carry "${input.value}".` : "Shared pictures carry no name now; IMD's still carry IMD's credit.");
+  };
+  input.addEventListener("change", save);
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") input.blur();
+  });
+  $("set-watermark-reset").addEventListener("click", () => {
+    input.value = DEFAULT_WATERMARK;
+    save();
+  });
 }
 
 // ---- Menu ----
@@ -272,6 +307,7 @@ export function initSettings() {
   initUnits();
   initRadar();
   initLook();
+  initWatermark();
   initMenu();
   initBackup();
 }

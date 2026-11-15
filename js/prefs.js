@@ -6,6 +6,7 @@ import { TN_DISTRICTS } from "./districts.js";
 export const DISTRICT_KEY = "myweather.settings.district";
 export const UNITS_KEY = "myweather.settings.units"; // { temp: "c" | "f", wind: "kmh" | "kn" | "mph" | "ms" }
 export const HIDDEN_KEY = "myweather.menu.hidden"; // [view names]
+export const WATERMARK_KEY = "myweather.settings.watermark"; // the name on shared pictures ("" hides it)
 
 const read = (key, fallback) => {
   try {
@@ -107,4 +108,29 @@ export function hiddenViews() {
 
 export function setHiddenViews(set) {
   write(HIDDEN_KEY, [...set]);
+}
+
+// ---- Watermark ----
+
+export const DEFAULT_WATERMARK = "gkgsiva";
+const MAX_WATERMARK = 40;
+
+/** A name as typed, tidied: one line, no leading "©" (the app adds it), at most 40 characters. */
+export function cleanWatermark(s) {
+  return String(s ?? "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/^(©|\(c\))\s*/i, "")
+    .slice(0, MAX_WATERMARK)
+    .trim();
+}
+
+/** The name put on shared pictures: "gkgsiva" unless changed; "" when the user cleared it. */
+export function watermarkName() {
+  const v = read(WATERMARK_KEY, null);
+  return typeof v === "string" ? cleanWatermark(v) : DEFAULT_WATERMARK;
+}
+
+export function setWatermarkName(name) {
+  write(WATERMARK_KEY, cleanWatermark(name));
 }

@@ -1255,6 +1255,11 @@ a.rec-row { text-decoration: none; color: var(--fg); }
 .set-menu input { flex: none; width: 18px; height: 18px; margin: 0; }
 .set-menu label.locked { color: var(--muted); }
 #set-menu-all { margin-top: 8px; }
+.set-mark-preview { display: grid; gap: 6px; margin-top: 10px; font-size: 0.9rem; }
+.set-mark-preview div { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.set-mark-preview span { color: var(--muted); flex: none; }
+.set-mark-preview b { font-weight: 600; text-align: right; overflow-wrap: anywhere; }
+.set-mark-preview b.none { color: var(--muted); font-weight: 400; font-style: italic; }
 .set-buttons { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
 .set-paste { margin-top: 10px; font-size: 0.9rem; }
 .set-paste summary { color: var(--accent); cursor: pointer; }

@@ -243,6 +243,11 @@ secret and is skipped without it.
 
 The same list is on the app's **Info** screen (`js/info.js`); keep the two in step.
 
+### v1.12 (not released yet)
+- Settings: **Name on shared pictures** (`myweather.settings.watermark`, `js/prefs.js` `watermarkName()`), "gkgsiva"
+  by default. The app's own pictures get "© name"; IMD's pictures keep "Courtesy: India Meteorological Department"
+  with the plain name, never ©. Empty hides the name (IMD's credit stays). Included in backup and restore.
+
 ### v1.11 (not released yet)
 - **IMD daily report** (Now menu): RMC Chennai's daily weather report as charts and tables (highlights, Chennai,
   station max/min, wettest places, station and district rain against normal, forecast, weather systems, the

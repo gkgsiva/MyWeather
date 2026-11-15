@@ -1807,6 +1807,26 @@
           </form>
         </div>
 
+        <div class="set-card">
+          <h3>Name on shared pictures</h3>
+          <form class="controls" onsubmit="return false">
+            <label>Name
+              <input id="set-watermark" type="text" maxlength="40" autocomplete="off" autocapitalize="off"
+                spellcheck="false" enterkeyhint="done" placeholder="Leave empty for no name" />
+            </label>
+          </form>
+          <div class="set-mark-preview" aria-live="polite">
+            <div><span>App's pictures</span><b id="set-watermark-app"></b></div>
+            <div><span>IMD's pictures</span><b id="set-watermark-imd"></b></div>
+          </div>
+          <div class="set-buttons">
+            <button id="set-watermark-reset" type="button" class="secondary small">Use gkgsiva</button>
+          </div>
+          <p class="note">Put in the corner of every picture you share. The app's own maps, tables and charts get
+            © and the name. IMD's radar, satellite, lightning and warning pictures always keep
+            "Courtesy: India Meteorological Department", with the plain name (no ©) under it.</p>
+        </div>
+
         <div class="set-card" id="set-menu-card">
           <h3>Menu</h3>
           <p class="note">Untick the screens you don't use. They leave the ☰ menu and Home's list; links to them from
