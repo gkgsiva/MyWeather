@@ -1255,6 +1255,18 @@ a.rec-row { text-decoration: none; color: var(--fg); }
 .set-menu input { flex: none; width: 18px; height: 18px; margin: 0; }
 .set-menu label.locked { color: var(--muted); }
 #set-menu-all { margin-top: 8px; }
+.set-mark-preview { display: grid; gap: 6px; margin-top: 10px; font-size: 0.9rem; }
+.set-mark-preview div { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.set-mark-preview span { color: var(--muted); flex: none; }
+.set-mark-preview b { font-weight: 600; text-align: right; overflow-wrap: anywhere; }
+.set-mark-preview b.none { color: var(--muted); font-weight: 400; font-style: italic; }
+.set-share-look { margin-top: 12px; }
+.set-share-look label { flex: 1 1 90px; }
+.set-mark-samples { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 10px 0 0; }
+.set-mark-samples figure { margin: 0; padding: 0; border: 0; background: none; }
+.set-mark-samples img { display: block; width: 100%; height: auto; min-height: 0; border-radius: 6px; border: 1px solid var(--border); }
+.set-mark-samples figcaption { font-size: 0.8rem; color: var(--muted); margin-top: 4px; text-align: center; }
+.set-share-checks { display: grid; gap: 8px; margin: 12px 0; }
 .set-buttons { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
 .set-paste { margin-top: 10px; font-size: 0.9rem; }
 .set-paste summary { color: var(--accent); cursor: pointer; }

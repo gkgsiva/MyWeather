@@ -26,14 +26,29 @@ export function shareName(what, type) {
   return `MyWeather-${what}-${stamp}.${EXT[type] || "img"}`;
 }
 
-// Every still picture shared from the app carries a mark in its bottom right
-// corner: "© gkgsiva" on the app's own pictures; on IMD's radar, satellite,
-// lightning and warning pictures (IMD's property) a credit to IMD and a plain
-// "gkgsiva". Animated GIFs (IMD's radar and satellite loops) are sent as they
-// are, since stamping them would mean re-encoding every frame; their caption
-// carries the credit.
-export const WATERMARK = "© gkgsiva";
-export const IMD_MARK = "gkgsiva";
+// Every still picture shared from the app carries a mark in a corner (bottom
+// right unless changed in Settings): "© <name>" on the app's own pictures; on
+// IMD's radar, satellite, lightning and warning pictures (IMD's property) a
+// credit to IMD and a plain "<name>", never ©. The name is set in Settings
+// (js/prefs.js watermarkName(), "gkgsiva" by default); when it is cleared the
+// app's own pictures get no mark and IMD's keep only the credit. The corner,
+// size and strength come from prefs.js shareLook(). Animated GIFs (IMD's
+// radar and satellite loops) are sent as they are, since stamping them would
+// mean re-encoding every frame; their caption carries the credit.
+import { watermarkName, shareLook } from "./prefs.js";
+
+/** The lines drawn on a picture, from the bottom up: [[text, size factor]]. */
+export function watermarkLines({ imd = false, name = watermarkName() } = {}) {
+  if (imd) return name ? [[name, 1], [IMD_CREDIT, 0.72]] : [[IMD_CREDIT, 0.72]];
+  return name ? [[`© ${name}`, 1]] : [];
+}
+const SIZE = { s: 0.75, m: 1, l: 1.35 };
+// [outline alpha on a light / dark corner, text alpha on a light / dark corner]
+const STRENGTH = {
+  light: [[0.45, 0.25], [0.45, 0.55]],
+  normal: [[0.7, 0.45], [0.75, 0.9]],
+  strong: [[0.85, 0.6], [0.95, 1]],
+};
 export const IMD_CREDIT = "Courtesy: India Meteorological Department";
 const STAMPABLE = new Set(["image/png", "image/jpeg", "image/webp"]);
 
@@ -50,8 +65,12 @@ async function decode(blob) {
   }
 }
 
-/** The picture with the watermark; the original when it can't be drawn. */
-export async function watermark(blob, { imd = false } = {}) {
+/**
+ * The picture with the watermark; the original when it can't be drawn. look
+ * overrides Settings (shareLook()) and name the Settings name, for a preview.
+ * insetTop keeps a top-corner mark below a band (js/snap.js sets blob.markTop).
+ */
+export async function watermark(blob, { imd = false, look = shareLook(), name = watermarkName(), insetTop = blob.markTop || 0 } = {}) {
   const type = blob.type || "image/png";
   if (!STAMPABLE.has(type)) return blob;
   try {
@@ -59,40 +78,51 @@ export async function watermark(blob, { imd = false } = {}) {
     const w = img.width;
     const h = img.height;
     if (!w || !h) return blob;
+    const marks = watermarkLines({ imd, name });
+    if (!marks.length) return blob;
     const c = document.createElement("canvas");
     c.width = w;
     c.height = h;
     const g = c.getContext("2d");
     g.drawImage(img, 0, 0);
     img.close?.();
-    const size = Math.max(11, Math.round(Math.min(w, h * 1.5) * 0.026));
+    const size = Math.max(9, Math.round(Math.min(w, h * 1.5) * 0.026 * (SIZE[look.size] || 1)));
     const pad = Math.round(size * 0.6);
     const family = getComputedStyle(document.body).fontFamily || "sans-serif";
-    g.textAlign = "right";
+    const right = look.corner[1] !== "l";
+    const top = look.corner[0] === "t";
+    const [[strokeLight, strokeDark], [fillLight, fillDark]] = STRENGTH[look.strength] || STRENGTH.normal;
+    g.textAlign = right ? "right" : "left";
     g.textBaseline = "alphabetic";
     g.lineJoin = "round";
-    const x = w - pad;
-    // Lines from the bottom up: [text, font size].
-    const lines = imd ? [[IMD_MARK, size], [IMD_CREDIT, Math.max(10, Math.round(size * 0.72))]] : [[WATERMARK, size]];
-    let y = h - pad;
-    for (const [text, px] of lines) {
+    const x = right ? w - pad : pad;
+    // Each line's size, shrunk to fit: the credit may be wider than a small picture.
+    const lines = marks.map(([text, k]) => {
+      let px = k === 1 ? size : Math.max(8, Math.round(size * k));
       g.font = `600 ${px}px ${family}`;
-      let fit = px;
-      // The credit may be wider than a small picture.
-      while (g.measureText(text).width > w - pad * 2 && fit > 8) g.font = `600 ${--fit}px ${family}`;
+      while (g.measureText(text).width > w - pad * 2 && px > 8) g.font = `600 ${--px}px ${family}`;
+      return [text, px];
+    });
+    // marks run from the bottom up; in a top corner the stack starts at the top.
+    const stack = top ? [...lines].reverse() : lines;
+    let y = top ? Math.min(h - pad, insetTop + pad + stack[0][1]) : h - pad;
+    stack.forEach(([text, px], i) => {
+      g.font = `600 ${px}px ${family}`;
       // Dark text on a light corner, white on a dark one, with a soft outline.
       const tw = Math.max(1, Math.min(w, Math.ceil(g.measureText(text).width)));
-      const data = g.getImageData(Math.max(0, x - tw), Math.max(0, y - fit), tw, Math.max(1, Math.min(h, fit))).data;
+      const left = right ? Math.max(0, x - tw) : x;
+      const data = g.getImageData(left, Math.max(0, y - px), tw, Math.max(1, Math.min(h, px))).data;
       let sum = 0;
-      for (let i = 0; i < data.length; i += 4) sum += 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+      for (let j = 0; j < data.length; j += 4) sum += 0.299 * data[j] + 0.587 * data[j + 1] + 0.114 * data[j + 2];
       const light = sum / (data.length / 4) > 140;
-      g.lineWidth = Math.max(2, fit / 5);
-      g.strokeStyle = light ? "rgba(255, 255, 255, 0.7)" : "rgba(0, 0, 0, 0.45)";
+      g.lineWidth = Math.max(2, px / 5);
+      g.strokeStyle = light ? `rgba(255, 255, 255, ${strokeLight})` : `rgba(0, 0, 0, ${strokeDark})`;
       g.strokeText(text, x, y);
-      g.fillStyle = light ? "rgba(29, 35, 43, 0.75)" : "rgba(255, 255, 255, 0.9)";
+      g.fillStyle = light ? `rgba(29, 35, 43, ${fillLight})` : `rgba(255, 255, 255, ${fillDark})`;
       g.fillText(text, x, y);
-      y -= Math.round(fit * 1.25);
-    }
+      // Down by the next line's size from a top corner, up by this one's from a bottom one.
+      y += top ? Math.round((stack[i + 1]?.[1] ?? px) * 1.25) : -Math.round(px * 1.25);
+    });
     const out = await new Promise((res) => c.toBlob(res, type, 0.92));
     return out || blob;
   } catch {
@@ -108,6 +138,11 @@ export async function shareImage({ blob, name, text, imd = false }) {
   blob = await watermark(blob, { imd });
   if (imd && text && !text.includes(IMD_CREDIT)) text = `${text} ${IMD_CREDIT}.`;
   const type = blob.type || "image/png";
+  // The user's own words (Settings) after every picture's message, not the backup's.
+  const { caption, brand } = shareLook();
+  // Without the MyWeather name the message leaves out "Shared from MyWeather." too.
+  if (!brand && text) text = text.replace(/\s*Shared from MyWeather\.?/g, "").trim();
+  if (caption && type.startsWith("image/")) text = text ? `${text} ${caption}` : caption;
   const bridge = window.MyWeatherAndroid;
   if (bridge && typeof bridge.postMessage === "function") {
     const data = await toBase64(blob);
