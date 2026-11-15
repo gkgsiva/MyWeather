@@ -6,7 +6,7 @@ import { APP_VERSION } from "./version.js";
 export const HISTORY = [
   {
     version: "1.12",
-    date: "not released yet",
+    date: "15 Nov 2026",
     groups: [
       [
         "Easier to use",
@@ -19,7 +19,7 @@ export const HISTORY = [
   },
   {
     version: "1.11",
-    date: "not released yet",
+    date: "15 Nov 2026",
     groups: [
       [
         "New",
