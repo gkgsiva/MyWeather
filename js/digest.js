@@ -16,7 +16,8 @@ import { sunTimes } from "./astro.js";
 import { loadNowcast, headline } from "./nowcast.js";
 import { snapBlock } from "./snap.js";
 import { shareImage, shareName } from "./share.js";
-import { toTemp, matchDistrict } from "./prefs.js";
+import { toTemp, toTempDelta, tempUnit, matchDistrict } from "./prefs.js";
+import { DATA } from "./imdreport.js";
 
 const AREA_KEY = "myweather.digest.area";
 // IMD's warning map spells these districts differently from its rainfall pages.
@@ -24,6 +25,11 @@ const WARN_NAME = { RANIPET: "RANIPPETTAI", THIRUCHIRAPPALLI: "THIRUCHIRAPALLI",
 // Districts that draw water from the Chennai lakes.
 const LAKE_AREAS = new Set(["CHENNAI", "THIRUVALLUR", "KANCHEEPURAM", "CHENGALPATTU", "KTCC"]);
 const areaPick = document.getElementById("dg-area");
+// "Morning outlook" looks back at the last finished rain day; "Today so far"
+// uses the running rain day (since 8:30 AM) and IMD's temperatures for today.
+const WHEN_KEY = "myweather.digest.when";
+const whenPick = document.getElementById("dg-when");
+const isToday = () => whenPick.value === "today";
 // "KTCC": Kancheepuram, Tiruvallur, Chennai and Chengalpattu side by side.
 const KTCC = ["CHENNAI", "KANCHEEPURAM", "CHENGALPATTU", "THIRUVALLUR"];
 const SHORT = { CHENNAI: "Chennai", KANCHEEPURAM: "Kanchi", CHENGALPATTU: "Chengalpet", THIRUVALLUR: "Tiruvallur" };
@@ -77,11 +83,11 @@ const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<
 // ---- Parts ----
 
 async function rain() {
-  const day = shiftDay(currentRainDay(), -1); // the last finished rain day
+  const day = isToday() ? currentRainDay() : shiftDay(currentRainDay(), -1); // the running or the last finished rain day
   const d = await getDay(day);
   const on = d.gauges.filter((g) => typeof g[4] === "number" && g[4] >= 0 && g[4] < 600);
   if (!on.length) throw new Error("no gauge data yet");
-  const period0 = `${niceDay(shiftDay(day, -1))} 8:30 AM to ${niceDay(day)} 8:30 AM`;
+  const period0 = isToday() ? `${niceDay(shiftDay(day, -1))} 8:30 AM until ${hm(new Date())}` : `${niceDay(shiftDay(day, -1))} 8:30 AM to ${niceDay(day)} 8:30 AM`;
   if (isGroup()) {
     const rows = areas().map((A) => {
       const g = on.filter((x) => imdDistrict(x[0]) === A.imd);
@@ -109,7 +115,7 @@ async function rain() {
   const tnTop = on.reduce((a, g) => (!a || g[4] > a[4] ? g : a), null);
   const heavy = on.filter((g) => g[4] >= 64.5).length;
   const wet = ch.filter((g) => g[4] >= 0.1).length;
-  const period = `${niceDay(shiftDay(day, -1))} 8:30 AM to ${niceDay(day)} 8:30 AM`;
+  const period = period0;
   fill(
     "rain",
     `<p class="dg-big"><b>${mm(avg)} mm</b> <span>${esc(A.name)} average</span></p>
@@ -243,6 +249,43 @@ async function monsoon() {
   );
 }
 
+// IMD's Chennai observatory for today: top and bottom temperature and the
+// rain, from the daily report (the report job on the data branch). Only the
+// Chennai area has it.
+async function temps() {
+  const sec = $("dg-temp");
+  if (!["CHENNAI", "KTCC"].includes(area().imd)) {
+    sec.hidden = true;
+    delete lines.temp;
+    return;
+  }
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 20000);
+  let r;
+  try {
+    const res = await fetch(`${DATA}latest.json?t=${Math.floor(Date.now() / 600000)}`, { signal: ctrl.signal });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    r = await res.json();
+  } finally {
+    clearTimeout(timer);
+  }
+  const n = r.chennai?.N;
+  if (!n || typeof n.max !== "number") throw new Error("no Chennai figures");
+  const sign = (v) => (typeof v === "number" ? `${v > 0 ? "+" : v < 0 ? "−" : "±"}${Math.abs(toTempDelta(v)).toFixed(1)}` : "–");
+  const t1 = (c) => (typeof c === "number" ? toTemp(c).toFixed(1) : "–");
+  const todayIst = new Date(Date.now() + 5.5 * 3600e3).toISOString().slice(0, 10);
+  const when = r.date === todayIst ? "today" : `${niceDay(r.date)} (today's isn't out yet)`;
+  const u = tempUnit();
+  fill(
+    "temp",
+    `<table class="dg-table"><tr><th></th><th>Today</th><th>From normal</th></tr>
+       <tr><th>Top</th><td><b>${t1(n.max)}${u}</b></td><td>${sign(n.maxDep)}°</td></tr>
+       <tr><th>Bottom</th><td><b>${t1(n.min)}${u}</b></td><td>${sign(n.minDep)}°</td></tr></table>
+     <small>IMD Nungambakkam, report of ${when} · humidity ${typeof n.rh0830 === "number" ? Math.round(n.rh0830) : "–"}% at 8:30 AM</small>`,
+    `🌡️ Chennai (IMD Nungambakkam, ${when}): top ${t1(n.max)}${u} (${sign(n.maxDep)}°), bottom ${t1(n.min)}${u} (${sign(n.minDep)}°).`
+  );
+}
+
 function sky() {
   const s = sunTimes(new Date(), area().lat, area().lon);
   fill("sky", `<p>Sunrise <b>${hm(s.sunrise)}</b> · sunset <b>${hm(s.sunset)}</b></p>`, `🌅 Sunrise ${hm(s.sunrise)}, sunset ${hm(s.sunset)}.`);
@@ -264,14 +307,15 @@ function nowcast() {
 
 function build() {
   const now = new Date();
-  $("dg-title").textContent = `${area().name} weather today`;
+  $("dg-title").textContent = `${area().name} weather ${isToday() ? "today so far" : "today"}`;
   $("dg-date").textContent = now.toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
   const body = $("dg-parts");
   body.replaceChildren(
     part("warn", "⚠️", "Warnings"),
     part("nowcast", "📡", "Rain coming?"),
+    ...(isToday() ? [part("temp", "🌡️", "Temperature today")] : []),
     part("forecast", "☁️", "Forecast"),
-    part("rain", "🌧️", "Rain in the last 24 hours"),
+    part("rain", "🌧️", isToday() ? "Rain so far today" : "Rain in the last 24 hours"),
     part("monsoon", "📈", "Monsoon so far"),
     ...(LAKE_AREAS.has(area().imd) ? [part("lakes", "💧", "Chennai lakes")] : []),
     part("sky", "🌅", "Sun")
@@ -291,7 +335,8 @@ async function refresh() {
     ["rain", rain, "the rain gauges"],
     ["monsoon", monsoon, "IMD's monsoon figures"],
     ["lakes", lakes, "the lakes report"],
-  ].filter(([id]) => id !== "lakes" || LAKE_AREAS.has(area().imd));
+    ["temp", temps, "IMD's temperatures"],
+  ].filter(([id]) => (id !== "lakes" || LAKE_AREAS.has(area().imd)) && (id !== "temp" || isToday()));
   const results = await Promise.allSettled(jobs.map(([, fn]) => fn()));
   const missing = [];
   results.forEach((r, i) => {
@@ -306,11 +351,11 @@ async function refresh() {
   status.className = missing.length ? "status error" : "status";
 }
 
-const ORDER = ["warn", "nowcast", "forecast", "rain", "monsoon", "lakes", "sky"];
+const ORDER = ["warn", "nowcast", "temp", "forecast", "rain", "monsoon", "lakes", "sky"];
 
 /** The digest as plain text, for the chat message under the picture. */
 export function digestText(parts = lines, date = new Date()) {
-  const head = `*${area().name} weather · ${date.toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short" })}*`;
+  const head = `*${area().name} weather${isToday() ? " today so far" : ""} · ${date.toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short" })}${isToday() ? `, ${hm(date)}` : ""}*`;
   return [head, ...ORDER.filter((k) => parts[k]).map((k) => parts[k]), "— shared from MyWeather"].join("\n");
 }
 
@@ -318,7 +363,7 @@ async function share() {
   const btn = $("dg-share");
   btn.disabled = true;
   try {
-    const title = `Morning digest · ${area().name} · ${new Date().toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}`;
+    const title = `${isToday() ? "Today so far" : "Morning digest"} · ${area().name} · ${new Date().toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}`;
     const blob = await snapBlock(card, title);
     const how = await shareImage({ blob, name: shareName("digest", "image/png"), text: digestText() });
     if (how === "downloaded") status.textContent = "Sharing isn't available here, so the picture was downloaded.";
@@ -341,6 +386,18 @@ export function initDigest() {
   areaPick.addEventListener("change", () => {
     try {
       localStorage.setItem(AREA_KEY, areaPick.value);
+    } catch {}
+    refresh();
+  });
+  // Before noon the morning outlook, after it today so far, unless picked here.
+  whenPick.value = new Date().getHours() >= 12 ? "today" : "morning";
+  try {
+    const saved = localStorage.getItem(WHEN_KEY);
+    if (saved === "today" || saved === "morning") whenPick.value = saved;
+  } catch {}
+  whenPick.addEventListener("change", () => {
+    try {
+      localStorage.setItem(WHEN_KEY, whenPick.value);
     } catch {}
     refresh();
   });

@@ -246,6 +246,16 @@ secret and is skipped without it.
 
 The same list is on the app's **Info** screen (`js/info.js`); keep the two in step.
 
+### v1.15 (16 Nov 2026)
+- **Offline-first Home** (`js/home.js`): the saved radar picture (`js/offline.js`, the default radar from Radar's
+  "Set as default") shows at once, then is refreshed if over 10 minutes old, online and the data saver isn't "On".
+  The station strip says "Reading at … · updating…" instead of a blank "Loading…", the nearest-gauge row is kept
+  in `myweather.home.gauge`, and a **No connection** line (`#home-net`) appears offline; the `online` event
+  refreshes the strip, radar and gauge row.
+- **Daily summary** (`#digest`, was Morning digest): a **Summary** select, "Morning outlook" (last rain day) or
+  "Today so far" (the running rain day since 8:30 AM plus IMD's Chennai top/bottom temperature from the daily
+  report JSON; from noon it is the default). The saved choice is `myweather.digest.when`.
+
 ### v1.14 (15 Nov 2026)
 - **Season card** (`#seasoncard`, Rain menu, `js/seasoncard.js`): Chennai NE monsoon so far vs normal from the IMD
   daily report JSON (Nungambakkam, Meenambakkam, Chennai/KTCC districts, Tamil Nadu) and TN-SMART's Chennai district
