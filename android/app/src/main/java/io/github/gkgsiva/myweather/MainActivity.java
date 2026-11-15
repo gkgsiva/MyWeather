@@ -138,6 +138,8 @@ public class MainActivity extends Activity {
         SHARE_TYPES.put("image/webp", ".webp");
         // The Settings screen's backup file.
         SHARE_TYPES.put("application/json", ".json");
+        // The Problem log as text.
+        SHARE_TYPES.put("text/plain", ".txt");
     }
 
     private WebView webView;
@@ -408,7 +410,8 @@ public class MainActivity extends Activity {
             String text = msg.optString("text");
             if (!text.isEmpty()) send.putExtra(Intent.EXTRA_TEXT, text);
             send.setClipData(ClipData.newRawUri("", uri));
-            Intent chooser = Intent.createChooser(send, type.startsWith("image/") ? "Share picture" : "Save or send the backup");
+            Intent chooser = Intent.createChooser(send, type.startsWith("image/") ? "Share picture"
+                    : type.equals("text/plain") ? "Send the problem log" : "Save or send the backup");
             runOnUiThread(() -> {
                 try {
                     startActivity(chooser);

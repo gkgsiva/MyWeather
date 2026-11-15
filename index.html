@@ -60,6 +60,7 @@
           <a href="#distrank" data-view="distrank">Rainfall cards</a>
           <a href="#rain" data-view="rain">Rain history</a>
           <a href="#season" data-view="season">Rain season</a>
+          <a href="#seasoncard" data-view="seasoncard">Season card</a>
           <a href="#spell" data-view="spell">Rain spell</a>
           <a href="#records" data-view="records">Rain records</a>
           <a href="#yoy" data-view="yoy">Year on year</a>
@@ -1898,6 +1899,80 @@
         </div>
       </section>
 
+      <!-- Season card -->
+      <section id="view-seasoncard" class="view" hidden>
+        <h2>Season card</h2>
+        <form class="controls" onsubmit="return false">
+          <button id="sc-refresh" type="button">Refresh</button>
+          <a class="button secondary-link" href="#imdreport">IMD daily report</a>
+        </form>
+        <p id="sc-status" class="status" aria-live="polite"></p>
+        <div data-share="Season card" data-share-from="sc-sub">
+          <div class="sc-card">
+            <header class="sc-banner">
+              <p id="sc-title" class="sc-title">Chennai · Northeast monsoon</p>
+              <p id="sc-sub" class="sc-sub"></p>
+            </header>
+            <div id="sc-tiles" class="sc-tiles"></div>
+            <div id="sc-chart-wrap" hidden>
+              <div class="chart-head"><strong>Chennai gauges, running total</strong></div>
+              <svg id="sc-chart" class="chart" role="group" aria-label="Chennai rain so far this season"></svg>
+              <p id="sc-readout" class="readout" aria-live="polite"></p>
+              <p id="sc-wet" class="sc-wet"></p>
+            </div>
+            <div id="sc-rows-wrap" hidden>
+              <p class="sc-rows-head"><span>Season so far (IMD)</span><span>mm / normal</span></p>
+              <ul id="sc-rows" class="sc-rows"></ul>
+            </div>
+            <p class="sc-source">Data: IMD Regional Meteorological Centre Chennai, daily weather report · TN-SMART (TNDRRA) automatic rain gauges, Chennai district mean</p>
+          </div>
+        </div>
+        <p class="note">
+          IMD's figures run from 1 October to 8:30 AM of the report's day and come with IMD's normals: Normal is within
+          19% of normal, Excess 20 to 59% above, Deficient 20 to 59% below. TN-SMART publishes no normals, so its Chennai
+          total is set against IMD's normal for Chennai district. Use Share (top right of the card) to send it as a
+          picture; the name in the corner follows Settings → Shared pictures.
+        </p>
+      </section>
+
+      <!-- Problem log (not in the menu: Info → Problem log) -->
+      <section id="view-errors" class="view" hidden>
+        <h2>Problem log</h2>
+        <p class="note">
+          Downloads that failed, pictures that didn't load and app errors over the last week, kept only on this phone.
+          Send it when something isn't working. Keys and tokens in links are blanked.
+        </p>
+        <form class="controls" onsubmit="return false">
+          <label>
+            Show
+            <select id="err-span">
+              <option value="24">Last 24 hours</option>
+              <option value="all">Whole week</option>
+            </select>
+          </label>
+          <label>
+            Kind
+            <select id="err-kind">
+              <option value="all">All</option>
+              <option value="download">Downloads</option>
+              <option value="picture">Pictures</option>
+              <option value="script">App errors</option>
+            </select>
+          </label>
+        </form>
+        <div class="controls">
+          <button id="err-share" type="button">Send as text</button>
+          <button id="err-copy" type="button" class="secondary">Copy</button>
+          <button id="err-clear" type="button" class="secondary">Clear</button>
+        </div>
+        <p id="err-status" class="status" aria-live="polite"></p>
+        <div data-share="Problem log" data-share-from="err-span">
+          <p id="err-summary" class="err-summary"></p>
+          <p id="err-empty" class="note" hidden></p>
+          <ul id="err-list" class="err-list"></ul>
+        </div>
+      </section>
+
       <!-- Info -->
       <section id="view-info" class="view" hidden>
         <h2>Info</h2>
@@ -1911,6 +1986,11 @@
             from the Kea Weather Blog. Nowcasts, storm movement and lightning distances are the app's own estimates.
           </p>
           <p class="note"><a href="https://github.com/gkgsiva/myweather/releases" target="_blank" rel="noopener noreferrer">All releases on GitHub</a></p>
+          <div class="controls">
+            <button id="info-update" type="button" class="secondary small">Check for updates</button>
+            <a class="button secondary-link small" href="#errors">Problem log</a>
+          </div>
+          <p id="info-update-status" class="status" aria-live="polite"></p>
         </div>
         <h3>Version history</h3>
         <div id="info-history" class="info-history"></div>

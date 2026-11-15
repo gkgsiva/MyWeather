@@ -246,6 +246,21 @@ secret and is skipped without it.
 
 The same list is on the app's **Info** screen (`js/info.js`); keep the two in step.
 
+### v1.14 (15 Nov 2026)
+- **Season card** (`#seasoncard`, Rain menu, `js/seasoncard.js`): Chennai NE monsoon so far vs normal from the IMD
+  daily report JSON (Nungambakkam, Meenambakkam, Chennai/KTCC districts, Tamil Nadu) and TN-SMART's Chennai district
+  mean (running total, wettest days; shares Rain records' saved days). Shared through `data-share`, so it follows
+  Settings → Shared pictures.
+- **Update notice** (`js/update.js`): release builds ask GitHub's releases API for the latest release at most every
+  12 h and show a strip with its APK; "Later" hides it until the next version. Info has **Check for updates**.
+- **Problem log** (`#errors`, not in the menu; Info → Problem log, or tap the version line 5 times; `js/errlog.js`,
+  `js/errorsview.js`): wraps `fetch` and listens for picture and script errors; last 200 entries / 7 days in
+  localStorage; keys and tokens in links are blanked. Sent as a .txt file (Android share accepts `text/plain` now).
+- **Signing**: `android-apk.yml` signs with a fixed release key when the `SIGNING_PASSWORD` secret is set (see
+  "Signing with your own key"). Users must uninstall once when moving from a debug-signed APK.
+- `check-sources.mjs` retries failing sources once more after 3 minutes (Open-Meteo's forecast host timed out on
+  15 Nov and opened issue #33).
+
 ### v1.13 (15 Nov 2026, PR #32)
 - **IMD daily report**: a **Not updated today yet** note when the newest report is older than today (India time).
 - The `imd-daily-report.yml` workflow: if the PDF can't be downloaded or read, the 14:15 and 16:15 IST runs only
@@ -375,6 +390,16 @@ It uses the same station and API key as the app, so open MyWeather once after ad
 **↻** reads it right away, and tapping it opens Home.
 
 ### Signing with your own key
+
+**Easiest (no computer needed):** add one repository secret, `SIGNING_PASSWORD`, under **Settings → Secrets and
+variables → Actions → New repository secret**, with a long passphrase of your own (16 characters or more, e.g. five
+random words). Save the passphrase in your password manager too. The next APK build on main or a release makes a
+release key once, locks it with that passphrase (AES-256, PBKDF2 600,000 rounds) and keeps the locked file on the
+`signing` branch; every later build unlocks the same key. The locked file is useless without the passphrase, which
+only lives in the secret. Don't delete the `signing` branch or change the secret, or later versions can't update
+the installed app. Each build's summary shows the signing certificate's SHA-256.
+
+**Or with a keystore of your own** (takes priority over `SIGNING_PASSWORD` when set):
 
 Without signing secrets the APK is signed with a throwaway debug key, so a newer APK
 needs the old one uninstalled first. Signing every release with the same key of your

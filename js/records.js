@@ -48,11 +48,12 @@ async function fetchMeans(day) {
   return out;
 }
 
-async function loadMeans(onProgress) {
+/** District means by day, { day: { district: mm } | 0 }; downloads only days missing on the phone from `from` on. */
+export async function loadMeans(onProgress, from = FIRST_DAY) {
   means = means || (await idbGet("misc", "records.means")) || {};
   const today = currentRainDay();
   const want = [];
-  for (let d = FIRST_DAY; d <= today; d = shiftDay(d, 1)) {
+  for (let d = from < FIRST_DAY ? FIRST_DAY : from; d <= today; d = shiftDay(d, 1)) {
     // Missing or running days, and a recent empty day (it may only be late).
     if (!(d in means) || d >= shiftDay(today, -1) || (means[d] === 0 && d >= shiftDay(today, -3))) want.push(d);
   }
@@ -66,7 +67,7 @@ async function loadMeans(onProgress) {
       } catch {
         // leave it for next time
       }
-      onProgress(++done, want.length);
+      onProgress?.(++done, want.length);
     }
   };
   await Promise.all(Array.from({ length: 6 }, worker));

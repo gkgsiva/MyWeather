@@ -5,7 +5,10 @@
 //
 // Each check fetches one URL and tests the answer: status 200, the content
 // type, a minimum size, and for pages and JSON something the app's parser
-// relies on. A source that is down for a few minutes is retried once.
+// relies on. A source that doesn't answer is retried after 20 s, and any
+// source still failing at the end is tried once more after 3 minutes, so a
+// short outage (like Open-Meteo's forecast host timing out on 2026-11-15)
+// doesn't open an issue.
 // WEATHER_API_KEY (repo secret) lets the Wunderground check run; without it
 // that check is skipped.
 import { writeFileSync } from "node:fs";
@@ -171,6 +174,18 @@ for (const c of CHECKS) {
   results.push(r);
   const tag = { ok: "ok  ", skipped: "skip", warning: "warn", failed: "FAIL" }[r.state];
   console.log(`${tag} ${r.group} · ${r.name}${r.state === "ok" ? ` (${r.ms} ms)` : ` — ${r.why}`}`);
+}
+
+// Last try for anything that failed, after the other checks and a pause.
+const retry = results.map((r, i) => (r.state === "failed" ? i : -1)).filter((i) => i >= 0);
+if (retry.length && !process.env.NO_FINAL_RETRY) {
+  console.log(`Trying ${retry.length} failed source(s) again in 3 minutes…`);
+  await new Promise((r) => setTimeout(r, 180_000));
+  for (const i of retry) {
+    const r = await runOne(CHECKS[i]);
+    console.log(`${r.state === "ok" ? "ok  " : "FAIL"} ${r.group} · ${r.name} (again)${r.state === "ok" ? ` (${r.ms} ms)` : ` — ${r.why}`}`);
+    if (r.state === "ok") results[i] = r;
+  }
 }
 
 const failed = results.filter((r) => r.state === "failed");
