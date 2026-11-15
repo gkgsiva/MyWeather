@@ -9,6 +9,7 @@
 // data-share-from="id id" adds the text of those elements to the title (a
 // select gives its chosen option), e.g. "Station map · Rain today".
 import { shareImage, shareName } from "./share.js";
+import { shareLook } from "./prefs.js";
 
 let lib = null;
 function loadLib() {
@@ -141,18 +142,22 @@ function when(title) {
 }
 
 // A band on top ("MyWeather", what it is, when) and a margin around the shot.
-function frame(shot, title) {
+// Settings can leave out the MyWeather name (brand: the band's first line and
+// the footer) and the date and time (time).
+function frame(shot, title, look = shareLook()) {
   const scale = shot.width / Math.max(1, parseFloat(shot.style.width) || shot.width);
   const pad = Math.round(12 * scale);
-  const foot = Math.round(26 * scale);
+  const foot = look.brand ? Math.round(26 * scale) : pad;
   const font = getComputedStyle(document.body).fontFamily;
   const out = document.createElement("canvas");
   out.width = Math.max(shot.width + pad * 2, Math.round(320 * scale));
   const g = out.getContext("2d");
   // The title and time, on as many lines as they need.
   g.font = `${Math.round(13 * scale)}px ${font}`;
-  const lines = wrap(g, `${title} · ${when(title)}`, out.width - pad * 2);
-  const band = Math.round((56 + (lines.length - 1) * 18) * scale);
+  const lines = wrap(g, look.time ? `${title} · ${when(title)}` : title, out.width - pad * 2);
+  // Without the name the band holds just the title lines.
+  const first = look.brand ? 45 : 22;
+  const band = Math.round((first + 11 + (lines.length - 1) * 18) * scale);
   out.height = band + pad + shot.height + foot;
   g.fillStyle = css("--bg") || "#ffffff";
   g.fillRect(0, 0, out.width, out.height);
@@ -160,18 +165,27 @@ function frame(shot, title) {
   g.fillRect(0, 0, out.width, band);
   g.fillStyle = css("--header-fg") || "#ffffff";
   g.textBaseline = "alphabetic";
-  g.font = `700 ${Math.round(17 * scale)}px ${font}`;
-  g.fillText("MyWeather", pad, Math.round(24 * scale), out.width - pad * 2);
-  g.font = `${Math.round(13 * scale)}px ${font}`;
+  if (look.brand) {
+    g.font = `700 ${Math.round(17 * scale)}px ${font}`;
+    g.fillText("MyWeather", pad, Math.round(24 * scale), out.width - pad * 2);
+  }
+  g.font = `${look.brand ? "" : "600 "}${Math.round(13 * scale)}px ${font}`;
   g.globalAlpha = 0.9;
-  lines.forEach((line, i) => g.fillText(line, pad, Math.round((45 + i * 18) * scale), out.width - pad * 2));
+  lines.forEach((line, i) => g.fillText(line, pad, Math.round((first + i * 18) * scale), out.width - pad * 2));
   g.globalAlpha = 1;
   g.drawImage(shot, pad, band + pad);
-  g.fillStyle = css("--muted") || "#5d6773";
-  g.font = `${Math.round(11 * scale)}px ${font}`;
-  g.fillText("Shared from the MyWeather app", pad, out.height - Math.round(9 * scale), out.width - pad * 2);
+  if (look.brand) {
+    g.fillStyle = css("--muted") || "#5d6773";
+    g.font = `${Math.round(11 * scale)}px ${font}`;
+    g.fillText("Shared from the MyWeather app", pad, out.height - Math.round(9 * scale), out.width - pad * 2);
+  }
   return new Promise((resolve, reject) =>
-    out.toBlob((b) => (b ? resolve(b) : reject(new Error("no picture"))), "image/png")
+    out.toBlob((b) => {
+      if (!b) return reject(new Error("no picture"));
+      // A mark in a top corner goes under the band (js/share.js watermark()).
+      b.markTop = band;
+      resolve(b);
+    }, "image/png")
   );
 }
 
@@ -236,7 +250,7 @@ export function initSnaps(root = document) {
         const how = await shareImage({
           blob,
           name: shareName(slug(title), "image/png"),
-          text: `${title}, ${when(title)}. Shared from MyWeather.`,
+          text: shareLook().time ? `${title}, ${when(title)}. Shared from MyWeather.` : `${title}. Shared from MyWeather.`,
           // Blocks showing IMD's pictures (radar, warnings) credit IMD.
           imd: "shareImd" in block.dataset,
         });

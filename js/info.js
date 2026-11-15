@@ -11,7 +11,8 @@ export const HISTORY = [
       [
         "Easier to use",
         [
-          "Settings: **Name on shared pictures**. Pick the name in the corner of every picture you share (gkgsiva unless you change it), or leave it empty for none. The app's own pictures get © and the name; IMD's pictures keep **Courtesy: India Meteorological Department** with the plain name. Saved in backups.",
+          "Settings: **Shared pictures**. Pick the name in the corner of every picture you share (gkgsiva unless you change it), or leave it empty for none. The app's own pictures get © and the name; IMD's pictures keep **Courtesy: India Meteorological Department** with the plain name.",
+          "Also there: which **corner** the mark goes in, its **size** and **strength** (with a preview), whether shared maps, tables and charts show the **date and time** and the **MyWeather** name, and **your own text** (a hashtag or link) added to every share's message. All saved in backups.",
         ],
       ],
     ],

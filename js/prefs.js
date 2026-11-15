@@ -7,6 +7,7 @@ export const DISTRICT_KEY = "myweather.settings.district";
 export const UNITS_KEY = "myweather.settings.units"; // { temp: "c" | "f", wind: "kmh" | "kn" | "mph" | "ms" }
 export const HIDDEN_KEY = "myweather.menu.hidden"; // [view names]
 export const WATERMARK_KEY = "myweather.settings.watermark"; // the name on shared pictures ("" hides it)
+export const SHARE_KEY = "myweather.settings.share"; // { corner, size, strength, time, brand, caption }
 
 const read = (key, fallback) => {
   try {
@@ -133,4 +134,36 @@ export function watermarkName() {
 
 export function setWatermarkName(name) {
   write(WATERMARK_KEY, cleanWatermark(name));
+}
+
+// ---- Shared pictures ----
+
+const CORNERS = ["br", "bl", "tr", "tl"];
+const SIZES = ["s", "m", "l"];
+const STRENGTHS = ["light", "normal", "strong"];
+const MAX_CAPTION = 100;
+
+export const cleanCaption = (s) => String(s ?? "").replace(/\s+/g, " ").trim().slice(0, MAX_CAPTION).trim();
+
+/**
+ * How shared pictures look: corner of the mark ("br" bottom right, "bl", "tr", "tl"), its size ("s", "m", "l") and
+ * strength ("light", "normal", "strong"), whether the band over maps, tables and charts shows the date and time
+ * (time) and the MyWeather name (brand), and text added to every share's message (caption, "" for none).
+ */
+export function shareLook() {
+  const v = read(SHARE_KEY, {}) || {};
+  return {
+    corner: CORNERS.includes(v.corner) ? v.corner : "br",
+    size: SIZES.includes(v.size) ? v.size : "m",
+    strength: STRENGTHS.includes(v.strength) ? v.strength : "normal",
+    time: v.time !== false,
+    brand: v.brand !== false,
+    caption: cleanCaption(v.caption),
+  };
+}
+
+export function setShareLook(change) {
+  const next = { ...shareLook(), ...change };
+  next.caption = cleanCaption(next.caption);
+  write(SHARE_KEY, next);
 }

@@ -244,9 +244,12 @@ secret and is skipped without it.
 The same list is on the app's **Info** screen (`js/info.js`); keep the two in step.
 
 ### v1.12 (not released yet)
-- Settings: **Name on shared pictures** (`myweather.settings.watermark`, `js/prefs.js` `watermarkName()`), "gkgsiva"
-  by default. The app's own pictures get "© name"; IMD's pictures keep "Courtesy: India Meteorological Department"
-  with the plain name, never ©. Empty hides the name (IMD's credit stays). Included in backup and restore.
+- Settings: **Shared pictures**. The watermark name (`myweather.settings.watermark`, `js/prefs.js` `watermarkName()`),
+  "gkgsiva" by default: the app's own pictures get "© name"; IMD's pictures keep "Courtesy: India Meteorological
+  Department" with the plain name, never ©. Empty hides the name (IMD's credit stays).
+- Also there (`myweather.settings.share`, `shareLook()`): the mark's corner, size and strength with a live preview;
+  switches for the date and time and the MyWeather name in the band over shared maps, tables and charts
+  (`js/snap.js`); and text added to every share's message. All included in backup and restore.
 
 ### v1.11 (not released yet)
 - **IMD daily report** (Now menu): RMC Chennai's daily weather report as charts and tables (highlights, Chennai,

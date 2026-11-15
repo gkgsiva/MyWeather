@@ -1807,10 +1807,10 @@
           </form>
         </div>
 
-        <div class="set-card">
-          <h3>Name on shared pictures</h3>
+        <div class="set-card" id="set-share-card">
+          <h3>Shared pictures</h3>
           <form class="controls" onsubmit="return false">
-            <label>Name
+            <label>Name in the corner
               <input id="set-watermark" type="text" maxlength="40" autocomplete="off" autocapitalize="off"
                 spellcheck="false" enterkeyhint="done" placeholder="Leave empty for no name" />
             </label>
@@ -1822,9 +1822,49 @@
           <div class="set-buttons">
             <button id="set-watermark-reset" type="button" class="secondary small">Use gkgsiva</button>
           </div>
-          <p class="note">Put in the corner of every picture you share. The app's own maps, tables and charts get
-            © and the name. IMD's radar, satellite, lightning and warning pictures always keep
-            "Courtesy: India Meteorological Department", with the plain name (no ©) under it.</p>
+          <p class="note">The app's own maps, tables and charts get © and the name. IMD's radar, satellite, lightning and
+            warning pictures always keep "Courtesy: India Meteorological Department", with the plain name (no ©) under it.</p>
+          <form class="controls set-share-look" onsubmit="return false">
+            <label>Corner
+              <select id="set-mark-corner">
+                <option value="br">Bottom right</option>
+                <option value="bl">Bottom left</option>
+                <option value="tr">Top right</option>
+                <option value="tl">Top left</option>
+              </select>
+            </label>
+            <label>Size
+              <select id="set-mark-size">
+                <option value="s">Small</option>
+                <option value="m">Medium</option>
+                <option value="l">Large</option>
+              </select>
+            </label>
+            <label>Strength
+              <select id="set-mark-strength">
+                <option value="light">Faint</option>
+                <option value="normal">Normal</option>
+                <option value="strong">Bold</option>
+              </select>
+            </label>
+          </form>
+          <div class="set-mark-samples">
+            <figure><img id="set-mark-sample" alt="How the mark looks on the app's pictures" /><figcaption>App's picture</figcaption></figure>
+            <figure><img id="set-mark-sample-imd" alt="How the mark looks on IMD's pictures" /><figcaption>IMD picture</figcaption></figure>
+          </div>
+          <div class="set-menu set-share-checks">
+            <label><input id="set-share-time" type="checkbox" /> Date and time on maps, tables and charts</label>
+            <label><input id="set-share-brand" type="checkbox" /> MyWeather name on maps, tables and charts</label>
+          </div>
+          <form class="controls" onsubmit="return false">
+            <label>Add to every share's message
+              <input id="set-share-caption" type="text" maxlength="100" autocomplete="off" enterkeyhint="done"
+                placeholder="e.g. #ChennaiRains, or your channel's link" />
+            </label>
+          </form>
+          <p class="note">The date and time and the MyWeather name sit in the band over shared maps, tables and charts;
+            without the name the "Shared from MyWeather" line goes from the message too. Your text is added after the
+            message of every picture you share.</p>
         </div>
 
         <div class="set-card" id="set-menu-card">
