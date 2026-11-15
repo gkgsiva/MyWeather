@@ -1,13 +1,14 @@
 // Settings (#settings): home district, units, default radar, data saver,
-// theme, which screens the menu shows, and a backup of everything picked on
+// theme, how shared pictures look, which screens the menu shows, and a backup of everything picked on
 // the phone (favourites, stations, places, settings) as one small JSON file.
 import { TN_DISTRICTS } from "./districts.js";
 import { homeDistrict, setHomeDistrict, units, setUnits, hiddenViews, setHiddenViews } from "./prefs.js";
+import { watermarkName, setWatermarkName, cleanWatermark, DEFAULT_WATERMARK, shareLook, setShareLook } from "./prefs.js";
 import { STATIONS, PRODUCTS } from "./stations.js";
 import { RADARS } from "./radarmap.js";
 import { bindSaver } from "./datasaver.js";
 import { currentTheme, setTheme } from "./theme.js";
-import { shareImage } from "./share.js";
+import { shareImage, watermarkLines, watermark } from "./share.js";
 import { routeParams } from "./route.js";
 
 const $ = (id) => document.getElementById(id);
@@ -109,6 +110,121 @@ function initLook() {
   theme.addEventListener("change", () => setTheme(theme.value));
   // The theme button in the menu changes it too.
   window.addEventListener("myweather:theme", () => (theme.value = currentTheme()));
+}
+
+// ---- Shared pictures: name, mark, band and caption ----
+
+function showMarks(name) {
+  const put = (id, lines) => {
+    const el = $(id);
+    // Top line first, as it sits on the picture.
+    el.textContent = lines.length ? lines.map(([t]) => t).reverse().join(" / ") : "no mark";
+    el.className = lines.length ? "" : "none";
+  };
+  put("set-watermark-app", watermarkLines({ name }));
+  put("set-watermark-imd", watermarkLines({ imd: true, name }));
+}
+
+// Two small made-up pictures: a light chart (the app's) and a dark radar (IMD's).
+function sampleBlob(imd) {
+  const c = document.createElement("canvas");
+  c.width = 360;
+  c.height = 240;
+  const g = c.getContext("2d");
+  if (imd) {
+    g.fillStyle = "#0b1a2a";
+    g.fillRect(0, 0, 360, 240);
+    g.strokeStyle = "rgba(255,255,255,0.25)";
+    for (const r of [40, 80, 120]) {
+      g.beginPath();
+      g.arc(180, 120, r, 0, Math.PI * 2);
+      g.stroke();
+    }
+    for (const [x, y, r, col] of [[130, 90, 34, "#1e88e5"], [140, 95, 20, "#43a047"], [146, 98, 9, "#fdd835"], [230, 160, 26, "#1e88e5"], [234, 162, 12, "#43a047"]]) {
+      g.fillStyle = col;
+      g.beginPath();
+      g.arc(x, y, r, 0, Math.PI * 2);
+      g.fill();
+    }
+  } else {
+    g.fillStyle = "#ffffff";
+    g.fillRect(0, 0, 360, 240);
+    g.fillStyle = "#1565c0";
+    [60, 110, 80, 150, 120, 170, 90].forEach((v, i) => g.fillRect(24 + i * 46, 220 - v, 30, v));
+    g.fillStyle = "#cfd8dc";
+    g.fillRect(16, 220, 328, 2);
+  }
+  return new Promise((res) => c.toBlob(res, "image/png"));
+}
+
+let sampleRun = 0;
+async function showSamples() {
+  const run = ++sampleRun;
+  const name = cleanWatermark($("set-watermark").value);
+  const look = { ...shareLook(), corner: $("set-mark-corner").value, size: $("set-mark-size").value, strength: $("set-mark-strength").value };
+  for (const [id, imd] of [["set-mark-sample", false], ["set-mark-sample-imd", true]]) {
+    const blob = await watermark(await sampleBlob(imd), { imd, look, name });
+    if (run !== sampleRun) return;
+    const img = $(id);
+    if (img.src) URL.revokeObjectURL(img.src);
+    img.src = URL.createObjectURL(blob);
+  }
+}
+
+function initWatermark() {
+  const input = $("set-watermark");
+  input.value = watermarkName();
+  showMarks(input.value);
+  input.addEventListener("input", () => {
+    showMarks(cleanWatermark(input.value));
+    showSamples();
+  });
+  const save = () => {
+    setWatermarkName(input.value);
+    input.value = watermarkName();
+    showMarks(input.value);
+    showSamples();
+    say(input.value ? `Shared pictures now carry "${input.value}".` : "Shared pictures carry no name now; IMD's still carry IMD's credit.");
+  };
+  input.addEventListener("change", save);
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") input.blur();
+  });
+  $("set-watermark-reset").addEventListener("click", () => {
+    input.value = DEFAULT_WATERMARK;
+    save();
+  });
+}
+
+function initShareLook() {
+  const look = shareLook();
+  const picks = { corner: $("set-mark-corner"), size: $("set-mark-size"), strength: $("set-mark-strength") };
+  for (const [key, el] of Object.entries(picks)) {
+    el.value = look[key];
+    el.addEventListener("change", () => {
+      setShareLook({ [key]: el.value });
+      showSamples();
+      say("Saved. The next picture you share uses it.");
+    });
+  }
+  for (const [key, el] of [["time", $("set-share-time")], ["brand", $("set-share-brand")]]) {
+    el.checked = look[key];
+    el.addEventListener("change", () => {
+      setShareLook({ [key]: el.checked });
+      say("Saved. The next picture you share uses it.");
+    });
+  }
+  const caption = $("set-share-caption");
+  caption.value = look.caption;
+  caption.addEventListener("change", () => {
+    setShareLook({ caption: caption.value });
+    caption.value = shareLook().caption;
+    say(caption.value ? `Every share's message now ends with "${caption.value}".` : "No text is added to shares now.");
+  });
+  caption.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") caption.blur();
+  });
+  showSamples();
 }
 
 // ---- Menu ----
@@ -272,6 +388,8 @@ export function initSettings() {
   initUnits();
   initRadar();
   initLook();
+  initWatermark();
+  initShareLook();
   initMenu();
   initBackup();
 }
