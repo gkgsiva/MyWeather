@@ -9,6 +9,13 @@ export const HISTORY = [
     date: "17 Nov 2026",
     groups: [
       [
+        "My places",
+        [
+          "**My places** (Now menu): save your own places, such as a village, a street or a farm, by searching a name or pincode, using your location, or tapping the map. Each one shows its **rain for the last 30 days** (a chart, the last 7 and 30 days, rainy days and the wettest day, with Share) and opens **Model charts** with that place chosen. Places stay on your phone.",
+          "In **Model charts**, your saved places are in the place list, and a spot you tap on the map can be saved with **Save this spot**.",
+        ],
+      ],
+      [
         "Model charts",
         [
           "**Model agreement**: under *Charts for a place*, one line says how closely the six models agree on the rain for your district over the next 3 rain days: **High**, **Moderate** or **Low**, with a score for each day. When they agree, trust the rain figures more; when they disagree, expect it could be much more or less than any one model shows.",
