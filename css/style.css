@@ -1733,6 +1733,9 @@ table.cw-table { width: 100%; border-collapse: collapse; font-size: 0.78rem; fon
 .cw-mjo p { margin: 2px 0; }
 .cw-big { font-size: 1.3rem; }
 .cw-big b { color: var(--cw-gold); font-size: 1.8rem; }
+.cw-pickrow { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+.cw-pickrow select { flex: 1 1 10em; min-width: 0; max-width: 100%; }
+.cw-trmap { height: 300px; border-radius: 8px; margin: 0 0 6px; }
 .cw-hist { margin: 0; padding-left: 0; list-style: none; font-size: 0.85rem; }
 .cw-hist li { padding: 5px 0; border-bottom: 1px solid rgba(100, 150, 230, 0.15); }
 .cw-hist li:first-child b { color: var(--cw-gold); }

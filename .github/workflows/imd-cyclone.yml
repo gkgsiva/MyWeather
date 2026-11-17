@@ -8,7 +8,8 @@ name: IMD cyclone bulletin
 # the MJO index into JSON for the app's "Cyclone watch" screen
 # (scripts/imd_cyclone.py). The files go to the `data` branch, under cyclone/:
 #
-#   latest.json, history.json, track.jpg, mjo.json, world.json, world/<id>.png
+#   latest.json, history.json, track.jpg, mjo.json, world.json, world/<id>.png,
+#   archive.json (every forecast and real position of every storm, kept)
 #
 # Runs every hour. A bulletin already read is skipped, so between systems a
 # run only reads IMD's page and, once a day, the MJO index. Shares the `data`
@@ -26,7 +27,7 @@ on:
         type: boolean
         default: false
   pull_request:
-    paths: ["scripts/imd_cyclone.py", "scripts/world_cyclones.py", ".github/workflows/imd-cyclone.yml"]
+    paths: ["scripts/imd_cyclone.py", "scripts/world_cyclones.py", "scripts/cyclone_archive.py", ".github/workflows/imd-cyclone.yml"]
 
 permissions:
   contents: write
@@ -71,7 +72,10 @@ jobs:
           verbose=""
           if [ "${{ github.event_name }}" = pull_request ]; then verbose=--verbose; fi
           world=$(python3 scripts/world_cyclones.py data/cyclone $verbose) || world=""
-          changed="$changed $world"
+          # Every forecast and the storm's real positions, kept for good
+          # (cyclone/archive.json), for "Forecast vs what happened".
+          archive=$(python3 scripts/cyclone_archive.py data/cyclone) || archive=""
+          changed="$changed $world $archive"
           echo "Changed: ${changed:-nothing}"
           echo "changed=$(echo $changed)" >> "$GITHUB_OUTPUT"
           if [ "${{ github.event_name }}" = pull_request ] && [ -f data/cyclone/world.json ]; then

@@ -304,6 +304,12 @@ The same list is on the app's **Info** screen (`js/info.js`); keep the two in st
 - **Radar timeline slider** (`#radar`): "Play last 3 hours" decodes IMD's loop with `js/gif.js` and shows it on a
   canvas with a slider and play/pause. IMD gives the time of the newest frame only, so older frames are labelled
   "about" N min ago (spaced evenly over 3 hours). Share sends the frame on screen as a picture (IMD watermark rules).
+- **Cyclone track history**: Cyclone watch has a "Forecast vs what happened" panel. The hourly cyclone workflow
+  now also runs `scripts/cyclone_archive.py`, which keeps every forecast IMD, NHC and JTWC issued for a storm and
+  the storm's recorded positions in `cyclone/archive.json` on the `data` branch (kept after the storm ends).
+  `js/cyclonecheck.js` compares each forecast point with the position at that time (error in km, average by how
+  far ahead), `js/cyclonetrackhistory.js` and `js/cyclonetrackmap.js` draw the panel. Shared pictures carry the
+  agency's Courtesy line.
 
 ### v1.16 (17 Nov 2026)
 - **Model charts** (`#models`): see the screen list above. New `js/zoom.js` (pinch, double-tap and +/− zoom for

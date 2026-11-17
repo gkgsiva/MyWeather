@@ -24,6 +24,8 @@ import { fetchTrack } from "./cyclonetrack.js";
 import { loadLeaflet } from "./stationmap.js";
 import { placeNamed, shoreBetween, shoreAround, nearestPlace, meetsCoast, closestOnSegment } from "./coast.js";
 import { MODELS, modelTracks, steering, compass, landTest } from "./cyclonemodels.js";
+import { showTrackHistory } from "./cyclonetrackhistory.js";
+import { resizeTrackMap } from "./cyclonetrackmap.js";
 
 export const DATA = "https://raw.githubusercontent.com/gkgsiva/MyWeather/data/cyclone/";
 const SAVED = "myweather.cyclonewatch.last";
@@ -253,24 +255,25 @@ async function refresh() {
   let wfs = null;
   let saved = null;
   let world = null;
-  const results = await Promise.allSettled([getData("latest.json"), getData("history.json"), getData("mjo.json"), fetchTrack(), getData("world.json")]);
-  [b, hist, mjo, wfs, world] = results.map((r) => (r.status === "fulfilled" ? r.value : null));
+  let archive = null;
+  const results = await Promise.allSettled([getData("latest.json"), getData("history.json"), getData("mjo.json"), fetchTrack(), getData("world.json"), getData("archive.json")]);
+  [b, hist, mjo, wfs, world, archive] = results.map((r) => (r.status === "fulfilled" ? r.value : null));
   const offline = results[0].status === "rejected";
   if (offline) {
     try {
       saved = JSON.parse(localStorage.getItem(SAVED));
     } catch {}
-    if (saved) ({ b, hist, mjo, world } = saved);
+    if (saved) ({ b, hist, mjo, world, archive } = saved);
   } else {
     try {
-      localStorage.setItem(SAVED, JSON.stringify({ at: Date.now(), b, hist, mjo, world }));
+      localStorage.setItem(SAVED, JSON.stringify({ at: Date.now(), b, hist, mjo, world, archive }));
     } catch {}
   }
   const issued = Date.parse(b?.issued || "");
   const recent = Number.isFinite(issued) && Date.now() - issued < ACTIVE_HOURS * 3600 * 1000;
   const wfsLive = (wfs?.features || []).some((f) => f.geometry);
   const prev = state?.sel;
-  state = { b, hist, mjo, wfs, world, active: recent || (wfsLive && !!b), wfsLive, issued };
+  state = { b, hist, mjo, wfs, world, archive, active: recent || (wfsLive && !!b), wfsLive, issued };
   state.sel = pickDefault(prev);
   loadedAt = Date.now();
   render();
@@ -298,6 +301,7 @@ function render() {
   state.steer = null;
   state.land = null;
   renderPicker(storms);
+  showTrackHistory(state.archive, state.sel === "imd" ? (state.b?.system ? `imd:${state.b.system}` : null) : state.sel);
   if (state.mode === "world") {
     renderWorld(storms.find((x) => x.id === state.sel).s);
     return;
@@ -1467,5 +1471,8 @@ export function initCycloneWatch() {
 
 export function showCycloneWatch() {
   if (Date.now() - loadedAt > 10 * 60 * 1000) refresh();
-  else if (map) setTimeout(() => map.invalidateSize(), 0);
+  else {
+    if (map) setTimeout(() => map.invalidateSize(), 0);
+    resizeTrackMap();
+  }
 }

@@ -9,6 +9,12 @@ export const HISTORY = [
     date: "17 Nov 2026",
     groups: [
       [
+        "Cyclone track history",
+        [
+          "**Forecast vs what happened** (Cyclone watch): every forecast IMD, the National Hurricane Center and the Joint Typhoon Warning Center issue for a storm is now saved, and kept after the storm ends. Pick a storm and one of its forecasts: the map shows the forecast track dashed over where the storm really went, with the error in km at each point, and a table gives the average error by how far ahead the forecast looked (up to 12 h, 24 h, 48 h, 72 h and more). Saving starts from the day this was added, so older storms aren't there. Share carries the agency's credit.",
+        ],
+      ],
+      [
         "My places",
         [
           "**My places** (Now menu): save your own places, such as a village, a street or a farm, by searching a name or pincode, using your location, or tapping the map. Each one shows its **rain for the last 30 days** (a chart, the last 7 and 30 days, rainy days and the wettest day, with Share) and opens **Model charts** with that place chosen. Places stay on your phone.",
