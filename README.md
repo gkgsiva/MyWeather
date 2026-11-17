@@ -288,6 +288,11 @@ secret and is skipped without it.
 
 The same list is on the app's **Info** screen (`js/info.js`); keep the two in step.
 
+### v1.17 (17 Nov 2026)
+- **Radar timeline slider** (`#radar`): "Play last 3 hours" decodes IMD's loop with `js/gif.js` and shows it on a
+  canvas with a slider and play/pause. IMD gives the time of the newest frame only, so older frames are labelled
+  "about" N min ago (spaced evenly over 3 hours). Share sends the frame on screen as a picture (IMD watermark rules).
+
 ### v1.16 (17 Nov 2026)
 - **Model charts** (`#models`): see the screen list above. New `js/zoom.js` (pinch, double-tap and +/− zoom for
   non-map blocks); `js/rainmap.js` now exports its district raster and colour bands.

@@ -5,6 +5,18 @@ import { APP_VERSION } from "./version.js";
 
 export const HISTORY = [
   {
+    version: "1.17",
+    date: "17 Nov 2026",
+    groups: [
+      [
+        "Radars",
+        [
+          "**Scrub the last 3 hours** on the Radars screen: **Play last 3 hours** now has a slider under the picture. Drag it back to any frame, or tap ▶ to play and ⏸ to pause. It shows about how long ago each frame is, and **Share** sends the frame you are on.",
+        ],
+      ],
+    ],
+  },
+  {
     version: "1.16",
     date: "17 Nov 2026",
     groups: [

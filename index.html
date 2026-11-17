@@ -684,6 +684,12 @@
 
         <figure>
           <img id="radar-img" alt="" />
+          <canvas id="radar-canvas" class="radar-canvas" hidden></canvas>
+          <div id="radar-player" class="rm-player radar-player" hidden>
+            <button id="radar-play" type="button" class="secondary small" aria-label="Play the loop">▶</button>
+            <input id="radar-frame" type="range" min="0" max="0" value="0" aria-label="Radar time, last 3 hours" />
+            <span id="radar-frame-time" class="rm-time"></span>
+          </div>
           <figcaption>
             Direct image link:
             <a id="radar-link" target="_blank" rel="noopener noreferrer"></a>
