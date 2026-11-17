@@ -5,6 +5,19 @@ import { APP_VERSION } from "./version.js";
 
 export const HISTORY = [
   {
+    version: "1.16",
+    date: "17 Nov 2026",
+    groups: [
+      [
+        "Model charts",
+        [
+          "**Model charts** (Now menu): rain, wind and temperature over Tamil Nadu from six weather models side by side: **ECMWF**, **ECMWF AI**, **GFS**, **ICON**, **UK Met Office** and **GEM**. Choose **24-hour rain** (the next 24 hours, or each IMD rain day from 8:30 AM), **rain every 3 hours**, **wind** or **temperature**, and slide through the next 6 days. Six small maps show the models next to each other; **pinch or double-tap to zoom**. Tap one to see it on the big map, and tap the map for every model's figure at that spot.",
+          "**Charts for a place**: pick a district (your home district first) or a spot on the map for lines of each model's rain every 3 hours, wind and temperature, and a **24-hour rain** bar chart with a table and the models' average. Every chart zooms and has Share.",
+        ],
+      ],
+    ],
+  },
+  {
     version: "1.15",
     date: "16 Nov 2026",
     groups: [

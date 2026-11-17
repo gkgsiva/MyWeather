@@ -16,6 +16,15 @@ A small static web app for Chennai weather watchers. A home page and the ☰ men
 - **Forecast** (`#forecast`): Chennai's weather now, the chance of rain for each of the next 24 hours, and
   7 days ahead (high/low, rain chance, expected mm, wind). From [Open-Meteo](https://open-meteo.com/)
   (`api.open-meteo.com`, no key), which blends ECMWF, GFS and other models.
+- **Model charts** (`#models`, Now menu, `js/models.js`): rain, wind and temperature over Tamil Nadu from six global
+  models side by side (ECMWF, ECMWF AI, GFS, ICON, UK Met Office, GEM), read from Open-Meteo in one request on a
+  0.25° grid (the 295 points within about 40 km of TN), every 3 hours for 6 days, in UTC so 24-hour rain matches
+  IMD's 8:30 AM day. Tabs: 24-hour rain (next 24 h or each IMD day), rain in 3 h, wind, temperature, with a time
+  slider. Six small maps with district lines (pinch / double-tap zoom, `js/zoom.js`), a Leaflet map of one model
+  (tap for every model's figure there), and for a district or map spot: 3-hourly rain, wind and temperature lines
+  and a 24-hour rain bar chart with a table and the models' average. Saved in IndexedDB (`misc` →
+  `models.grid.v2`) for an hour. Raw model output, not IMD's forecast; shared pictures carry "© name" and the
+  Open-Meteo credit line inside the picture.
 - **Heat & humidity** (`#heat`): the heat index ("feels like", US weather service formula) and wet-bulb
   temperature now and for the next 48 hours, with heat stress levels hour by hour and the hottest feel of each
   day, from Open-Meteo (the phone's place when Near you is on). The home station's latest reading is shown too.
@@ -278,6 +287,10 @@ secret and is skipped without it.
 ## Version history
 
 The same list is on the app's **Info** screen (`js/info.js`); keep the two in step.
+
+### v1.16 (17 Nov 2026)
+- **Model charts** (`#models`): see the screen list above. New `js/zoom.js` (pinch, double-tap and +/− zoom for
+  non-map blocks); `js/rainmap.js` now exports its district raster and colour bands.
 
 ### v1.15 (16 Nov 2026)
 - **Cyclone watch** (`#cyclonewatch`, Radar & sky menu): see the screen list above. New hourly workflow
