@@ -1840,3 +1840,8 @@ table.cw-table { width: 100%; border-collapse: collapse; font-size: 0.78rem; fon
 .md-agree.high { border-left-color: #2e9d4f; }
 .md-agree.moderate { border-left-color: #e0a100; }
 .md-agree.low { border-left-color: #d9432f; }
+
+/* Radars: scrub through IMD's 3-hour loop */
+.radar-canvas { display: block; width: 100%; height: auto; border-radius: 6px; }
+.radar-canvas[hidden], .radar-player[hidden] { display: none; }
+.radar-player { position: sticky; bottom: 0; padding: 8px 2px; background: var(--card); }

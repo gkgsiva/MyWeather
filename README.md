@@ -295,14 +295,9 @@ The same list is on the app's **Info** screen (`js/info.js`); keep the two in st
   from 75%, Moderate from 50%. New `js/agree.js`.
 - **Model charts offline**: no signal skips the fetch and shows the last saved run, with a yellow line giving when
   it was read and its age (also when an update fails); shared pictures are tagged "saved run".
-
-### v1.17 (17 Nov 2026)
-- **Model agreement** on Model charts: one line for the chosen place saying how closely the six models agree on the
-  rain for the next 3 rain days. Per day: 100% when even the wettest model is under 2.5 mm, otherwise 100% less the
-  gap between wettest and driest model measured against the wettest total + 2.5 mm; at least 3 models needed. High
-  from 75%, Moderate from 50%. New `js/agree.js`.
-- **Model charts offline**: no signal skips the fetch and shows the last saved run, with a yellow line giving when
-  it was read and its age (also when an update fails); shared pictures are tagged "saved run".
+- **Radar timeline slider** (`#radar`): "Play last 3 hours" decodes IMD's loop with `js/gif.js` and shows it on a
+  canvas with a slider and play/pause. IMD gives the time of the newest frame only, so older frames are labelled
+  "about" N min ago (spaced evenly over 3 hours). Share sends the frame on screen as a picture (IMD watermark rules).
 
 ### v1.16 (17 Nov 2026)
 - **Model charts** (`#models`): see the screen list above. New `js/zoom.js` (pinch, double-tap and +/− zoom for

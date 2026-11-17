@@ -15,6 +15,12 @@ export const HISTORY = [
           "**Works offline**: with no signal, Model charts shows the **last run it read**, with a yellow line saying when it was read and how old it is (the same if an update fails). Pictures you share from it say they are a saved run.",
         ],
       ],
+      [
+        "Radars",
+        [
+          "**Scrub the last 3 hours** on the Radars screen: **Play last 3 hours** now has a slider under the picture. Drag it back to any frame, or tap ▶ to play and ⏸ to pause. It shows about how long ago each frame is, and **Share** sends the frame you are on.",
+        ],
+      ],
     ],
   },
   {
