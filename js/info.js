@@ -14,6 +14,26 @@ export const HISTORY = [
           "**Forecast vs what happened** (Cyclone watch): every forecast IMD, the National Hurricane Center and the Joint Typhoon Warning Center issue for a storm is now saved, and kept after the storm ends. Pick a storm and one of its forecasts: the map shows the forecast track dashed over where the storm really went, with the error in km at each point, and a table gives the average error by how far ahead the forecast looked (up to 12 h, 24 h, 48 h, 72 h and more). Saving starts from the day this was added, so older storms aren't there. Share carries the agency's credit.",
         ],
       ],
+      [
+        "My places",
+        [
+          "**My places** (Now menu): save your own places, such as a village, a street or a farm, by searching a name or pincode, using your location, or tapping the map. Each one shows its **rain for the last 30 days** (a chart, the last 7 and 30 days, rainy days and the wettest day, with Share) and opens **Model charts** with that place chosen. Places stay on your phone.",
+          "In **Model charts**, your saved places are in the place list, and a spot you tap on the map can be saved with **Save this spot**.",
+        ],
+      ],
+      [
+        "Model charts",
+        [
+          "**Model agreement**: under *Charts for a place*, one line says how closely the six models agree on the rain for your district over the next 3 rain days: **High**, **Moderate** or **Low**, with a score for each day. When they agree, trust the rain figures more; when they disagree, expect it could be much more or less than any one model shows.",
+          "**Works offline**: with no signal, Model charts shows the **last run it read**, with a yellow line saying when it was read and how old it is (the same if an update fails). Pictures you share from it say they are a saved run.",
+        ],
+      ],
+      [
+        "Radars",
+        [
+          "**Scrub the last 3 hours** on the Radars screen: **Play last 3 hours** now has a slider under the picture. Drag it back to any frame, or tap ▶ to play and ⏸ to pause. It shows about how long ago each frame is, and **Share** sends the frame you are on.",
+        ],
+      ],
     ],
   },
   {

@@ -2,6 +2,7 @@ import { STATIONS, PRODUCTS, radarImageUrl, radarAnimationUrl, hasAnimation } fr
 import { saveImage, loadImage, when } from "./offline.js";
 import { shareButton, shareName } from "./share.js";
 import { RADARS } from "./radarmap.js";
+import { decodeGif } from "./gif.js";
 
 const DEFAULT_KEY = "myweather.radar.default";
 const FALLBACK = { city: "cni", product: "caz" }; // Chennai, MAX (Z)
@@ -12,6 +13,19 @@ const img = document.getElementById("radar-img");
 const link = document.getElementById("radar-link");
 const status = document.getElementById("status");
 const animateBtn = document.getElementById("animate");
+const canvas = document.getElementById("radar-canvas");
+const player = document.getElementById("radar-player");
+const playBtn = document.getElementById("radar-play");
+const slider = document.getElementById("radar-frame");
+const frameTime = document.getElementById("radar-frame-time");
+
+// The 3-hour loop, taken apart so it can be scrubbed: every frame as pixels,
+// shown on a canvas under a slider. IMD gives the time of the last frame only;
+// the others are spaced evenly back over 3 hours, so their times are "about".
+let frames = [];
+let frameEnd = 0; // time of the newest frame (ms), 0 when unknown
+let timer = 0;
+const LOOP_MIN = 180;
 
 // Showing IMD's 3-hour loop instead of the latest image (MAX (Z) and rainfall
 // intensity only). Kept in the URL as &anim=1.
@@ -54,6 +68,11 @@ function init() {
   document.getElementById("refresh").addEventListener("click", render);
   document.getElementById("set-default").addEventListener("click", setDefault);
   shareButton(document.getElementById("radar-share"), shareRadar, say);
+  slider.addEventListener("input", () => {
+    stopPlay();
+    showFrame(+slider.value);
+  });
+  playBtn.addEventListener("click", () => (timer ? stopPlay() : startPlay()));
   animateBtn.addEventListener("click", () => {
     animate = !animate;
     render();
@@ -109,12 +128,81 @@ function say(text, error = false) {
   status.className = error ? "status error" : "status";
 }
 
-function showBlob(blob, imdTime) {
-  shown = { blob, imdTime };
+function stopPlay() {
+  clearInterval(timer);
+  timer = 0;
+  playBtn.textContent = "▶";
+  playBtn.setAttribute("aria-label", "Play the loop");
+}
+
+function startPlay() {
+  if (frames.length < 2) return;
+  if (+slider.value >= frames.length - 1) showFrame(0);
+  playBtn.textContent = "⏸";
+  playBtn.setAttribute("aria-label", "Pause");
+  timer = setInterval(() => {
+    const next = +slider.value + 1;
+    if (next >= frames.length) return stopPlay();
+    showFrame(next);
+  }, 350);
+}
+
+function showFrame(i) {
+  const f = frames[i];
+  if (!f) return;
+  canvas.getContext("2d").putImageData(f, 0, 0);
+  slider.value = String(i);
+  const ago = Math.round(((frames.length - 1 - i) * LOOP_MIN) / Math.max(1, frames.length - 1));
+  const agoText = i === frames.length - 1 ? "latest" : ago >= 60 ? `~${Math.floor(ago / 60)} h ${ago % 60} min ago` : `~${ago} min ago`;
+  frameTime.textContent = frameEnd && i === frames.length - 1 ? `${agoText} · ${new Date(frameEnd).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}` : agoText;
+  slider.setAttribute("aria-valuetext", frameTime.textContent);
+}
+
+// Takes the loop apart. Returns false when it can't be read (the picture then
+// stays the plain animated GIF).
+async function loadFrames(blob, imdTime) {
+  const list = [];
+  try {
+    let size = [0, 0];
+    decodeGif(await blob.arrayBuffer(), (rgba, w, h) => {
+      size = [w, h];
+      list.push(new ImageData(new Uint8ClampedArray(rgba), w, h));
+    });
+    if (list.length < 2) return false;
+    canvas.width = size[0];
+    canvas.height = size[1];
+  } catch {
+    return false;
+  }
+  stopPlay();
+  frames = list;
+  const t = Date.parse(imdTime);
+  frameEnd = isNaN(t) ? 0 : t;
+  slider.max = String(list.length - 1);
+  showFrame(list.length - 1);
+  return true;
+}
+
+function showPlayer(on) {
+  canvas.hidden = player.hidden = !on;
+  img.hidden = on;
+  if (!on) {
+    stopPlay();
+    frames = [];
+  }
+}
+
+function showBlob(blob, imdTime, loop = false) {
+  shown = { blob, imdTime, loop };
+  showPlayer(false);
   if (objectUrl) URL.revokeObjectURL(objectUrl);
   objectUrl = URL.createObjectURL(blob);
   img.dataset.mode = "blob";
   img.src = objectUrl;
+  if (loop)
+    loadFrames(blob, imdTime).then((ok) => {
+      if (ok && shown && shown.blob === blob) showPlayer(true);
+    });
 }
 
 const imdTimeText = (lastModified) =>
@@ -139,7 +227,7 @@ async function loadRadar(url, playing) {
     }
     if (seq !== loadSeq) return;
     const entry = { blob, savedAt: Date.now(), imdTime: res.headers.get("last-modified") || "" };
-    showBlob(blob, entry.imdTime);
+    showBlob(blob, entry.imdTime, playing);
     const what = playing ? "Playing the last 3 hours, loaded" : "Updated";
     say(`${what} ${new Date().toLocaleTimeString()}${imdTimeText(entry.imdTime)}`);
     saveImage(url, entry);
@@ -148,11 +236,12 @@ async function loadRadar(url, playing) {
     const saved = await loadImage(url);
     if (seq !== loadSeq) return;
     if (saved) {
-      showBlob(saved.blob, saved.imdTime);
+      showBlob(saved.blob, saved.imdTime, playing);
       const why = httpError ? "IMD isn't serving this image right now" : "No connection";
       say(`${why}. Showing the copy saved at ${when(saved.savedAt)}${imdTimeText(saved.imdTime)}.`, true);
     } else if (httpError) {
       shown = null;
+      showPlayer(false);
       img.dataset.mode = "";
       img.removeAttribute("src");
       say("Image not available right now. This radar may be offline; try another city or product.", true);
@@ -160,6 +249,7 @@ async function loadRadar(url, playing) {
       // Can't fetch it here (no network, or a browser without the app's CORS
       // header): let the image load straight from IMD.
       shown = null;
+      showPlayer(false);
       img.dataset.mode = "direct";
       img.src = `${url}?t=${Date.now()}`;
     }
@@ -173,12 +263,18 @@ function shareRadar() {
   const loop = img.dataset.anim ? " · last 3 hours" : "";
   const t = Date.parse(shown.imdTime);
   const time = isNaN(t) ? "" : ` · ${when(t)}`;
-  return {
-    blob: shown.blob,
-    name: shareName(`radar-${citySelect.value}`, shown.blob.type),
-    text: `${city} radar, ${product}${loop}${time} (IMD). Shared from MyWeather.`,
-    imd: true,
-  };
+  const base = { name: shareName(`radar-${citySelect.value}`, shown.blob.type), imd: true };
+  if (!canvas.hidden && frames.length) {
+    // The frame on screen as a picture, not the whole loop.
+    const i = +slider.value;
+    const when_ = i === frames.length - 1 ? time : ` · ${frameTime.textContent}`;
+    return new Promise((res) =>
+      canvas.toBlob((blob) =>
+        res(blob && { ...base, blob, name: shareName(`radar-${citySelect.value}`, "image/png"), text: `${city} radar, ${product}${when_} (IMD). Shared from MyWeather.` })
+      )
+    );
+  }
+  return { ...base, blob: shown.blob, text: `${city} radar, ${product}${loop}${time} (IMD). Shared from MyWeather.` };
 }
 
 function setDefault() {
