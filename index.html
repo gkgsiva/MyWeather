@@ -34,6 +34,7 @@
           <a href="#digest" data-view="digest">Daily summary</a>
           <a href="#forecast" data-view="forecast">Forecast</a>
           <a href="#models" data-view="models">Model charts</a>
+          <a href="#myplaces" data-view="myplaces">My places</a>
           <a href="#heat" data-view="heat">Heat &amp; humidity</a>
           <a href="#warnings" data-view="warnings">Warnings</a>
           <a href="#imdreport" data-view="imdreport">IMD daily report</a>
@@ -211,6 +212,12 @@
             <a class="card" href="#forecast">
               <strong>Forecast</strong>
               <span>Chennai's next 7 days and today's rain chance by hour</span>
+            </a>
+          </li>
+          <li>
+            <a class="card" href="#myplaces">
+              <strong>My places</strong>
+              <span>Save your own places, each with its own model charts and last 30 days of rain</span>
             </a>
           </li>
           <li>
@@ -572,6 +579,54 @@
         </p>
       </section>
 
+      <section id="view-myplaces" class="view" hidden>
+        <h2>My places</h2>
+        <p class="note nw-intro">
+          Save the places you care about: a village, a street, a farm. Each one gets its own <a href="#models">Model charts</a>
+          and the rain of the last 30 days. Places are kept on this phone only.
+        </p>
+        <form class="controls" onsubmit="return false">
+          <label class="heat-search">
+            Add a place or pincode
+            <input id="mp-q" type="search" placeholder="Kumbakonam or 612001" autocomplete="off" enterkeyhint="search" />
+          </label>
+          <button id="mp-go" type="button" class="secondary">Find</button>
+        </form>
+        <ul id="mp-results" class="rank-list heat-results"></ul>
+        <div class="nc-pick-foot">
+          <small class="nc-hint">Or tap the map to save a spot.</small>
+          <button id="mp-gps" type="button" class="linkish">📍 Save my location</button>
+        </div>
+        <p id="mp-status" class="status" aria-live="polite"></p>
+        <h3>Saved places <small id="mp-count"></small></h3>
+        <p id="mp-empty" class="note">Nothing saved yet. Search above or tap the map.</p>
+        <ul id="mp-list" class="rank-list heat-results"></ul>
+        <div id="mp-map" class="station-map md-map"></div>
+
+        <div id="mp-detail" hidden>
+          <form class="controls" onsubmit="return false">
+            <label>
+              Name
+              <input id="mp-name" type="text" maxlength="40" autocomplete="off" />
+            </label>
+            <button id="mp-remove" type="button" class="secondary">Remove</button>
+          </form>
+          <p id="mp-where" class="note"></p>
+          <p>
+            <button id="mp-open" type="button" class="secondary">Model charts for this place</button>
+            <span id="mp-nomodels" class="note" hidden>Model charts cover Tamil Nadu and about 40 km round it, so this place has rain history only.</span>
+          </p>
+          <div data-share="Rain history · my place" data-share-from="mp-title">
+            <div class="chart-head"><strong>Rain, last 30 days · <span id="mp-title"></span></strong></div>
+            <svg id="mp-chart" class="chart" role="group" aria-label="Rain each day for the last 30 days"></svg>
+            <p id="mp-readout" class="readout" aria-live="polite"></p>
+            <div id="mp-sums" class="mp-sums"></div>
+            <p class="note md-credit">Rain data: Open-Meteo.com, CC BY 4.0. Calendar days, midnight to midnight IST; a weather analysis for the spot, not a rain gauge.</p>
+          </div>
+          <p><button id="mp-refresh" type="button" class="secondary">Refresh rain history</button></p>
+        </div>
+      </section>
+
       <section id="view-models" class="view" hidden>
         <h2>Model charts</h2>
         <p class="note nw-intro">
@@ -623,8 +678,9 @@
             Place
             <select id="md-place"></select>
           </label>
+          <button id="md-save" type="button" class="secondary" hidden>Save this spot</button>
         </form>
-        <p class="note">Or tap the big map and choose "Charts for this spot".</p>
+        <p class="note">Or tap the big map and choose "Charts for this spot", then <strong>Save this spot</strong> to keep it in <a href="#myplaces">My places</a>.</p>
         <p id="md-swatches" class="legend md-swatches"></p>
 
         <div data-share="Rain every 3 hours, model by model" data-share-from="md-place-name">

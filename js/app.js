@@ -16,6 +16,7 @@ const VIEWS = {
   digest: { title: "MyWeather · Daily summary", load: () => import("./digest.js"), init: "initDigest", show: "showDigest" },
   forecast: { title: "MyWeather · Forecast", load: () => import("./forecast.js"), init: "initForecast", show: "showForecast" },
   models: { title: "MyWeather · Model charts", load: () => import("./models.js"), init: "initModels", show: "showModels" },
+  myplaces: { title: "MyWeather · My places", load: () => import("./myplaces.js"), init: "initMyPlaces", show: "showMyPlaces" },
   heat: { title: "MyWeather · Heat & humidity", load: () => import("./heat.js"), init: "initHeat", show: "showHeat" },
   nowcast: { title: "MyWeather · Rain nowcast", load: () => import("./nowcastview.js"), init: "initNowcastView", show: "showNowcastView" },
   rainmap: { title: "MyWeather · Rain map", load: () => import("./rainmap.js"), init: "initRainMap", show: "showRainMap" },

@@ -19,6 +19,7 @@ import { homeDistrict, toWind, windUnit, toTemp, tempUnit } from "./prefs.js";
 import { el, niceMax } from "./chart.js";
 import { idbGet, idbPut } from "./idb.js";
 import { makeZoomable } from "./zoom.js";
+import { savedPlaces, addPlace } from "./placestore.js";
 
 const API = "https://api.open-meteo.com/v1/forecast";
 export const MODELS = [
@@ -783,11 +784,39 @@ function renderCharts() {
   if (map && place.spot) spotMarker = L.circleMarker([place.lat, place.lon], { radius: 6, color: "#000", weight: 2, fillColor: "#fff", fillOpacity: 1 }).addTo(map);
 }
 
+// "My places" (saved on the My places screen) sit under the districts.
+function fillSaved() {
+  const s = $("md-place");
+  const was = s.value;
+  s.querySelector("optgroup")?.remove();
+  const list = savedPlaces();
+  if (list.length) {
+    const g = document.createElement("optgroup");
+    g.label = "My places";
+    g.append(...list.map((x) => new Option(x.name, `p:${x.id}`)));
+    s.append(g);
+  }
+  if ([...s.options].some((o) => o.value === was)) s.value = was;
+  $("md-save").hidden = !place?.spot;
+}
+
+function pickSaved(id) {
+  const x = savedPlaces().find((y) => y.id === id);
+  if (!x) return false;
+  setPlace({ name: x.name, lat: x.lat, lon: x.lon, saved: x.id });
+  return true;
+}
+
 function setPlace(p) {
   place = p;
   const s = $("md-place");
   let spot = s.querySelector('option[value="spot"]');
-  if (p.spot) {
+  if (p.saved) {
+    spot?.remove();
+    fillSaved();
+    s.value = `p:${p.saved}`;
+    setPref("place", `p:${p.saved}`);
+  } else if (p.spot) {
     if (!spot) {
       spot = document.createElement("option");
       spot.value = "spot";
@@ -800,6 +829,7 @@ function setPlace(p) {
     s.value = p.name;
     setPref("place", p.name);
   }
+  $("md-save").hidden = !p.spot;
   renderCharts();
 }
 
@@ -937,6 +967,7 @@ export function initModels() {
     })
   );
   s.addEventListener("change", () => {
+    if (s.value.startsWith("p:")) return void pickSaved(s.value.slice(2));
     const d = TN_DISTRICTS.find(([n]) => n === s.value);
     if (d) setPlace({ name: d[0], lat: d[1], lon: d[2] });
   });
@@ -945,6 +976,14 @@ export function initModels() {
   // Chennai's district centre is inland; use the city itself.
   place = d[0] === "Chennai" ? { name: "Chennai", lat: 13.08, lon: 80.27 } : { name: d[0], lat: d[1], lon: d[2] };
   s.value = d[0];
+  fillSaved();
+  if (want.startsWith("p:")) pickSaved(want.slice(2));
+  $("md-save").addEventListener("click", () => {
+    if (!place?.spot) return;
+    const x = addPlace(place);
+    if (!x) return say("You can save up to 12 places. Remove one on My places.", true);
+    pickSaved(x.id);
+  });
 
   $("md-swatches").replaceChildren(
     ...MODELS.map((x) => {
@@ -959,6 +998,10 @@ export function initModels() {
 }
 
 export async function showModels() {
+  // Coming from My places: it sets the place first.
+  const want = pref("place", "");
+  if (want.startsWith("p:") && place?.saved !== want.slice(2)) pickSaved(want.slice(2));
+  else fillSaved();
   try {
     L = await loadLeaflet();
     ensureMap();

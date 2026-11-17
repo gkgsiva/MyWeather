@@ -16,6 +16,10 @@ A small static web app for Chennai weather watchers. A home page and the ☰ men
 - **Forecast** (`#forecast`): Chennai's weather now, the chance of rain for each of the next 24 hours, and
   7 days ahead (high/low, rain chance, expected mm, wind). From [Open-Meteo](https://open-meteo.com/)
   (`api.open-meteo.com`, no key), which blends ECMWF, GFS and other models.
+- **My places** (`#myplaces`, Now menu, `js/myplaces.js`, `js/placestore.js`): save your own places (search by name or
+  pincode, your location, or a map tap; up to 12, in localStorage). Each has the last 30 days of daily rain from
+  Open-Meteo and a button that opens Model charts with that place chosen (Model charts also lists them under "My places"
+  and can save a map spot).
 - **Model charts** (`#models`, Now menu, `js/models.js`): rain, wind and temperature over Tamil Nadu from six global
   models side by side (ECMWF, ECMWF AI, GFS, ICON, UK Met Office, GEM), read from Open-Meteo in one request on a
   0.25° grid (the 295 points within about 40 km of TN), every 3 hours for 6 days, in UTC so 24-hour rain matches
@@ -287,6 +291,10 @@ secret and is skipped without it.
 ## Version history
 
 The same list is on the app's **Info** screen (`js/info.js`); keep the two in step.
+
+### v1.17 (17 Nov 2026)
+- **My places** (`#myplaces`): see the screen list above. Model charts' place list gained a "My places" group and a
+  "Save this spot" button.
 
 ### v1.16 (17 Nov 2026)
 - **Model charts** (`#models`): see the screen list above. New `js/zoom.js` (pinch, double-tap and +/− zoom for
