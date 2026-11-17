@@ -288,6 +288,14 @@ secret and is skipped without it.
 
 The same list is on the app's **Info** screen (`js/info.js`); keep the two in step.
 
+### v1.17 (17 Nov 2026)
+- **Cyclone track history**: Cyclone watch has a "Forecast vs what happened" panel. The hourly cyclone workflow
+  now also runs `scripts/cyclone_archive.py`, which keeps every forecast IMD, NHC and JTWC issued for a storm and
+  the storm's recorded positions in `cyclone/archive.json` on the `data` branch (kept after the storm ends).
+  `js/cyclonecheck.js` compares each forecast point with the position at that time (error in km, average by how
+  far ahead), `js/cyclonetrackhistory.js` and `js/cyclonetrackmap.js` draw the panel. Shared pictures carry the
+  agency's Courtesy line.
+
 ### v1.16 (17 Nov 2026)
 - **Model charts** (`#models`): see the screen list above. New `js/zoom.js` (pinch, double-tap and +/− zoom for
   non-map blocks); `js/rainmap.js` now exports its district raster and colour bands.

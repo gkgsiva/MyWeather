@@ -5,6 +5,18 @@ import { APP_VERSION } from "./version.js";
 
 export const HISTORY = [
   {
+    version: "1.17",
+    date: "17 Nov 2026",
+    groups: [
+      [
+        "Cyclone track history",
+        [
+          "**Forecast vs what happened** (Cyclone watch): every forecast IMD, the National Hurricane Center and the Joint Typhoon Warning Center issue for a storm is now saved, and kept after the storm ends. Pick a storm and one of its forecasts: the map shows the forecast track dashed over where the storm really went, with the error in km at each point, and a table gives the average error by how far ahead the forecast looked (up to 12 h, 24 h, 48 h, 72 h and more). Saving starts from the day this was added, so older storms aren't there. Share carries the agency's credit.",
+        ],
+      ],
+    ],
+  },
+  {
     version: "1.16",
     date: "17 Nov 2026",
     groups: [
