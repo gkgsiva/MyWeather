@@ -5,6 +5,19 @@ import { APP_VERSION } from "./version.js";
 
 export const HISTORY = [
   {
+    version: "1.17",
+    date: "17 Nov 2026",
+    groups: [
+      [
+        "Model charts",
+        [
+          "**Model agreement**: under *Charts for a place*, one line says how closely the six models agree on the rain for your district over the next 3 rain days: **High**, **Moderate** or **Low**, with a score for each day. When they agree, trust the rain figures more; when they disagree, expect it could be much more or less than any one model shows.",
+          "**Works offline**: with no signal, Model charts shows the **last run it read**, with a yellow line saying when it was read and how old it is (the same if an update fails). Pictures you share from it say they are a saved run.",
+        ],
+      ],
+    ],
+  },
+  {
     version: "1.16",
     date: "17 Nov 2026",
     groups: [

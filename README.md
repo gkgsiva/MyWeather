@@ -288,6 +288,22 @@ secret and is skipped without it.
 
 The same list is on the app's **Info** screen (`js/info.js`); keep the two in step.
 
+### v1.17 (17 Nov 2026)
+- **Model agreement** on Model charts: one line for the chosen place saying how closely the six models agree on the
+  rain for the next 3 rain days. Per day: 100% when even the wettest model is under 2.5 mm, otherwise 100% less the
+  gap between wettest and driest model measured against the wettest total + 2.5 mm; at least 3 models needed. High
+  from 75%, Moderate from 50%. New `js/agree.js`.
+- **Model charts offline**: no signal skips the fetch and shows the last saved run, with a yellow line giving when
+  it was read and its age (also when an update fails); shared pictures are tagged "saved run".
+
+### v1.17 (17 Nov 2026)
+- **Model agreement** on Model charts: one line for the chosen place saying how closely the six models agree on the
+  rain for the next 3 rain days. Per day: 100% when even the wettest model is under 2.5 mm, otherwise 100% less the
+  gap between wettest and driest model measured against the wettest total + 2.5 mm; at least 3 models needed. High
+  from 75%, Moderate from 50%. New `js/agree.js`.
+- **Model charts offline**: no signal skips the fetch and shows the last saved run, with a yellow line giving when
+  it was read and its age (also when an update fails); shared pictures are tagged "saved run".
+
 ### v1.16 (17 Nov 2026)
 - **Model charts** (`#models`): see the screen list above. New `js/zoom.js` (pinch, double-tap and +/− zoom for
   non-map blocks); `js/rainmap.js` now exports its district raster and colour bands.
