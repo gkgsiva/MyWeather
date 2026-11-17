@@ -11,7 +11,8 @@
 //   saved station for the strip, the nearest TN rain gauge and the nearest
 //   radar on the radar map; sun and moon are worked out for that place.
 import { loadStations, apiKey, fetchReading, loadLast } from "./wunderground.js";
-import { when } from "./offline.js";
+import { when, loadImage, saveImage } from "./offline.js";
+import { saverMode } from "./datasaver.js";
 import { sunTimes, moonTimes, moonIllumination, phaseName, nextPhases } from "./astro.js";
 import { loadCoords, addTiles, loadLeaflet } from "./stationmap.js";
 import { searchPlaces } from "./places.js";
@@ -26,6 +27,7 @@ const gaugeDays = () => import("./gaugedays.js");
 const FAV_KEY = "myweather.home.favs";
 const STATION_KEY = "myweather.home.station";
 const READING_KEY = "myweather.home.reading";
+const GAUGE_KEY = "myweather.home.gauge"; // the nearest-gauge row as last shown, for offline
 const GPS_KEY = "myweather.home.gps"; // true when "Use my location" is on
 const POS_KEY = "myweather.home.pos"; // { lat, lon, at }
 const TTL = 5 * 60 * 1000;
@@ -225,7 +227,8 @@ async function refreshStrip() {
   const key = apiKey();
   if (!key) return say("Add your Wunderground API key under Wunderground → Manage stations.", true);
   tellWidget(main, key);
-  say("Loading…");
+  // Offline-first: what was saved is on screen already, labelled, while the new reading loads.
+  say(keptObs ? `${readingLine(keptObs).text} · updating…` : "Loading…");
   try {
     const obs = await fetchReading(main.id, key);
     if (mainStation()?.id !== main.id) return; // picked another meanwhile
@@ -250,6 +253,69 @@ async function refreshStrip() {
       const line = readingLine(keptObs, kept?.at || loadLast()?.at);
       say(line.text, true);
     } else say("Couldn't reach Wunderground.", true);
+  }
+}
+
+// ---- Offline-first: the last radar picture and a no-connection notice ----
+
+const RADAR_KEY = "myweather.radar.default";
+const RADAR_FRESH = 10 * 60 * 1000;
+let radarShown = "";
+let radarObjectUrl = "";
+
+function radarChoice() {
+  let saved = {};
+  try {
+    saved = JSON.parse(localStorage.getItem(RADAR_KEY) || "{}");
+  } catch {}
+  return { city: saved.city || "cni", product: saved.product || "caz" };
+}
+
+function paintRadar(card, entry, name, stale) {
+  if (radarObjectUrl) URL.revokeObjectURL(radarObjectUrl);
+  radarObjectUrl = URL.createObjectURL(entry.blob);
+  $("home-radar-img").src = radarObjectUrl;
+  const t = Date.parse(entry.imdTime);
+  $("home-radar-title").textContent = `${name} radar`;
+  $("home-radar-when").textContent =
+    `${isNaN(t) ? `Saved ${when(entry.savedAt)}` : `IMD image of ${when(t)}`}` + (stale ? " · saved copy, will update when there is a connection" : "");
+  card.classList.toggle("stale", !!stale);
+  card.hidden = false;
+}
+
+// The saved radar picture shows at once; a new one is fetched only when this
+// one is more than 10 minutes old, there is a connection and the data saver
+// isn't on (a single picture is about 100 KB, so only the saver's "on" skips it).
+async function refreshRadar() {
+  const card = $("home-radar");
+  try {
+    const { STATIONS, radarImageUrl } = await import("./stations.js");
+    const { city, product } = radarChoice();
+    const station = STATIONS.find((x) => x.code === city) || STATIONS.find((x) => x.code === "cni");
+    const url = radarImageUrl(station.code, product);
+    radarShown = url;
+    const saved = await loadImage(url);
+    if (saved && radarShown === url) paintRadar(card, saved, station.name, !navigator.onLine);
+    const old = !saved || Date.now() - saved.savedAt > RADAR_FRESH;
+    if (!old || !navigator.onLine || (saved && saverMode() === "on")) return;
+    const res = await fetch(`${url}?t=${Date.now()}`, { cache: "no-store" });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const blob = await res.blob();
+    if (!blob.type.startsWith("image/")) throw new Error("not an image");
+    const entry = { blob, savedAt: Date.now(), imdTime: res.headers.get("last-modified") || "" };
+    saveImage(url, entry);
+    if (radarShown === url) paintRadar(card, entry, station.name, false);
+  } catch {
+    // Keep whatever is on screen; the problem log has the details.
+  }
+}
+
+function paintNet() {
+  const line = $("home-net");
+  line.hidden = navigator.onLine;
+  if (!navigator.onLine) {
+    const kept = read(READING_KEY, null);
+    line.textContent = `No connection. Showing what was saved${kept?.at ? ` (station reading from ${when(kept.at)})` : ""}; it updates when you're back online.`;
   }
 }
 
@@ -387,7 +453,12 @@ async function renderNear(fresh = false) {
       ? nearRow("🌡️", station.s.name, `Nearest of your stations, ${station.d.toFixed(1)} km · shown in the strip above`, `#wunderground?id=${encodeURIComponent(station.s.id)}`)
       : nearRow("🌡️", "No saved station within 50 km", "Open the Station map once so the app learns where your stations are", "#map")
   );
-  const gaugeRow = nearRow("🌧️", "Nearest TN rain gauge", "Loading…");
+  // The last gauge row stays on screen (marked saved) while the new one loads.
+  const savedGauge = read(GAUGE_KEY, null);
+  const keepGauge = savedGauge && Math.abs(savedGauge.lat - pos.lat) < 0.05 && Math.abs(savedGauge.lon - pos.lon) < 0.05 ? savedGauge : null;
+  const gaugeRow = keepGauge
+    ? nearRow("🌧️", keepGauge.title, `${keepGauge.detail} · saved ${when(keepGauge.at)}, updating…`, keepGauge.href)
+    : nearRow("🌧️", "Nearest TN rain gauge", "Loading…");
   rows.push(gaugeRow);
   const at = document.createElement("small");
   at.className = "strip-status";
@@ -408,16 +479,16 @@ async function renderNear(fresh = false) {
       return;
     }
     const [district, name, , , total, wettest] = best.g;
-    gaugeRow.replaceWith(
-      nearRow(
-        "🌧️",
-        `${name} · ${mm(total)} today`,
-        `Nearest TN rain gauge, ${best.d.toFixed(1)} km · ${district}` + (typeof wettest === "number" && wettest > 0 ? ` · wettest hour ${mm(wettest)}` : ""),
-        `#gauges?gauge=${encodeURIComponent(`${district}|${name}`)}`
-      )
-    );
+    const row = {
+      title: `${name} · ${mm(total)} today`,
+      detail: `Nearest TN rain gauge, ${best.d.toFixed(1)} km · ${district}` + (typeof wettest === "number" && wettest > 0 ? ` · wettest hour ${mm(wettest)}` : ""),
+      href: `#gauges?gauge=${encodeURIComponent(`${district}|${name}`)}`,
+    };
+    write(GAUGE_KEY, { ...row, lat: pos.lat, lon: pos.lon, at: Date.now() });
+    gaugeRow.replaceWith(nearRow("🌧️", row.title, row.detail, row.href));
   } catch {
-    gaugeRow.replaceWith(nearRow("🌧️", "TN rain gauges", "Couldn't load the gauges just now", "#gauges"));
+    if (keepGauge) gaugeRow.replaceWith(nearRow("🌧️", keepGauge.title, `${keepGauge.detail} · no connection, kept from ${when(keepGauge.at)}`, keepGauge.href));
+    else gaugeRow.replaceWith(nearRow("🌧️", "TN rain gauges", "Couldn't load the gauges just now", "#gauges"));
   }
 }
 
@@ -607,11 +678,23 @@ export function initHome() {
     renderNear(true);
   });
   $("home-refresh").addEventListener("click", refreshStrip);
+  window.addEventListener("offline", paintNet);
+  // Back online: bring everything on Home up to date.
+  window.addEventListener("online", () => {
+    paintNet();
+    if (!$("view-home").hidden) {
+      refreshStrip();
+      refreshRadar();
+      renderNear();
+    }
+  });
   $("home-nowcast-btn").addEventListener("click", checkNowcast);
   initSpotPicker();
 }
 
 export function showHome() {
+  paintNet();
+  refreshRadar();
   renderFavs();
   if (!nowcastBusy) renderNowcast();
   if (!skyDay.startsWith(new Date().toDateString())) renderSky();

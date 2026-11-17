@@ -5,6 +5,24 @@ import { APP_VERSION } from "./version.js";
 
 export const HISTORY = [
   {
+    version: "1.15",
+    date: "16 Nov 2026",
+    groups: [
+      [
+        "Works better without signal",
+        [
+          "**Home** now shows what was saved straight away: the last **radar picture** of your default radar (a new one is fetched when it is over 10 minutes old and you're online), the last station reading, and the last nearest rain gauge, each marked as saved with its time. A yellow **No connection** line says so, and everything updates by itself when the signal returns.",
+        ],
+      ],
+      [
+        "Daily summary",
+        [
+          "**Morning digest** is now **Daily summary** with a **Summary** choice: **Morning outlook** (as before: the last rain day) or **Today so far** (the choice from noon): the rain since 8:30 AM at the TN-SMART gauges and IMD's top and bottom temperatures for Chennai from the daily report, ready to share with the text version.",
+        ],
+      ],
+    ],
+  },
+  {
     version: "1.14",
     date: "15 Nov 2026",
     groups: [

@@ -13,7 +13,7 @@ initProblemLog();
 
 const VIEWS = {
   home: { title: "MyWeather", load: () => import("./home.js"), init: "initHome", show: "showHome" },
-  digest: { title: "MyWeather · Morning digest", load: () => import("./digest.js"), init: "initDigest", show: "showDigest" },
+  digest: { title: "MyWeather · Daily summary", load: () => import("./digest.js"), init: "initDigest", show: "showDigest" },
   forecast: { title: "MyWeather · Forecast", load: () => import("./forecast.js"), init: "initForecast", show: "showForecast" },
   heat: { title: "MyWeather · Heat & humidity", load: () => import("./heat.js"), init: "initHeat", show: "showHeat" },
   nowcast: { title: "MyWeather · Rain nowcast", load: () => import("./nowcastview.js"), init: "initNowcastView", show: "showNowcastView" },

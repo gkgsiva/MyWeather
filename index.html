@@ -31,7 +31,7 @@
         <h2 class="menu-head">Now</h2>
         <div class="menu-links">
           <a href="#home" data-view="home">Home</a>
-          <a href="#digest" data-view="digest">Morning digest</a>
+          <a href="#digest" data-view="digest">Daily summary</a>
           <a href="#forecast" data-view="forecast">Forecast</a>
           <a href="#heat" data-view="heat">Heat &amp; humidity</a>
           <a href="#warnings" data-view="warnings">Warnings</a>
@@ -133,6 +133,14 @@
           </div>
         </div>
 
+        <p id="home-net" class="home-net" role="status" hidden></p>
+
+        <a id="home-radar" class="sky-card home-radar" href="#radar" hidden>
+          <span class="strip-head"><strong class="near-title" id="home-radar-title">Radar</strong></span>
+          <img id="home-radar-img" alt="Latest IMD radar picture" decoding="async" />
+          <small id="home-radar-when" class="strip-status"></small>
+        </a>
+
         <div id="home-strip" class="strip">
           <div class="strip-head">
             <label class="strip-pick">
@@ -193,8 +201,8 @@
         <ul id="all-cards" class="cards">
           <li>
             <a class="card" href="#digest">
-              <strong>Morning digest</strong>
-              <span>Today's rain, forecast, warnings and lakes in one picture to share on WhatsApp</span>
+              <strong>Daily summary</strong>
+              <span>The morning outlook or today so far: rain, temperature, forecast and warnings in one picture to share on WhatsApp</span>
             </a>
           </li>
           <li>
@@ -419,6 +427,13 @@
             District
             <select id="dg-area"></select>
           </label>
+          <label>
+            Summary
+            <select id="dg-when">
+              <option value="morning">Morning outlook</option>
+              <option value="today">Today so far</option>
+            </select>
+          </label>
           <button id="dg-share" type="button" class="share-btn">Share on WhatsApp</button>
           <button id="dg-refresh" type="button" class="secondary">Refresh</button>
         </form>
@@ -431,8 +446,9 @@
           <div id="dg-parts"></div>
         </div>
         <p class="note">
-          A summary to share each morning: the picture goes with the same summary as text. Rain is the last full rain
-          day (8:30 AM to 8:30 AM) at the TN-SMART gauges; the radar nowcast appears when Home or the Radar map
+          A summary to share: the picture goes with the same summary as text. <b>Morning outlook</b> looks back at the
+          last full rain day (8:30 AM to 8:30 AM); <b>Today so far</b> (the choice from noon) uses the rain since 8:30
+          AM and IMD's top and bottom temperatures for Chennai from the daily report. Rain is from the TN-SMART gauges; the radar nowcast appears when Home or the Radar map
           checked it in the last 30 minutes.
         </p>
       </section>
