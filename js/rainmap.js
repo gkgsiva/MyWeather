@@ -17,10 +17,10 @@ import { gaugeFlags, skipSuspects, isSuspect } from "./health.js";
 import { TN_DISTRICTS } from "./districts.js";
 
 // The grid: plain latitude/longitude around Tamil Nadu, about 2 km cells.
-const BOX = { lon0: 76.1, lon1: 80.5, lat0: 7.9, lat1: 13.7 };
-const STEP = 0.02; // degrees
-const CW = Math.round((BOX.lon1 - BOX.lon0) / STEP);
-const CH = Math.round((BOX.lat1 - BOX.lat0) / STEP);
+export const BOX = { lon0: 76.1, lon1: 80.5, lat0: 7.9, lat1: 13.7 };
+export const STEP = 0.02; // degrees
+export const CW = Math.round((BOX.lon1 - BOX.lon0) / STEP);
+export const CH = Math.round((BOX.lat1 - BOX.lat0) / STEP);
 const AS_PRODUCT = { crop: [0, 0, CW, CH], lon: [BOX.lon0, 0, 1 / STEP], lat: [BOX.lat1, 0, 1 / STEP] };
 const latOfRow = (y) => BOX.lat1 - (y + 0.5) * STEP;
 const lonOfCol = (x) => BOX.lon0 + (x + 0.5) * STEP;
@@ -77,7 +77,8 @@ function rasterise(geo) {
   return out;
 }
 
-async function districtRaster() {
+/** TN districts on the 0.02° grid (0 = outside TN, else TN_DISTRICTS index + 1); Model charts uses it too. */
+export async function districtRaster() {
   if (raster) return raster;
   try {
     const s = localStorage.getItem(RASTER_KEY);
@@ -209,7 +210,7 @@ export function interpolate(gauges, inside) {
 
 // ---- Screen ----
 
-const BANDS = [
+export const BANDS = [
   [0.5, "#c6e6ff", "0.5"],
   [2.5, "#7cc4ff", "2.5"],
   [7.5, "#2b8cff", "7.5"],

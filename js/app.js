@@ -15,6 +15,7 @@ const VIEWS = {
   home: { title: "MyWeather", load: () => import("./home.js"), init: "initHome", show: "showHome" },
   digest: { title: "MyWeather · Daily summary", load: () => import("./digest.js"), init: "initDigest", show: "showDigest" },
   forecast: { title: "MyWeather · Forecast", load: () => import("./forecast.js"), init: "initForecast", show: "showForecast" },
+  models: { title: "MyWeather · Model charts", load: () => import("./models.js"), init: "initModels", show: "showModels" },
   heat: { title: "MyWeather · Heat & humidity", load: () => import("./heat.js"), init: "initHeat", show: "showHeat" },
   nowcast: { title: "MyWeather · Rain nowcast", load: () => import("./nowcastview.js"), init: "initNowcastView", show: "showNowcastView" },
   rainmap: { title: "MyWeather · Rain map", load: () => import("./rainmap.js"), init: "initRainMap", show: "showRainMap" },
@@ -149,7 +150,7 @@ initTheme();
 initSnaps();
 initPullToRefresh(refreshView, {
   // Not while the menu is open, and not on the map (dragging pans it).
-  canStart: (target) => menuPanel.hidden && !target.closest?.(".leaflet-container"),
+  canStart: (target) => menuPanel.hidden && !target.closest?.(".leaflet-container, .zoom-box.zoomed"),
 });
 applyHiddenViews();
 window.addEventListener("hashchange", route);

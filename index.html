@@ -33,6 +33,7 @@
           <a href="#home" data-view="home">Home</a>
           <a href="#digest" data-view="digest">Daily summary</a>
           <a href="#forecast" data-view="forecast">Forecast</a>
+          <a href="#models" data-view="models">Model charts</a>
           <a href="#heat" data-view="heat">Heat &amp; humidity</a>
           <a href="#warnings" data-view="warnings">Warnings</a>
           <a href="#imdreport" data-view="imdreport">IMD daily report</a>
@@ -210,6 +211,12 @@
             <a class="card" href="#forecast">
               <strong>Forecast</strong>
               <span>Chennai's next 7 days and today's rain chance by hour</span>
+            </a>
+          </li>
+          <li>
+            <a class="card" href="#models">
+              <strong>Model charts</strong>
+              <span>Rain, 24-hour rain, wind and temperature over Tamil Nadu from six weather models, side by side, with zoom</span>
             </a>
           </li>
           <li>
@@ -562,6 +569,97 @@
           Each spot takes the gauges within 20 km, the nearer ones counting more (inverse-distance weighting). Places
           with no gauge that close are left blank. Gauges that miss more than one hour in ten, or that Station health
           finds suspect, are left out. Rain gauges: TN-SMART (Tamil Nadu disaster management, RIMES), hourly.
+        </p>
+      </section>
+
+      <section id="view-models" class="view" hidden>
+        <h2>Model charts</h2>
+        <p class="note nw-intro">
+          Rain, wind and temperature over Tamil Nadu from six global weather models, side by side. These are the computer models
+          themselves, not IMD's forecast: where they agree the signal is strong, where they differ it is uncertain.
+        </p>
+        <div id="md-layers" class="tabs" role="tablist">
+          <button type="button" role="tab" data-layer="rain24" aria-selected="true">24 h rain</button>
+          <button type="button" role="tab" data-layer="rain3" aria-selected="false">Rain (3 h)</button>
+          <button type="button" role="tab" data-layer="wind" aria-selected="false">Wind</button>
+          <button type="button" role="tab" data-layer="temp" aria-selected="false">Temp</button>
+        </div>
+        <form class="controls" onsubmit="return false">
+          <label id="md-day-wrap">
+            Day
+            <select id="md-day"></select>
+          </label>
+          <div id="md-step-wrap" class="md-step" hidden>
+            <button id="md-prev" type="button" class="secondary small" aria-label="3 hours earlier">‹</button>
+            <input id="md-step" type="range" min="0" max="0" step="1" aria-label="Time" />
+            <button id="md-next" type="button" class="secondary small" aria-label="3 hours later">›</button>
+            <span id="md-when" class="md-when"></span>
+          </div>
+          <button id="md-refresh" type="button" class="secondary">Refresh</button>
+        </form>
+        <p id="md-status" class="status" aria-live="polite"></p>
+
+        <div data-share="Model charts" data-share-from="md-title">
+          <p id="md-title" class="md-title"></p>
+          <div id="md-zoom"><div id="md-grid" class="md-grid"></div></div>
+          <p id="md-legend" class="legend map-legend"></p>
+          <p class="note md-credit">Model data: Open-Meteo.com (ECMWF, NOAA, DWD, UK Met Office, ECCC), CC BY 4.0. Not IMD's forecast.</p>
+        </div>
+        <p class="note">Pinch or double-tap the maps to zoom in, drag to move round. Tap a model to show it on the big map.</p>
+        <p id="md-runs" class="note"></p>
+
+        <h3>On the map</h3>
+        <div id="md-models" class="md-chips"></div>
+        <div class="share-map" data-share="Model map" data-share-from="md-map-title">
+          <div id="md-map" class="station-map md-map"></div>
+          <p id="md-map-title" class="note"></p>
+          <p id="md-legend2" class="legend map-legend"></p>
+          <p class="note md-credit">Model data: Open-Meteo.com, CC BY 4.0. Not IMD's forecast.</p>
+        </div>
+
+        <h3 id="md-place-head">Charts for a place</h3>
+        <form class="controls" onsubmit="return false">
+          <label>
+            Place
+            <select id="md-place"></select>
+          </label>
+        </form>
+        <p class="note">Or tap the big map and choose "Charts for this spot".</p>
+        <p id="md-swatches" class="legend md-swatches"></p>
+
+        <div data-share="Rain every 3 hours, model by model" data-share-from="md-place-name">
+          <div class="chart-head"><strong>Rain every 3 hours · <span id="md-place-name"></span></strong></div>
+          <div id="md-rain-zoom"><svg id="md-rain-chart" class="chart" role="group" aria-label="Rain every 3 hours from each model"></svg></div>
+          <p id="md-rain-readout" class="readout" aria-live="polite"></p>
+          <p class="note md-credit">Model data: Open-Meteo.com, CC BY 4.0.</p>
+        </div>
+        <div data-share="Wind speed, model by model" data-share-from="md-place-name2">
+          <div class="chart-head"><strong>Wind speed · <span id="md-place-name2"></span></strong></div>
+          <div id="md-wind-zoom"><svg id="md-wind-chart" class="chart" role="group" aria-label="Wind speed from each model"></svg></div>
+          <p id="md-wind-readout" class="readout" aria-live="polite"></p>
+          <p class="note md-credit">Model data: Open-Meteo.com, CC BY 4.0.</p>
+        </div>
+        <div data-share="Temperature, model by model" data-share-from="md-place-name4">
+          <div class="chart-head"><strong>Temperature · <span id="md-place-name4"></span></strong></div>
+          <div id="md-temp-zoom"><svg id="md-temp-chart" class="chart" role="group" aria-label="Temperature from each model"></svg></div>
+          <p id="md-temp-readout" class="readout" aria-live="polite"></p>
+          <p class="note md-credit">Model data: Open-Meteo.com, CC BY 4.0.</p>
+        </div>
+        <div data-share="24-hour rain, model by model" data-share-from="md-place-name3">
+          <div class="chart-head"><strong>24-hour rain · <span id="md-place-name3"></span></strong></div>
+          <div id="md-day-zoom"><svg id="md-day-chart" class="chart" role="group" aria-label="Rain each day from each model"></svg></div>
+          <p id="md-day-readout" class="readout" aria-live="polite"></p>
+          <div class="table-wrap"><table id="md-table" class="rain-table md-table"></table></div>
+          <p class="note md-credit">Model data: Open-Meteo.com, CC BY 4.0.</p>
+        </div>
+        <p id="md-days-note" class="note"></p>
+        <p class="note">
+          The models: <strong>ECMWF</strong> (European Centre's IFS), <strong>ECMWF AI</strong> (its AIFS machine-learning
+          model, which works in 6-hour steps), <strong>GFS</strong> (NOAA, USA),
+          <strong>ICON</strong> (DWD, Germany), <strong>UK Met Office</strong> (global, 10 km) and <strong>GEM</strong>
+          (Environment Canada). All are read from Open-Meteo on a 0.25° grid (about 28 km) over Tamil Nadu and 40 km around it, every 3 hours for 6 days; temperature is the 2 m air at that hour, so the 2:30 pm step is near the day's high; each
+          model's own run time is listed above the map. Global models smooth out heavy local showers and a cyclone's core,
+          so read the totals as a guide. Saved for an hour, so the screen also opens offline.
         </p>
       </section>
 
