@@ -163,6 +163,15 @@ A small static web app for Chennai weather watchers. A home page and the ☰ men
     from Open-Meteo on a 1° grid, every 6 h, followed from IMD's position (lowest pressure within 300 km, fitted
     between grid points, stops when the low fades below 1 hPa). Where each meets the coast uses `js/coast.js`
     (the east and west coasts and Sri Lanka as lines through the places IMD names). Kept 3 h per bulletin.
+  - **Storms around the world**: `scripts/world_cyclones.py` (same workflow, every hour) writes
+    `cyclone/world.json` with every active storm: NHC's `CurrentStorms.json` plus each forecast advisory (position,
+    winds, pressure, forecast points, watches and warnings, the cone picture), JTWC's warnings (position, forecast,
+    remarks) and GDACS alerts (colour and countries). It is rewritten only when the storms change. The screen shows a
+    world map and a picker (`#cw-pick`, the choice kept in `myweather.cyclonewatch.pick`; IMD's storm first, and
+    JTWC's copy of it is folded into IMD's view as a cyan line and a row in the models table). For another storm the
+    same panels show its agency's track, table, warnings and outlook; model tracks use Open-Meteo's elevation as the
+    land mask, steering looks for the ridge on the poleward side in either hemisphere, and the MJO note names the
+    phases that favour that sea. Shared pictures credit the agency (`data-share-credit`).
   - **Steering**: GFS 850–200 hPa mean wind at IMD's forecast positions every 24 h, and the 500 hPa ridge latitude
     (easterly to westerly turn) along the storm's longitude.
   - **Past storms**: a fixed list of where 17 storms since 2010 crossed the coast (`PAST` in `js/cyclonewatch.js`).
@@ -272,7 +281,8 @@ The same list is on the app's **Info** screen (`js/info.js`); keep the two in st
 
 ### v1.15 (16 Nov 2026)
 - **Cyclone watch** (`#cyclonewatch`, Radar & sky menu): see the screen list above. New hourly workflow
-  `IMD cyclone bulletin` writes `cyclone/` on the `data` branch.
+  `IMD cyclone bulletin` writes `cyclone/` on the `data` branch, including `world.json` with every active storm
+  worldwide (NHC, JTWC, GDACS) and a storm picker on the screen.
 - **Offline-first Home** (`js/home.js`): the saved radar picture (`js/offline.js`, the default radar from Radar's
   "Set as default") shows at once, then is refreshed if over 10 minutes old, online and the data saver isn't "On".
   The station strip says "Reading at … · updating…" instead of a blank "Loading…", the nearest-gauge row is kept

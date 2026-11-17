@@ -105,9 +105,13 @@ function saveCoords(found) {
 
 // ---- Leaflet, loaded the first time the map opens ----
 
+// One promise for every caller, so two maps opening together don't load two
+// copies of Leaflet (their shapes then can't be mixed).
+let leafletLoad = null;
 export function loadLeaflet() {
   if (window.L) return Promise.resolve(window.L);
-  return new Promise((resolve, reject) => {
+  if (leafletLoad) return leafletLoad;
+  leafletLoad = new Promise((resolve, reject) => {
     const css = document.createElement("link");
     css.rel = "stylesheet";
     css.href = "js/vendor/leaflet/leaflet.css";
@@ -115,9 +119,13 @@ export function loadLeaflet() {
     const s = document.createElement("script");
     s.src = "js/vendor/leaflet/leaflet.js";
     s.onload = () => resolve(window.L);
-    s.onerror = () => reject(new Error("map library didn't load"));
+    s.onerror = () => {
+      leafletLoad = null;
+      reject(new Error("map library didn't load"));
+    };
     document.head.append(s);
   });
+  return leafletLoad;
 }
 
 export const isDark = () => {

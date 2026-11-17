@@ -276,9 +276,15 @@ def jtwc_warning(text, sid):
     st["forecast"] = pts
     m = re.search(r"REMARKS:\s*(.+?)(?:\n\s*\d\.\s|\n\s*//|\Z)", text, re.S)
     if m:
-        st["outlook"] = one_line(m.group(1))[:1500]
+        rem = one_line(m.group(1))
+        rem = re.sub(r"\s*NEXT WARNINGS? AT .*$", "", rem)
+        rem = re.sub(r"^\d{6}Z POSITION NEAR [\d.]+[NS] [\d.]+[EW]\.\s*\d+[A-Z]{3}\d+\.\s*", "", rem)
+        st["outlook"] = rem.replace("//", "").replace("NNNN", "").strip()[:1500]
     if st.get("lon") is not None and sid[:2] == "sh":
-        st["basin"] = "South Indian Ocean" if st["lon"] < 135 else "South Pacific"
+        st["basin"] = "South Indian Ocean" if 20 <= st["lon"] < 135 else "South Pacific"
+    m = re.search(r"MINIMUM CENTRAL PRESSURE AT \d{6}Z IS\s*(\d{3,4})\s*MB", text)
+    if m:
+        st["hPa"] = int(m.group(1))
     if st.get("kt") is not None and not st.get("category"):
         st["category"] = saffir(st["kt"])
     return st

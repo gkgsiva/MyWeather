@@ -13,6 +13,7 @@ export const HISTORY = [
         [
           "**Cyclone watch** (Radar & sky menu): the current depression or cyclone on one screen, like a forecaster's infographic. The headline gives IMD's own landfall forecast, the map shows the observed track, IMD's forecast track and its **landfall zone** along the coast, and numbered panels follow: at a glance, IMD's forecast table, **Tamil Nadu & Chennai** warnings and the closest approach to Chennai, **model guidance** (where ECMWF, GFS, ECMWF AI, UK Met Office and ICON take it), **steering flow & ridge**, the **MJO**, how IMD's forecast changed, **past storms** that crossed nearby, and IMD's track-and-cone picture. Every panel has Share.",
           "IMD's newest bulletin is read every hour, so the screen updates soon after IMD issues one. With no active system it says so and keeps the MJO and the past storms near Chennai.",
+          "**Storms around the world**: every active tropical cyclone, hurricane and typhoon, from NOAA's National Hurricane Center (Atlantic and East & Central Pacific), the Joint Typhoon Warning Center (West Pacific, Indian Ocean and the Southern Hemisphere) and GDACS alerts, read every hour. A world map and a button for each storm sit at the top; tap one and the same panels show for it: the agency's forecast track and table, warnings and outlook, model tracks, steering and the MJO for its sea. The Indian storm is shown first.",
         ],
       ],
       [

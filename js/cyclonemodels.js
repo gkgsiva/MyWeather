@@ -28,19 +28,59 @@ export const MODELS = [
 ];
 
 const STEP = 1; // grid spacing, degrees
-const SPAN_S = 7; // grid reach from the storm, degrees
-const SPAN_N = 9;
+const POLEWARD = 10; // grid reach from the storm, degrees
+const EQUATORWARD = 6;
 const SPAN_W = 9;
-const SPAN_E = 7;
+const SPAN_E = 8;
+
+// Longitudes are kept continuous around the storm (a Pacific storm's grid may
+// run past 180°); the query wraps them into −180…180.
+const wrap = (x) => ((((x + 180) % 360) + 360) % 360) - 180;
 
 function grid(lat0, lon0) {
   const la = Math.round(lat0);
   const lo = Math.round(lon0);
+  const north = lat0 >= 0;
   const lats = [];
   const lons = [];
-  for (let y = la - SPAN_S; y <= la + SPAN_N; y += STEP) lats.push(y);
+  const lo0 = la - (north ? EQUATORWARD : POLEWARD);
+  const hi0 = la + (north ? POLEWARD : EQUATORWARD);
+  for (let y = Math.max(-60, lo0); y <= Math.min(60, hi0); y += STEP) lats.push(y);
   for (let x = lo - SPAN_W; x <= lo + SPAN_E; x += STEP) lons.push(x);
   return { lats, lons };
+}
+
+/**
+ * A land test from the grid's elevations (Open-Meteo gives each point's
+ * height; the sea is 0). A place is land when most of the four grid points
+ * around it are, so it is only good to about 50 km.
+ */
+export function landTest(g) {
+  if (!g?.elev) return null;
+  const { lats, lons, elev } = g;
+  return (lat, lon) => {
+    const i = Math.floor((lat - lats[0]) / STEP);
+    const j = Math.floor((lon - lons[0]) / STEP);
+    if (i < 0 || j < 0 || i >= lats.length - 1 || j >= lons.length - 1) return null;
+    const fy = (lat - lats[i]) / STEP;
+    const fx = (lon - lons[j]) / STEP;
+    const at = (a, b) => (elev[a * lons.length + b] > 0 ? 1 : 0);
+    const v = at(i, j) * (1 - fy) * (1 - fx) + at(i, j + 1) * (1 - fy) * fx + at(i + 1, j) * fy * (1 - fx) + at(i + 1, j + 1) * fy * fx;
+    return v >= 0.5;
+  };
+}
+
+// Where segment p→q first goes from sea to land: India's coasts by their
+// lines, elsewhere the land test (checked in 10 steps).
+function landing(p, q, isLand) {
+  if (!isLand) return meetsCoast(p, q);
+  if (isLand(p[0], p[1]) !== false) return null;
+  for (let k = 1; k <= 10; k++) {
+    const f = k / 10;
+    const pt = [p[0] + (q[0] - p[0]) * f, p[1] + (q[1] - p[1]) * f];
+    if (isLand(pt[0], pt[1])) return { f, pt };
+  }
+  return null;
 }
 
 // One retry: Open-Meteo sometimes drops a big request.
@@ -76,7 +116,7 @@ function vertex(a, b, c) {
  * Follows the low in one model's pressure field.
  * field(t) → 2-D array [latIndex][lonIndex] of hPa (null over missing).
  */
-export function follow({ lats, lons, times, field }, start) {
+export function follow({ lats, lons, times, field, isLand }, start) {
   const track = [];
   let pos = [start.lat, start.lon];
   let landedAt = null;
@@ -120,7 +160,7 @@ export function follow({ lats, lons, times, field }, start) {
     const pt = { t: times[k], lat: here[0], lon: here[1], hPa: best.p, depth };
     const prev = track[track.length - 1];
     if (prev && !landedAt) {
-      const hit = meetsCoast([prev.lat, prev.lon], here);
+      const hit = landing([prev.lat, prev.lon], here, isLand);
       if (hit) landedAt = { t: prev.t + (pt.t - prev.t) * hit.f, lat: hit.pt[0], lon: hit.pt[1] };
     }
     track.push(pt);
@@ -131,17 +171,23 @@ export function follow({ lats, lons, times, field }, start) {
   return track;
 }
 
-/** Every model's track from IMD's position { lat, lon, t (unix s) }. */
-export async function modelTracks(start) {
+/**
+ * Every model's track from the agency's position { lat, lon, t (unix s) }.
+ * india: find landfall on India's coast lines and name the nearest place;
+ * otherwise landfall comes from the grid's land test. Returns { models, land }
+ * where land is the grid's elevations (for landTest).
+ */
+export async function modelTracks(start, { india = true } = {}) {
   const { lats, lons } = grid(start.lat, start.lon);
   const la = [];
   const lo = [];
-  for (const y of lats) for (const x of lons) la.push(y), lo.push(x);
+  for (const y of lats) for (const x of lons) la.push(y), lo.push(+wrap(x).toFixed(2));
   const qs = new URLSearchParams({
     latitude: la.join(","),
     longitude: lo.join(","),
     hourly: "pressure_msl",
     models: MODELS.map((m) => m.id).join(","),
+    past_days: "1",
     forecast_days: "7",
     temporal_resolution: "hourly_6",
     timeformat: "unixtime",
@@ -150,6 +196,8 @@ export async function modelTracks(start) {
   const data = await getJson(`${API}?${qs}`);
   const pts = Array.isArray(data) ? data : [data];
   const times = pts[0].hourly.time;
+  const land = { lats, lons, elev: pts.map((p) => p.elevation ?? 0) };
+  const isLand = india ? null : landTest(land);
   const out = [];
   for (const m of MODELS) {
     const key = `pressure_msl_${m.id}`;
@@ -163,7 +211,7 @@ export async function modelTracks(start) {
       }
       return rows;
     };
-    const track = follow({ lats, lons, times, field }, start);
+    const track = follow({ lats, lons, times, field, isLand }, start);
     if (track.length < 2) {
       out.push({ ...m, track, lost: true });
       continue;
@@ -172,12 +220,12 @@ export async function modelTracks(start) {
     out.push({
       ...m,
       track,
-      landfall: lf ? { ...lf, place: nearestPlace([lf.lat, lf.lon], km) } : null,
+      landfall: lf ? { ...lf, place: india ? nearestPlace([lf.lat, lf.lon], km) : null } : null,
       lowest: Math.min(...track.map((p) => p.hPa)),
       last: track[track.length - 1],
     });
   }
-  return out;
+  return { models: out, land };
 }
 
 // ---- Steering ----
@@ -198,17 +246,21 @@ export async function steering(points) {
   // The storm points, then a column of points for the ridge at each distinct
   // whole-degree longitude.
   const lonsCol = [...new Set(points.map((p) => Math.round(p.lon)))];
+  // Away from the equator: north in the northern hemisphere, south in the
+  // southern (where the ridge lies south of the storm).
+  const sign = points[0].lat >= 0 ? 1 : -1;
   const colLats = [];
-  for (let y = 5; y <= 30; y++) colLats.push(y);
+  for (let y = 5; y <= 40; y++) colLats.push(sign * y);
   const la = points.map((p) => +p.lat.toFixed(2));
-  const lo = points.map((p) => +p.lon.toFixed(2));
-  for (const x of lonsCol) for (const y of colLats) la.push(y), lo.push(x);
+  const lo = points.map((p) => +wrap(p.lon).toFixed(2));
+  for (const x of lonsCol) for (const y of colLats) la.push(y), lo.push(+wrap(x).toFixed(2));
   const vars = LEVELS.flatMap((l) => [`wind_speed_${l}hPa`, `wind_direction_${l}hPa`]);
   const qs = new URLSearchParams({
     latitude: la.join(","),
     longitude: lo.join(","),
     hourly: vars.join(","),
     models: "gfs_seamless",
+    past_days: "1",
     forecast_days: "6",
     temporal_resolution: "hourly_3",
     wind_speed_unit: "kmh",
@@ -246,8 +298,8 @@ export async function steering(points) {
       out.speed = Math.hypot(e, no);
       out.towards = ((Math.atan2(e, no) * 180) / Math.PI + 360) % 360;
     }
-    // Ridge: first latitude north of the storm's latitude − 3° where the
-    // 500 hPa wind turns westerly (blowing towards the east).
+    // Ridge: going poleward from 3° on the equator side of the storm, the
+    // first latitude where the 500 hPa wind turns westerly (blowing east).
     const ci = lonsCol.indexOf(Math.round(p.lon));
     const base = points.length + ci * colLats.length;
     let prevU = null;
@@ -257,9 +309,9 @@ export async function steering(points) {
       const d = hh.wind_direction_500hPa[k];
       if (s == null || d == null) continue;
       const u = uv(s, d)[0];
-      if (colLats[y] >= p.lat - 3 && prevU != null && prevU < 0 && u >= 0) {
+      if (Math.abs(colLats[y]) >= Math.abs(p.lat) - 3 && prevU != null && prevU < 0 && u >= 0) {
         // Linear between the two latitudes.
-        out.ridge = colLats[y] - 1 + -prevU / (u - prevU);
+        out.ridge = colLats[y - 1] + (colLats[y] - colLats[y - 1]) * (-prevU / (u - prevU));
         break;
       }
       prevU = u;

@@ -12,13 +12,18 @@
 // - The MJO index (cyclone/mjo.json, from Australia's Bureau of Meteorology).
 // - Past storms: a fixed list of where well-known storms crossed the coast.
 //
-// When nothing is active, it says so and keeps the MJO and the past storms.
+// - Every other active tropical cyclone in the world (cyclone/world.json from
+//   NOAA's National Hurricane Center, the Joint Typhoon Warning Center and
+//   GDACS), picked from a world map; the same panels, credited to the agency.
+//
+// When nothing is active anywhere, it says so and keeps the MJO and the past
+// storms.
 import { km } from "./geo.js";
 import { when } from "./offline.js";
 import { fetchTrack } from "./cyclonetrack.js";
 import { loadLeaflet } from "./stationmap.js";
 import { placeNamed, shoreBetween, shoreAround, nearestPlace, meetsCoast, closestOnSegment } from "./coast.js";
-import { MODELS, modelTracks, steering, compass } from "./cyclonemodels.js";
+import { MODELS, modelTracks, steering, compass, landTest } from "./cyclonemodels.js";
 
 export const DATA = "https://raw.githubusercontent.com/gkgsiva/MyWeather/data/cyclone/";
 const SAVED = "myweather.cyclonewatch.last";
@@ -69,7 +74,10 @@ let L = null;
 let map = null;
 let layers = {};
 let loadedAt = 0;
-let state = null; // { b, hist, mjo, wfs, active, models, steer }
+let state = null; // { b, hist, mjo, wfs, world, active, mode, sel, models, steer, land }
+let worldMap = null;
+let worldLayer = null;
+const PICK_KEY = "myweather.cyclonewatch.pick";
 
 // ---- small helpers ----
 
@@ -244,33 +252,36 @@ async function refresh() {
   let mjo = null;
   let wfs = null;
   let saved = null;
-  const results = await Promise.allSettled([getData("latest.json"), getData("history.json"), getData("mjo.json"), fetchTrack()]);
-  [b, hist, mjo, wfs] = results.map((r) => (r.status === "fulfilled" ? r.value : null));
+  let world = null;
+  const results = await Promise.allSettled([getData("latest.json"), getData("history.json"), getData("mjo.json"), fetchTrack(), getData("world.json")]);
+  [b, hist, mjo, wfs, world] = results.map((r) => (r.status === "fulfilled" ? r.value : null));
   const offline = results[0].status === "rejected";
   if (offline) {
     try {
       saved = JSON.parse(localStorage.getItem(SAVED));
     } catch {}
-    if (saved) ({ b, hist, mjo } = saved);
+    if (saved) ({ b, hist, mjo, world } = saved);
   } else {
     try {
-      localStorage.setItem(SAVED, JSON.stringify({ at: Date.now(), b, hist, mjo }));
+      localStorage.setItem(SAVED, JSON.stringify({ at: Date.now(), b, hist, mjo, world }));
     } catch {}
   }
   const issued = Date.parse(b?.issued || "");
   const recent = Number.isFinite(issued) && Date.now() - issued < ACTIVE_HOURS * 3600 * 1000;
   const wfsLive = (wfs?.features || []).some((f) => f.geometry);
-  state = { b, hist, mjo, wfs, active: recent || (wfsLive && !!b), wfsLive, issued };
+  const prev = state?.sel;
+  state = { b, hist, mjo, wfs, world, active: recent || (wfsLive && !!b), wfsLive, issued };
+  state.sel = pickDefault(prev);
   loadedAt = Date.now();
   render();
   if (offline) {
     say(saved ? `No connection. Showing what was saved ${when(saved.at)}.` : "Couldn't load the cyclone data. Check the connection and try again.", true);
-  } else if (!b) {
-    say("No cyclone bulletin has been read yet.");
+  } else if (!b && !world) {
+    say("No cyclone data has been read yet.");
   } else {
     say(`Updated ${new Date().toLocaleTimeString("en-IN", { hour: "numeric", minute: "2-digit" })}`);
   }
-  if (state.active) loadModels();
+  if (state.mode !== "calm") loadModels();
 }
 
 // ---- rendering ----
@@ -280,6 +291,18 @@ function show(id, on) {
 }
 
 function render() {
+  const storms = stormList();
+  state.mode = !storms.length ? "calm" : state.sel === "imd" ? "imd" : "world";
+  state.active = state.mode === "imd";
+  state.models = null;
+  state.steer = null;
+  state.land = null;
+  renderPicker(storms);
+  if (state.mode === "world") {
+    renderWorld(storms.find((x) => x.id === state.sel).s);
+    return;
+  }
+  resetImdPanels();
   const { b, active } = state;
   renderHead();
   show("cw-mapbox", active);
@@ -309,15 +332,16 @@ function renderHead() {
   chips.replaceChildren();
   $("cw-head").classList.toggle("cw-calm", !active);
   if (!active) {
-    $("cw-kicker").textContent = "Bay of Bengal & Arabian Sea";
+    $("cw-kicker").textContent = "India and around the world";
     $("cw-stage").textContent = "No active cyclone";
     $("cw-name").textContent = "";
     $("cw-alert").hidden = true;
     const lf = $("cw-landfall");
     lf.hidden = false;
-    lf.textContent = b
-      ? `IMD has issued no bulletin since ${fmtTime(issued)} (${b.stage || "system"}${b.name ? ` ${b.name}` : ""}, ${b.system || ""}). This screen fills in when the next depression forms.`
-      : "IMD has no depression or cyclone in its bulletins. This screen fills in when one forms.";
+    const imd = b
+      ? `IMD has issued no bulletin since ${fmtTime(issued)} (${b.stage || "system"}${b.name ? ` ${b.name}` : ""}, ${b.system || ""}).`
+      : "IMD has no depression or cyclone in its bulletins.";
+    lf.textContent = `${imd} No hurricane, typhoon or cyclone is active anywhere else either (NHC, JTWC). This screen fills in when one forms.`;
     if (b?.outlook) {
       chips.append(el("a", { class: "cw-chip", href: b.outlook, target: "_blank", rel: "noopener noreferrer", text: "IMD's tropical weather outlook (PDF)" }));
     }
@@ -472,6 +496,16 @@ function renderGlance() {
   }
   const near = closest(pts, CHENNAI);
   if (near && pts.length > 1) items.push(["tn", `Closest to Chennai on IMD's track: about ${round10(near.km)} km, ${fmtTime(near.t)}.`]);
+  if (state.twin?.forecast?.length > 1) {
+    const tw = crossing(worldPoints(state.twin));
+    const off = tw && zone ? zoneKm(zone, [tw.lat, tw.lon]) : null;
+    items.push([
+      off != null && off <= 100 ? "ok" : "info",
+      tw
+        ? `JTWC (US Navy) takes it to the coast near ${nearestPlace([tw.lat, tw.lon], km).name}${off != null ? (off <= 25 ? ", inside IMD's zone" : `, ${round10(off)} km from IMD's zone`) : ""}.`
+        : "JTWC (US Navy) keeps it at sea through its forecast.",
+    ]);
+  }
   if (models?.length) {
     const hits = models.filter((m) => m.landfall);
     if (zone && hits.length) {
@@ -489,11 +523,11 @@ function renderGlance() {
   }
   if (steer?.length && steer[0].speed != null) {
     const s0 = steer[0];
-    const ridge = s0.ridge != null ? ` 500 hPa ridge near ${s0.ridge.toFixed(0)}°N, ${s0.ridge > s0.lat ? "north of the storm" : "at or south of the storm"}.` : "";
+    const ridge = s0.ridge != null ? ` 500 hPa ridge near ${latText(s0.ridge)}, ${s0.ridge > s0.lat ? "north of the storm" : "at or south of the storm"}.` : "";
     items.push(["info", `Steering (GFS) now: towards the ${compass(s0.towards)} at ${Math.round(s0.speed)} km/h.${ridge}`]);
   }
   const m = mjo?.days?.[mjo.days.length - 1];
-  if (m) items.push([mjoGood(m) ? "ok" : "info", `MJO phase ${m.phase}, amplitude ${m.amp.toFixed(1)}: ${mjoSay(m)}.`]);
+  if (m) items.push([mjoGood(m, state.twin) ? "ok" : "info", `MJO phase ${m.phase}, amplitude ${m.amp.toFixed(1)}: ${mjoSay(m)}.`]);
   if (mid) {
     const past = PAST.map((p) => ({ ...p, d: km(mid, [p.lat, p.lon]) })).filter((p) => p.d <= 150);
     if (past.length) items.push(["info", `Past storms that crossed within 150 km of this zone: ${past.map((p) => `${p.name} (${p.date.slice(0, 4)})`).join(", ")}.`]);
@@ -515,15 +549,28 @@ function spreadText(models) {
 // ---- MJO ----
 
 const MJO_AREA = { 1: "Africa & west Indian Ocean", 2: "Indian Ocean", 3: "Indian Ocean", 4: "Maritime Continent", 5: "Maritime Continent", 6: "West Pacific", 7: "West Pacific", 8: "Western Hemisphere & Africa" };
-const mjoGood = (m) => m.amp >= 1 && m.phase >= 2 && m.phase <= 5;
-function mjoSay(m) {
-  if (m.amp < 1) return "weak, little effect on the Bay of Bengal";
-  if (m.phase >= 2 && m.phase <= 5) return `active over the ${MJO_AREA[m.phase]}, a phase when Bay of Bengal storms form and grow more readily`;
-  return `active over the ${MJO_AREA[m.phase]}, a phase that usually holds back storms over the Bay`;
+// The MJO phases that favour storms in each basin (its wet half overhead).
+function mjoBasin(w) {
+  const b = w?.basin || "";
+  if (!w || /north indian/i.test(b)) return { name: "the Bay of Bengal and Arabian Sea", good: [2, 3, 4, 5] };
+  if (/south indian/i.test(b)) return { name: "the South Indian Ocean", good: [2, 3, 4] };
+  if (/south pacific|australia/i.test(b)) return { name: "the South Pacific", good: [5, 6, 7] };
+  if (/west pacific/i.test(b)) return { name: "the West Pacific", good: [5, 6, 7] };
+  if (/east pacific|central pacific/i.test(b)) return { name: "the East Pacific", good: [8, 1, 2] };
+  if (/atlantic/i.test(b)) return { name: "the Atlantic", good: [8, 1, 2] };
+  return { name: "this basin", good: [] };
+}
+const mjoGood = (m, w) => m.amp >= 1 && mjoBasin(w).good.includes(m.phase);
+function mjoSay(m, w) {
+  const basin = mjoBasin(w);
+  if (m.amp < 1) return `weak, little effect on ${basin.name}`;
+  if (basin.good.includes(m.phase)) return `active over the ${MJO_AREA[m.phase]}, a phase when storms in ${basin.name} form and grow more readily`;
+  return `active over the ${MJO_AREA[m.phase]}, a phase that usually holds back storms in ${basin.name}`;
 }
 
 function renderMjo() {
   const { mjo } = state;
+  const sw = state.mode === "world" ? currentWorld() : null;
   const days = mjo?.days || [];
   show("cw-p-mjo", true);
   const svg = $("cw-mjo");
@@ -570,7 +617,7 @@ function renderMjo() {
   text.replaceChildren(
     el("p", { class: "cw-big" }, "Phase ", el("b", { text: String(m.phase) })),
     el("p", {}, "Amplitude ", el("b", { text: m.amp.toFixed(2) }), m.amp >= 1 ? " (active)" : " (weak)"),
-    el("p", { class: `cw-verdict ${mjoGood(m) ? "cw-ok" : ""}`, text: `${mjoSay(m).replace(/^./, (c) => c.toUpperCase())}.` }),
+    el("p", { class: `cw-verdict ${mjoGood(m, sw) ? "cw-ok" : ""}`, text: `${mjoSay(m, sw).replace(/^./, (c) => c.toUpperCase())}.` }),
     el("p", { class: "cw-foot", text: `Index for ${fmtDay(m.date)}.` })
   );
 }
@@ -616,7 +663,7 @@ async function ensureMap() {
   map = L.map(box, { zoomControl: true, attributionControl: true, minZoom: 4, maxZoom: 10 }).setView([14, 84], 5);
   L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
     maxZoom: 19,
-    attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors · Track: IMD',
+    attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors · Tracks: IMD, NHC, JTWC',
   }).addTo(map);
   for (const k of ["zone", "imd", "earlier", "models", "past", "places"]) layers[k] = L.layerGroup();
   for (const k of ["zone", "earlier", "imd", "places"]) layers[k].addTo(map);
@@ -703,6 +750,17 @@ async function drawMap() {
     if (ll.length > 1) L.polyline(ll, { color: "#b0bec5", weight: 2, opacity: 0.7, dashArray: "2 6" }).bindTooltip(`IMD bulletin No. ${h.no}`).addTo(layers.earlier);
   }
 
+  // JTWC's forecast for the same storm, a second opinion.
+  const twin = state.twin;
+  if (twin?.forecast?.length > 1) {
+    L.polyline(
+      worldPoints(twin).map((p) => [p.lat, p.lon]),
+      { color: "#4dd0e1", weight: 2.5, dashArray: "4 6", opacity: 0.95 }
+    )
+      .bindTooltip("JTWC forecast")
+      .addTo(layers.imd);
+  }
+
   // Places.
   L.circleMarker(CHENNAI, { radius: 6, color: "#fff", weight: 2, fillColor: "#e91e63", fillOpacity: 1 }).addTo(layers.places);
   label(L, CHENNAI, "Chennai", "cw-l-place").addTo(layers.places);
@@ -738,11 +796,15 @@ function drawModels() {
 }
 
 function legend() {
-  const parts = [
-    `<span class="cw-key" style="--c:#ff5252"></span>Observed`,
-    `<span class="cw-key cw-dash" style="--c:#fff"></span>IMD forecast`,
-    `<span class="cw-key cw-thick" style="--c:#ff9800"></span>IMD landfall zone`,
-  ];
+  const w = state.mode === "world" ? currentWorld() : null;
+  const parts = w
+    ? [`<span class="cw-key" style="--c:#ff5252"></span>Past positions`, `<span class="cw-key cw-dash" style="--c:#fff"></span>${SHORT_AGENCY[w.source] || w.agency} forecast`]
+    : [
+        `<span class="cw-key" style="--c:#ff5252"></span>Observed`,
+        `<span class="cw-key cw-dash" style="--c:#fff"></span>IMD forecast`,
+        `<span class="cw-key cw-thick" style="--c:#ff9800"></span>IMD landfall zone`,
+      ];
+  if (!w && state.twin?.forecast?.length) parts.push(`<span class="cw-key cw-dash" style="--c:#4dd0e1"></span>JTWC forecast`);
   for (const m of state.models || []) if (m.track.length > 1) parts.push(`<span class="cw-key" style="--c:${m.colour}"></span>${m.name}`);
   $("cw-legend").innerHTML = parts.map((p) => `<span>${p}</span>`).join("");
 }
@@ -751,19 +813,25 @@ function legend() {
 
 async function loadModels() {
   const { b } = state;
-  const pts = forecastPoints(b);
-  const start = b.at ? { lat: b.lat, lon: b.lon, t: Date.parse(b.at) } : pts[0];
-  if (!start?.lat) {
-    $("cw-models-status").textContent = "IMD's position isn't in the bulletin, so the models can't be followed.";
+  const world = state.mode === "world" ? currentWorld() : null;
+  const pts = world ? worldPoints(world) : forecastPoints(b);
+  const start = world
+    ? world.lat != null && { lat: world.lat, lon: world.lon, t: Date.parse(world.at) || Date.now() }
+    : b.at
+      ? { lat: b.lat, lon: b.lon, t: Date.parse(b.at) }
+      : pts[0];
+  if (!start?.lat && start?.lat !== 0) {
+    $("cw-models-status").textContent = "The storm's position isn't known, so the models can't be followed.";
     return;
   }
-  const key = `${b.system}-${b.no}`;
+  const key = world ? `${world.id}-${world.at}` : `${b.system}-${b.no}`;
+  const sel = state.sel;
   let cache = null;
   try {
     cache = JSON.parse(localStorage.getItem(MODEL_CACHE));
   } catch {}
   if (cache?.key === key && Date.now() - cache.at < MODEL_TTL) {
-    Object.assign(state, { models: cache.models, steer: cache.steer });
+    Object.assign(state, { models: cache.models, steer: cache.steer, land: cache.land });
     afterModels(cache.at);
     return;
   }
@@ -771,21 +839,28 @@ async function loadModels() {
   $("cw-steer-status").textContent = "Reading GFS winds…";
   // Steering at IMD's position now and every 24 hours along its track, up to
   // the coast.
-  const cross = crossing(pts);
-  const end = cross ? cross.t : pts[pts.length - 1]?.t;
+  const cross = world ? null : crossing(pts);
+  const end = cross ? cross.t : Math.min(pts[pts.length - 1]?.t ?? 0, start.t + 4 * 86400000);
   const along = [];
   for (let t = start.t; end && t <= end; t += 24 * 3600000) {
     const p = t === start.t ? start : positionAt(pts, t);
     if (p) along.push({ t: Math.round(t / 1000), lat: p.lat, lon: p.lon });
   }
-  const [mr, sr] = await Promise.allSettled([modelTracks({ lat: start.lat, lon: start.lon, t: Math.round(start.t / 1000) }), steering(along)]);
-  const models = mr.status === "fulfilled" ? mr.value.map(slim) : null;
+  const [mr, sr] = await Promise.allSettled([
+    modelTracks({ lat: start.lat, lon: start.lon, t: Math.round(start.t / 1000) }, { india: !world || isIndian(world) }),
+    steering(along),
+  ]);
+  // Another storm picked while these were loading.
+  if (state.sel !== sel) return;
+  const models = mr.status === "fulfilled" ? mr.value.models.map(slim) : null;
+  const land = mr.status === "fulfilled" ? mr.value.land : null;
   const steer = sr.status === "fulfilled" ? sr.value : null;
   state.models = models;
   state.steer = steer;
+  state.land = land;
   if (models && steer) {
     try {
-      localStorage.setItem(MODEL_CACHE, JSON.stringify({ key, at: Date.now(), models, steer }));
+      localStorage.setItem(MODEL_CACHE, JSON.stringify({ key, at: Date.now(), models, steer, land }));
     } catch {}
   }
   afterModels(Date.now(), mr.reason, sr.reason);
@@ -797,13 +872,16 @@ function slim(m) {
     name: m.name,
     colour: m.colour,
     track: m.track.map((p) => ({ t: p.t * 1000, lat: +p.lat.toFixed(2), lon: +p.lon.toFixed(2), hPa: Math.round(p.hPa) })),
-    landfall: m.landfall ? { t: m.landfall.t * 1000, lat: m.landfall.lat, lon: m.landfall.lon, place: { name: m.landfall.place.name, state: m.landfall.place.state } } : null,
+    landfall: m.landfall
+      ? { t: m.landfall.t * 1000, lat: m.landfall.lat, lon: m.landfall.lon, place: m.landfall.place ? { name: m.landfall.place.name, state: m.landfall.place.state } : null }
+      : null,
     lowest: m.lowest != null ? Math.round(m.lowest) : null,
     lost: !!m.lost,
   };
 }
 
 function afterModels(at, modelErr, steerErr) {
+  if (state.mode === "world") return afterWorldModels(at, modelErr, steerErr);
   const { models, steer, b } = state;
   const stamp = new Date(at).toLocaleTimeString("en-IN", { hour: "numeric", minute: "2-digit" });
   // Models table.
@@ -826,6 +904,26 @@ function afterModels(at, modelErr, steerErr) {
         el("td", { text: "" })
       ),
     ];
+    // JTWC's track for the same storm, where it meets the coast.
+    const tw = state.twin ? crossing(worldPoints(state.twin)) : null;
+    if (state.twin) {
+      const off = tw ? zoneKm(zone, [tw.lat, tw.lon]) : null;
+      rows.push(
+        el(
+          "tr",
+          {},
+          el("td", {}, el("span", { class: "cw-key", style: "--c:#4dd0e1" }), "JTWC (US Navy)"),
+          el(
+            "td",
+            {},
+            tw ? nearestPlace([tw.lat, tw.lon], km).name : "Stays at sea in its forecast",
+            off != null ? el("small", { class: `cw-off ${off <= 25 ? "cw-in" : ""}`, text: off <= 25 ? "inside IMD's zone" : `${round10(off)} km outside IMD's zone` }) : null
+          ),
+          el("td", { text: tw ? fmtShort(tw.t) : "" }),
+          el("td", { class: "num", text: state.twin.hPa ? `${state.twin.hPa} hPa now` : "" })
+        )
+      );
+    }
     for (const m of models) {
       let where;
       let whenText = "";
@@ -869,7 +967,7 @@ function afterModels(at, modelErr, steerErr) {
         el("td", { text: fmtShort(s.t * 1000) }),
         el("td", { text: `${s.lat.toFixed(1)}, ${s.lon.toFixed(1)}` }),
         el("td", { text: s.speed != null ? `→ ${abbr(compass(s.towards))} ${Math.round(s.speed)} km/h` : "—" }),
-        el("td", { text: s.ridge != null ? `${s.ridge.toFixed(1)}°N` : "—" })
+        el("td", { text: s.ridge != null ? latText(s.ridge) : "—" })
       )
     );
     $("cw-steer").replaceChildren(el("thead", {}, head), el("tbody", {}, rows));
@@ -890,19 +988,475 @@ function steerSay(steer) {
   out.push(`The deep-layer flow now pushes towards the ${compass(first.towards)} at ${Math.round(first.speed)} km/h${first.speed < 10 ? ", weak, so the storm drifts slowly" : ""}.`);
   const r = s.filter((x) => x.ridge != null);
   if (r.length >= 2) {
-    const d = r[r.length - 1].ridge - r[0].ridge;
-    const move = Math.abs(d) < 1 ? "stays near" : d > 0 ? `moves north to` : `moves south to`;
-    out.push(`The ridge ${move} ${r[r.length - 1].ridge.toFixed(0)}°N by ${fmtTime(r[r.length - 1].t * 1000)}.`);
+    const south = r[0].lat < 0;
+    const pole = south ? "south" : "north";
+    const d = Math.abs(r[r.length - 1].ridge) - Math.abs(r[0].ridge);
+    const move = Math.abs(d) < 1 ? "stays near" : d > 0 ? `moves ${pole} to` : `moves ${south ? "north" : "south"} (towards the equator) to`;
     const last = r[r.length - 1];
-    if (last.ridge - last.lat < 2) out.push("By then the storm is close to the ridge's latitude, where storms often turn north.");
-    else out.push("The ridge stays north of the storm, which favours a westward or northwestward track.");
+    out.push(`The ridge ${move} ${latText(last.ridge)} by ${fmtTime(last.t * 1000)}.`);
+    if (Math.abs(last.ridge) - Math.abs(last.lat) < 2) out.push(`By then the storm is close to the ridge's latitude, where storms often turn ${pole}.`);
+    else out.push(`The ridge stays ${pole} of the storm, which favours a westward track, curving ${pole}west.`);
   }
   return out.join(" ");
 }
 
+// ---- Storms around the world ----
+
+const isIndian = (w) => /north indian/i.test(w?.basin || "") || (w?.lat > 0 && w?.lat < 30 && w?.lon > 45 && w?.lon < 100);
+const SHORT_AGENCY = { nhc: "NHC", jtwc: "JTWC", gdacs: "GDACS" };
+const latText = (v) => `${Math.abs(v).toFixed(1)}°${v >= 0 ? "N" : "S"}`;
+const lonText = (v) => `${Math.abs(((((v + 180) % 360) + 360) % 360) - 180).toFixed(1)}°${((((v + 180) % 360) + 360) % 360) - 180 >= 0 ? "E" : "W"}`;
+const kmhOf = (kt) => (kt == null ? null : Math.round(kt * 1.852));
+
+// Saffir–Simpson colours by 1-minute wind (knots).
+function ktColour(kt) {
+  if (kt == null) return "#9e9e9e";
+  if (kt >= 137) return "#6a1b9a";
+  if (kt >= 113) return "#b71c1c";
+  if (kt >= 96) return "#f44336";
+  if (kt >= 83) return "#ff5722";
+  if (kt >= 64) return "#ff9800";
+  if (kt >= 34) return "#ffc107";
+  return "#4caf50";
+}
+function ktClass(kt) {
+  if (kt == null) return "";
+  if (kt >= 137) return "Cat 5";
+  if (kt >= 113) return "Cat 4";
+  if (kt >= 96) return "Cat 3";
+  if (kt >= 83) return "Cat 2";
+  if (kt >= 64) return "Cat 1";
+  if (kt >= 34) return "TS";
+  return "TD";
+}
+
+// The IMD storm (when active) and every other storm, IMD first. JTWC also
+// warns on Bay of Bengal storms; that copy is kept as the IMD storm's "twin"
+// rather than listed twice.
+function stormList() {
+  const out = [];
+  const { b } = state;
+  const world = (state.world?.storms || []).filter((w) => w.lat != null);
+  state.twin = null;
+  if (state.active) {
+    out.push({ id: "imd", kind: "imd", name: b.name || b.stage || "IMD system", sub: `${SHORT[b.stage] || b.stage || ""} · IMD`, lat: b.lat, lon: b.lon, colour: stageColour(b.stage) });
+    const twin = world.find((w) => b.lat != null && km([b.lat, b.lon], [w.lat, w.lon]) < 500);
+    if (twin) state.twin = twin;
+  }
+  for (const w of world) {
+    if (w === state.twin) continue;
+    out.push({ id: w.id, kind: "world", s: w, name: w.name || w.number || "Storm", sub: `${w.basin || ""} · ${w.kt != null ? `${kmhOf(w.kt)} km/h` : SHORT_AGENCY[w.source] || ""}`, lat: w.lat, lon: w.lon, colour: ktColour(w.kt) });
+  }
+  return out;
+}
+
+// The last storm picked if it is still active, else the Indian region's
+// (IMD's, then any North or South Indian Ocean storm), else the strongest.
+function pickDefault(prev) {
+  const list = stormList();
+  if (!list.length) return null;
+  let saved = prev;
+  if (!saved) {
+    try {
+      saved = localStorage.getItem(PICK_KEY);
+    } catch {}
+  }
+  if (saved && list.some((x) => x.id === saved)) return saved;
+  const indian = list.find((x) => x.kind === "imd") || list.find((x) => isIndian(x.s)) || list.find((x) => /indian/i.test(x.s?.basin || ""));
+  if (indian) return indian.id;
+  return list.slice().sort((a, b) => (b.s?.kt ?? 0) - (a.s?.kt ?? 0))[0].id;
+}
+
+const currentWorld = () => (state.world?.storms || []).find((w) => w.id === state.sel) || null;
+
+function pick(id) {
+  if (id === state.sel) return;
+  state.sel = id;
+  try {
+    localStorage.setItem(PICK_KEY, id);
+  } catch {}
+  render();
+  if (state.mode !== "calm") loadModels();
+  $("cw-head").scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function renderPicker(list) {
+  // Shown whenever there is more than one storm, or one that isn't IMD's.
+  const on = list.length > 1 || (list.length === 1 && list[0].kind === "world");
+  show("cw-p-world", on);
+  if (!on) return;
+  $("cw-pick").replaceChildren(
+    ...list.map((x) =>
+      el(
+        "button",
+        { type: "button", class: `cw-pickbtn ${x.id === state.sel ? "cw-on" : ""}`, "aria-pressed": String(x.id === state.sel), style: `--c:${x.colour}` },
+        el("b", { text: `🌀 ${x.name}` }),
+        el("small", { text: x.sub })
+      )
+    )
+  );
+  [...$("cw-pick").children].forEach((btn, i) => btn.addEventListener("click", () => pick(list[i].id)));
+  drawWorldMap(list);
+}
+
+async function drawWorldMap(list) {
+  try {
+    L = L || (await loadLeaflet());
+  } catch {
+    return;
+  }
+  if (!worldMap) {
+    worldMap = L.map($("cw-worldmap"), { zoomControl: false, attributionControl: true, minZoom: 1, maxZoom: 5, worldCopyJump: true }).setView([10, 80], 1);
+    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19, attribution: "© OpenStreetMap" }).addTo(worldMap);
+    worldLayer = L.layerGroup().addTo(worldMap);
+  }
+  worldLayer.clearLayers();
+  const ref = list.find((x) => x.lat != null)?.lon ?? 80;
+  for (const x of unwrap(list.filter((s) => s.lat != null), ref)) {
+    const on = x.id === state.sel;
+    L.circleMarker([x.lat, x.lon], { radius: on ? 9 : 7, color: on ? "#fff" : "#0b1d36", weight: 2, fillColor: x.colour, fillOpacity: 1 })
+      .on("click", () => pick(x.id))
+      .addTo(worldLayer);
+    label(L, [x.lat, x.lon], x.name.toUpperCase(), `cw-l-world ${on ? "cw-l-on" : ""}`).addTo(worldLayer);
+  }
+  // Centre on the storms, keeping the whole band of the tropics in view.
+  // Longitudes are taken the short way round from the first storm, so storms
+  // either side of the dateline sit together.
+  const lons = unwrap(list.filter((x) => x.lat != null), ref).map((x) => x.lon);
+  const mid = lons.length ? (Math.min(...lons) + Math.max(...lons)) / 2 : 80;
+  worldMap.setView([5, mid], 1);
+  setTimeout(() => worldMap.invalidateSize(), 0);
+}
+
+// Agency points as { t, lat, lon, kt, note }, longitudes kept continuous.
+function worldPoints(w) {
+  const pts = (w.forecast || []).map((p) => ({ ...p, t: Date.parse(p.at) })).filter((p) => Number.isFinite(p.t));
+  return unwrap(pts, w.lon);
+}
+function unwrap(pts, ref) {
+  return pts.map((p) => {
+    let lon = p.lon;
+    while (lon - ref > 180) lon -= 360;
+    while (lon - ref < -180) lon += 360;
+    return { ...p, lon };
+  });
+}
+
+// Puts the IMD-only panels back the way the IMD storm needs them.
+const GLANCE_FOOT = "IMD's bulletin is the official forecast. The other lines are what the models and indices show, read by the app; they are not a forecast of their own.";
+
+function resetImdPanels() {
+  $("cw-lb-earlier").hidden = false;
+  $("cw-lb-past").hidden = false;
+  $("cw-glance-foot").textContent = GLANCE_FOOT;
+  $("cw-p-fc").querySelector("h3").textContent = FC_TITLE;
+  if (fcFoot) $("cw-p-fc").querySelector(".cw-foot").textContent = fcFoot;
+  $("cw-tn-title").textContent = "Tamil Nadu & Chennai";
+  $("cw-more").hidden = false;
+  $("cw-img-title").textContent = "IMD's track & cone";
+  $("cw-img-cap").textContent = "The cone shows where the centre may go. Courtesy: India Meteorological Department.";
+  const box = $("cw-p-img");
+  box.dataset.shareImd = "";
+  delete box.dataset.shareCredit;
+  box.dataset.share = "IMD cyclone track and cone";
+}
+
+function renderWorld(w) {
+  const indian = isIndian(w);
+  $("cw-lb-earlier").hidden = true;
+  $("cw-lb-past").hidden = !indian;
+  $("cw-glance-foot").textContent = GLANCE_FOOT.replace(
+    "IMD's bulletin is the official forecast.",
+    w.source === "nhc"
+      ? "NHC's advisory is the official forecast."
+      : `${SHORT_AGENCY[w.source] || w.agency}'s warning is the forecast shown here; the official one for each sea comes from its regional centre (such as Japan, Australia, Fiji or Réunion).`
+  );
+  show("cw-mapbox", true);
+  show("cw-p-glance", true);
+  show("cw-p-fc", (w.forecast || []).length > 0);
+  show("cw-p-tn", true);
+  show("cw-p-models", w.lat != null);
+  show("cw-p-steer", w.lat != null);
+  show("cw-p-hist", false);
+  show("cw-p-past", indian);
+  show("cw-p-img", !!w.picture);
+  renderWorldHead(w);
+  renderWorldForecast(w);
+  renderWorldWarnings(w);
+  renderWorldGlance(w);
+  // The agency's own picture, with its credit.
+  const box = $("cw-p-img");
+  delete box.dataset.shareImd;
+  box.dataset.shareCredit = w.credit || `Courtesy: ${w.agency}`;
+  box.dataset.share = `${SHORT_AGENCY[w.source] || w.agency} forecast graphic`;
+  $("cw-img-title").textContent = `${SHORT_AGENCY[w.source] || w.agency}'s forecast graphic`;
+  $("cw-img-cap").textContent = `${w.source === "nhc" ? "The cone shows where the centre may go. " : ""}${w.credit || `Courtesy: ${w.agency}`}.`;
+  if (w.picture) $("cw-img").src = `${DATA}${w.picture}?t=${encodeURIComponent(w.at || "")}`;
+  drawWorldStormMap(w);
+  renderMjo();
+  if (indian) renderPast();
+}
+
+function stormTitle(w) {
+  const cat = w.category && w.source !== "nhc" ? ` (${w.category.replace("Category", "Cat")} strength)` : w.category ? ` (${w.category})` : "";
+  return `${w.type || "Tropical cyclone"}${cat}`;
+}
+
+function renderWorldHead(w) {
+  $("cw-head").classList.remove("cw-calm");
+  const kind = w.source === "nhc" ? "Advisory" : w.source === "jtwc" ? "Warning" : "Report";
+  $("cw-kicker").textContent = `${w.agency}${w.advisory ? ` · ${kind} ${w.advisory}` : ""}${w.number ? ` (${w.number})` : ""} · ${w.at ? fmtTime(Date.parse(w.at)) : ""}`;
+  $("cw-stage").textContent = stormTitle(w);
+  $("cw-name").textContent = (w.name || "").toUpperCase();
+  const g = w.gdacs || {};
+  const alert = $("cw-alert");
+  alert.hidden = !g.alert;
+  alert.textContent = g.alert ? `GDACS ${g.alert} alert${g.countries?.length ? ` · ${g.countries.join(", ")}` : ""}` : "";
+  alert.className = `cw-alert ${g.alert ? `cw-${g.alert.toLowerCase()}` : ""}`;
+  const lf = $("cw-landfall");
+  const words = w.headline || w.hazards || w.outlook;
+  lf.hidden = !words;
+  lf.replaceChildren(el("b", { text: `${SHORT_AGENCY[w.source] || w.agency}: ` }), sentenceCase(words || ""));
+  const chips = $("cw-chips");
+  chips.replaceChildren();
+  if (w.kt != null) chips.append(chip("Wind now (1-min)", `${kmhOf(w.kt)} km/h · ${w.kt} kt`));
+  if (w.hPa) chips.append(chip("Pressure", `${w.hPa} hPa`));
+  if (w.movement) chips.append(chip("Motion", w.movement.replace(/towards (\d+)°/, (m, d) => `towards ${compass(+d)}`)));
+  if (w.basin) chips.append(chip("Basin", w.basin));
+  if (w.lat != null) chips.append(chip("Position at", `${w.at ? fmtTime(Date.parse(w.at)) : ""}: ${latText(w.lat)} ${lonText(w.lon)}`));
+  if (isIndian(w)) chips.append(chip("From Chennai", `${round10(km(CHENNAI, [w.lat, w.lon]))} km ${dir8(CHENNAI, [w.lat, w.lon])}`));
+}
+
+// JTWC and NHC write in capitals; this reads easier. Short all-capital words
+// (NM, KT, MB, place codes in brackets) are left alone.
+function sentenceCase(t) {
+  if (!/[a-z]/.test(t) && /[A-Z]{4}/.test(t)) {
+    t = t.toLowerCase().replace(/(^|[.!?]\s+)([a-z])/g, (m, a, c) => a + c.toUpperCase());
+    t = t.replace(/\b(nm|kt|kts|mb|utc)\b/g, (m) => m.toUpperCase()).replace(/\(([a-z])/g, (m, c) => `(${c.toUpperCase()}`);
+    t = t.replace(/\b(\d{2}[a-z])\b/g, (m) => m.toUpperCase());
+  }
+  return t;
+}
+
+function renderWorldForecast(w) {
+  const pts = worldPoints(w);
+  const indian = isIndian(w);
+  const head = el("tr", {}, ...["When (IST)", "Lat, lon", "Wind km/h (kt)", "Class", indian ? "Chennai" : "Note"].map((h) => el("th", { text: h })));
+  const rows = pts.map((p) =>
+    el(
+      "tr",
+      {},
+      el("td", { text: fmtShort(p.t) }),
+      el("td", { text: `${latText(p.lat)}, ${lonText(p.lon)}` }),
+      el("td", { class: "num", text: p.kt != null ? `${kmhOf(p.kt)} (${p.kt})` : "" }),
+      el("td", {}, el("span", { class: "cw-stage", style: `--c:${ktColour(p.kt)}`, text: ktClass(p.kt) })),
+      el("td", { class: indian ? "num" : "", text: indian ? `${round10(km(CHENNAI, [p.lat, p.lon]))} km` : p.now ? "Now" : p.note || "" })
+    )
+  );
+  $("cw-fc").replaceChildren(el("thead", {}, head), el("tbody", {}, rows));
+  const fc = $("cw-p-fc");
+  fc.querySelector("h3").textContent = `${SHORT_AGENCY[w.source] || w.agency} forecast track`;
+  fc.querySelector(".cw-foot").textContent =
+    `From the ${w.agency}'s ${w.source === "nhc" ? "forecast advisory" : "warning"}. Wind is the 1-minute sustained wind; the class is the Saffir–Simpson scale for that wind (TS: tropical storm, TD: depression), as a guide outside the Atlantic and East Pacific.`;
+}
+
+function renderWorldWarnings(w) {
+  $("cw-tn-title").textContent = "Warnings & outlook";
+  $("cw-more").hidden = true;
+  const g = w.gdacs || {};
+  const items = [];
+  if (w.warnings) items.push(["Watches and warnings", w.warnings]);
+  if (w.hazards) items.push(["Hazards affecting land", w.hazards]);
+  if (w.outlook) items.push([w.source === "jtwc" ? "JTWC remarks" : "Discussion and outlook", w.outlook]);
+  if (g.severity || g.countries?.length) items.push(["GDACS", `${g.alert ? `${g.alert} alert. ` : ""}${g.severity || ""}${g.countries?.length ? `. Countries it may affect: ${g.countries.join(", ")}.` : ""}`]);
+  const links = [];
+  if (w.links?.advisory) links.push(el("a", { href: w.links.advisory, target: "_blank", rel: "noopener noreferrer", text: `${SHORT_AGENCY[w.source] || w.agency} ${w.source === "nhc" ? "advisory" : "warning"}` }));
+  if (w.links?.graphics) links.push(el("a", { href: w.links.graphics, target: "_blank", rel: "noopener noreferrer", text: "NHC graphics" }));
+  if (g.report) links.push(el("a", { href: g.report, target: "_blank", rel: "noopener noreferrer", text: "GDACS report" }));
+  $("cw-tn").replaceChildren(
+    items.length ? el("ul", { class: "cw-warn" }, items.map(([k, t]) => el("li", {}, el("b", { text: `${k}: ` }), sentenceCase(t)))) : el("p", { text: "The agency's text has no warnings for land." }),
+    links.length ? el("p", { class: "cw-links" }, ...links.flatMap((a, i) => (i ? [" · ", a] : [a]))) : null
+  );
+}
+
+function renderWorldGlance(w) {
+  const { models, steer, mjo, land } = state;
+  const items = [];
+  const pts = worldPoints(w);
+  const agency = SHORT_AGENCY[w.source] || w.agency;
+  if (w.headline) items.push(["imd", `${agency}: ${sentenceCase(w.headline)}.`]);
+  const peak = pts.reduce((a, p) => (p.kt != null && (!a || p.kt > a.kt) ? p : a), null);
+  if (peak && pts.length > 1) items.push(["imd", `${agency} forecast: strongest around ${fmtShort(peak.t)}, ${kmhOf(peak.kt)} km/h (${peak.kt} kt, ${ktClass(peak.kt)}).`]);
+  const isLand = landTest(land);
+  if (isLand && pts.length > 1) {
+    const hit = pts.find((p, i) => i > 0 && isLand(p.lat, p.lon) && isLand(pts[i - 1].lat, pts[i - 1].lon) === false);
+    items.push(["tn", hit ? `${agency}'s track is over land by about ${fmtShort(hit.t)} (near ${latText(hit.lat)}, ${lonText(hit.lon)}).` : `${agency}'s track stays over the sea for the whole forecast.`]);
+  }
+  if (w.gdacs?.alert) items.push([w.gdacs.alert === "Green" ? "info" : "warn", `GDACS ${w.gdacs.alert.toLowerCase()} alert${w.gdacs.countries?.length ? ` for ${w.gdacs.countries.join(", ")}` : ""}.`]);
+  if (models?.length && pts.length > 1) {
+    const sp = modelSpread(models, pts);
+    if (sp) items.push([sp.max <= 300 ? "ok" : "warn", sp.text]);
+  }
+  if (steer?.length && steer[0].speed != null) {
+    const s0 = steer[0];
+    items.push(["info", `Steering (GFS) now: towards the ${compass(s0.towards)} at ${Math.round(s0.speed)} km/h.${s0.ridge != null ? ` 500 hPa ridge near ${latText(s0.ridge)}.` : ""}`]);
+  }
+  const m = mjo?.days?.[mjo.days.length - 1];
+  if (m) items.push([mjoGood(m, w) ? "ok" : "info", `MJO phase ${m.phase}, amplitude ${m.amp.toFixed(1)}: ${mjoSay(m, w)}.`]);
+  $("cw-glance").replaceChildren(...items.map(([k, t]) => el("li", { class: `cw-${k}`, text: t })));
+}
+
+// How far each model is from the agency's position at the agency's last
+// forecast time within 3 days.
+function modelSpread(models, pts) {
+  const t0 = pts[0].t;
+  const target = pts.filter((p) => p.t - t0 <= 72 * 3600000).pop();
+  if (!target || target === pts[0]) return null;
+  const d = [];
+  for (const m of models) {
+    const at = positionAt(m.track, target.t);
+    if (at) d.push(km([at.lat, at.lon], [target.lat, target.lon]));
+  }
+  if (!d.length) return null;
+  const hours = Math.round((target.t - t0) / 3600000);
+  return {
+    max: Math.max(...d),
+    text: `Models at ${hours} h: ${d.length} of ${models.length} still have the storm, ${round10(Math.min(...d))}–${round10(Math.max(...d))} km from the agency's position.`,
+  };
+}
+
+async function drawWorldStormMap(w) {
+  try {
+    await ensureMap();
+  } catch (e) {
+    $("cw-legend").textContent = `The map didn't load (${e.message}).`;
+    return;
+  }
+  for (const g of Object.values(layers)) g.clearLayers();
+  const bounds = [];
+  const past = unwrap((w.past || []).map((p) => ({ ...p })), w.lon).map((p) => [p.lat, p.lon]);
+  if (past.length > 1) {
+    L.polyline(past, { color: "#ff5252", weight: 4 }).bindTooltip("Past positions").addTo(layers.imd);
+    bounds.push(...past);
+  }
+  const pts = worldPoints(w);
+  if (pts.length) {
+    const ll = pts.map((p) => [p.lat, p.lon]);
+    L.polyline(ll, { color: "#ffffff", weight: 2.5, dashArray: "8 6", opacity: 0.9 }).addTo(layers.imd);
+    pts.forEach((p, i) =>
+      L.circleMarker([p.lat, p.lon], { radius: i ? 6 : 9, color: "#0b1d36", weight: 2, fillColor: ktColour(p.kt), fillOpacity: 1 })
+        .bindTooltip(`${fmtTime(p.t)}<br>${p.kt != null ? `${kmhOf(p.kt)} km/h (${p.kt} kt)` : ""}`)
+        .addTo(layers.imd)
+    );
+    let lastLabel = -Infinity;
+    for (const p of pts) {
+      if (p.t - lastLabel < 23 * 3600000) continue;
+      lastLabel = p.t;
+      label(L, [p.lat, p.lon], new Date(p.t).toLocaleDateString("en-IN", { ...IST, day: "numeric", month: "short" }), "cw-l-date").addTo(layers.imd);
+    }
+    bounds.push(...ll);
+  }
+  if (w.lat != null) {
+    label(L, [w.lat, w.lon], `<span class="cw-eye">🌀</span>${(w.name || "").toUpperCase()}`, "cw-l-storm").addTo(layers.imd);
+    bounds.push([w.lat, w.lon]);
+  }
+  if (isIndian(w)) {
+    L.circleMarker(CHENNAI, { radius: 6, color: "#fff", weight: 2, fillColor: "#e91e63", fillOpacity: 1 }).addTo(layers.places);
+    label(L, CHENNAI, "Chennai", "cw-l-place").addTo(layers.places);
+  }
+  drawModels();
+  if (bounds.length) map.fitBounds(L.latLngBounds(bounds).pad(0.35), { maxZoom: 6 });
+  setTimeout(() => map.invalidateSize(), 0);
+  legend();
+}
+
+function afterWorldModels(at, modelErr, steerErr) {
+  const w = currentWorld();
+  if (!w) return;
+  const { models, steer } = state;
+  const agency = SHORT_AGENCY[w.source] || w.agency;
+  const stamp = new Date(at).toLocaleTimeString("en-IN", { hour: "numeric", minute: "2-digit" });
+  const isLand = landTest(state.land);
+  if (!models) {
+    $("cw-models-status").textContent = `Couldn't read the models (${modelErr?.message || "no answer"}).`;
+  } else {
+    $("cw-models-status").textContent = `Model runs read at ${stamp}.`;
+    const pts = worldPoints(w);
+    const head = el("tr", {}, ...["Model", "Reaches land", "When (IST)", "Lowest"].map((h) => el("th", { text: h })));
+    const landAt = (track) => {
+      if (!isLand) return null;
+      for (let i = 1; i < track.length; i++) if (isLand(track[i].lat, track[i].lon) && isLand(track[i - 1].lat, track[i - 1].lon) === false) return track[i];
+      return null;
+    };
+    const ag = landAt(pts);
+    const rows = [
+      el(
+        "tr",
+        { class: "cw-imdrow" },
+        el("td", {}, el("span", { class: "cw-key", style: "--c:#fff" }), w.source === "nhc" ? `${agency} (official)` : `${agency} warning`),
+        el("td", { text: ag ? `${latText(ag.lat)}, ${lonText(ag.lon)}` : "Stays at sea" }),
+        el("td", { text: ag ? `≈ ${fmtShort(ag.t)}` : "" }),
+        el("td", { class: "num", text: w.hPa ? `${w.hPa} hPa now` : "" })
+      ),
+    ];
+    for (const m of models) {
+      let where;
+      let whenText = "";
+      if (m.landfall) {
+        where = `${latText(m.landfall.lat)}, ${lonText(m.landfall.lon)}`;
+        whenText = `≈ ${fmtShort(m.landfall.t)}`;
+      } else if (m.lost || m.track.length < 2) {
+        where = "Low not found near the storm";
+      } else {
+        const last = m.track[m.track.length - 1];
+        where = `Stays at sea, to ${latText(last.lat)} ${lonText(last.lon)}`;
+        whenText = fmtShort(last.t);
+      }
+      rows.push(
+        el(
+          "tr",
+          {},
+          el("td", {}, el("span", { class: "cw-key", style: `--c:${m.colour}` }), m.name),
+          el("td", { text: where }),
+          el("td", { text: whenText }),
+          el("td", { class: "num", text: m.lowest ? `${m.lowest} hPa` : "" })
+        )
+      );
+    }
+    $("cw-models").replaceChildren(el("thead", {}, head), el("tbody", {}, rows));
+    const sp = modelSpread(models, pts);
+    $("cw-spread").textContent = sp ? sp.text : "";
+  }
+  if (!steer) {
+    $("cw-steer-status").textContent = `Couldn't read the GFS winds (${steerErr?.message || "no answer"}).`;
+  } else {
+    $("cw-steer-status").textContent = "";
+    const head = el("tr", {}, ...["When (IST)", "Storm at", "Steering", "Ridge"].map((h) => el("th", { text: h })));
+    const rows = steer.map((x) =>
+      el(
+        "tr",
+        {},
+        el("td", { text: fmtShort(x.t * 1000) }),
+        el("td", { text: `${latText(x.lat)}, ${lonText(x.lon)}` }),
+        el("td", { text: x.speed != null ? `→ ${abbr(compass(x.towards))} ${Math.round(x.speed)} km/h` : "—" }),
+        el("td", { text: x.ridge != null ? latText(x.ridge) : "—" })
+      )
+    );
+    $("cw-steer").replaceChildren(el("thead", {}, head), el("tbody", {}, rows));
+    $("cw-steer-say").textContent = steerSay(steer);
+  }
+  renderWorldGlance(w);
+  drawModels();
+}
+
 // ---- screen ----
 
+const FC_TITLE = "IMD forecast track";
+let fcFoot = "";
+
 export function initCycloneWatch() {
+  fcFoot = $("cw-p-fc").querySelector(".cw-foot").textContent;
+  $("cw-img").addEventListener("error", () => show("cw-p-img", false));
   $("cw-refresh").addEventListener("click", () => {
     try {
       localStorage.removeItem(MODEL_CACHE);

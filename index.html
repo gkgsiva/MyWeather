@@ -732,6 +732,17 @@
         </form>
         <p id="cw-status" class="status" aria-live="polite"></p>
 
+        <div id="cw-p-world" class="cw-panel cw-world" data-share="Cyclone watch · Storms around the world" hidden>
+          <h3>Storms around the world</h3>
+          <div id="cw-worldmap" class="station-map dark-tiles cw-worldmap"></div>
+          <div id="cw-pick" class="cw-pick"></div>
+          <p class="cw-foot">
+            Tap a storm to see it below. From IMD (Bay of Bengal &amp; Arabian Sea), NOAA's National Hurricane Center
+            (Atlantic, East &amp; Central Pacific), the Joint Typhoon Warning Center (West Pacific, Indian Ocean and the
+            Southern Hemisphere) and GDACS alerts, read every hour.
+          </p>
+        </div>
+
         <div id="cw-head" class="cw-panel cw-head" data-share="Cyclone watch" data-share-from="cw-name">
           <p id="cw-kicker" class="cw-kicker"></p>
           <h3 class="cw-title"><span id="cw-stage"></span> <span id="cw-name" class="cw-name"></span></h3>
@@ -744,8 +755,8 @@
           <div id="cw-map" class="station-map dark-tiles cw-map"></div>
           <div class="cw-layers snap-skip">
             <label><input id="cw-l-models" type="checkbox" checked /> Models</label>
-            <label><input id="cw-l-earlier" type="checkbox" /> Earlier IMD forecasts</label>
-            <label><input id="cw-l-past" type="checkbox" /> Past storms</label>
+            <label id="cw-lb-earlier"><input id="cw-l-earlier" type="checkbox" /> Earlier IMD forecasts</label>
+            <label id="cw-lb-past"><input id="cw-l-past" type="checkbox" /> Past storms</label>
           </div>
           <p id="cw-legend" class="legend map-legend cw-legend"></p>
         </div>
@@ -753,7 +764,7 @@
         <div id="cw-p-glance" class="cw-panel cw-num" data-share="Cyclone watch · At a glance" data-share-from="cw-name" hidden>
           <h3>At a glance</h3>
           <ul id="cw-glance" class="cw-checks"></ul>
-          <p class="cw-foot">IMD's bulletin is the official forecast. The other lines are what the models and indices show, read by the app; they are not a forecast of their own.</p>
+          <p id="cw-glance-foot" class="cw-foot">IMD's bulletin is the official forecast. The other lines are what the models and indices show, read by the app; they are not a forecast of their own.</p>
         </div>
 
         <div id="cw-p-fc" class="cw-panel cw-num" data-share="Cyclone watch · IMD forecast" data-share-from="cw-name" hidden>
@@ -763,9 +774,9 @@
         </div>
 
         <div id="cw-p-tn" class="cw-panel cw-num" data-share="Cyclone watch · Tamil Nadu" data-share-from="cw-name" hidden>
-          <h3>Tamil Nadu &amp; Chennai</h3>
+          <h3 id="cw-tn-title">Tamil Nadu &amp; Chennai</h3>
           <div id="cw-tn"></div>
-          <details class="cw-more"><summary>Warnings for other areas</summary><div id="cw-other"></div></details>
+          <details id="cw-more" class="cw-more"><summary>Warnings for other areas</summary><div id="cw-other"></div></details>
         </div>
 
         <div id="cw-p-models" class="cw-panel cw-num" data-share="Cyclone watch · Model guidance" data-share-from="cw-name" hidden>
@@ -774,10 +785,10 @@
           <div class="table-wrap"><table id="cw-models" class="cw-table"></table></div>
           <p id="cw-spread" class="cw-verdict"></p>
           <p class="cw-foot">
-            Each model's lowest sea-level pressure, followed every 6 hours from IMD's latest position on a 1° grid, from
+            Each model's lowest sea-level pressure, followed every 6 hours from the agency's latest position (IMD's for Indian seas) on a 1° grid, from
             <a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer">Open-Meteo</a>. Global models draw a cyclone's
             core weaker and wider than it is, so the pressures are only for comparing the models. The tracks are the raw
-            models, not IMD's forecast.
+            models, not the agency's forecast.
           </p>
         </div>
 
@@ -801,8 +812,9 @@
           </div>
           <p class="cw-foot">
             The RMM index from Australia's Bureau of Meteorology, last 40 days (the dot is the latest). Outside the circle
-            (amplitude over 1) the MJO is active. Phases 2–5 bring its wet half over the Indian Ocean and the Bay of Bengal,
-            when depressions and cyclones form there more often; phases 6–8 and 1 usually mean fewer.
+            (amplitude over 1) the MJO is active. As its wet half moves east around the tropics it favours storms in turn:
+            phases 2–5 the Indian Ocean and the Bay of Bengal, 4–7 Australia and the West Pacific, 8, 1 and 2 the East Pacific
+            and the Atlantic.
           </p>
         </div>
 
@@ -818,9 +830,9 @@
         </div>
 
         <figure id="cw-p-img" class="cw-panel cw-imd" data-share="IMD cyclone track and cone" data-share-from="cw-name" data-share-imd hidden>
-          <h3>IMD's track &amp; cone</h3>
+          <h3 id="cw-img-title">IMD's track &amp; cone</h3>
           <img id="cw-img" alt="IMD's observed and forecast track with the cone of uncertainty" loading="lazy" />
-          <figcaption class="cw-foot">The cone shows where the centre may go. Courtesy: India Meteorological Department.</figcaption>
+          <figcaption id="cw-img-cap" class="cw-foot">The cone shows where the centre may go. Courtesy: India Meteorological Department.</figcaption>
         </figure>
 
         <p class="note">
