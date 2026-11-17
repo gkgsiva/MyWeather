@@ -652,6 +652,7 @@
           </div>
           <button id="md-refresh" type="button" class="secondary">Refresh</button>
         </form>
+        <p id="md-net" class="home-net" hidden></p>
         <p id="md-status" class="status" aria-live="polite"></p>
 
         <div data-share="Model charts" data-share-from="md-title">
@@ -681,6 +682,7 @@
           <button id="md-save" type="button" class="secondary" hidden>Save this spot</button>
         </form>
         <p class="note">Or tap the big map and choose "Charts for this spot", then <strong>Save this spot</strong> to keep it in <a href="#myplaces">My places</a>.</p>
+        <p id="md-agree" class="md-agree" aria-live="polite"></p>
         <p id="md-swatches" class="legend md-swatches"></p>
 
         <div data-share="Rain every 3 hours, model by model" data-share-from="md-place-name">
@@ -740,6 +742,12 @@
 
         <figure>
           <img id="radar-img" alt="" />
+          <canvas id="radar-canvas" class="radar-canvas" hidden></canvas>
+          <div id="radar-player" class="rm-player radar-player" hidden>
+            <button id="radar-play" type="button" class="secondary small" aria-label="Play the loop">▶</button>
+            <input id="radar-frame" type="range" min="0" max="0" value="0" aria-label="Radar time, last 3 hours" />
+            <span id="radar-frame-time" class="rm-time"></span>
+          </div>
           <figcaption>
             Direct image link:
             <a id="radar-link" target="_blank" rel="noopener noreferrer"></a>

@@ -15,6 +15,19 @@ export const HISTORY = [
           "In **Model charts**, your saved places are in the place list, and a spot you tap on the map can be saved with **Save this spot**.",
         ],
       ],
+      [
+        "Model charts",
+        [
+          "**Model agreement**: under *Charts for a place*, one line says how closely the six models agree on the rain for your district over the next 3 rain days: **High**, **Moderate** or **Low**, with a score for each day. When they agree, trust the rain figures more; when they disagree, expect it could be much more or less than any one model shows.",
+          "**Works offline**: with no signal, Model charts shows the **last run it read**, with a yellow line saying when it was read and how old it is (the same if an update fails). Pictures you share from it say they are a saved run.",
+        ],
+      ],
+      [
+        "Radars",
+        [
+          "**Scrub the last 3 hours** on the Radars screen: **Play last 3 hours** now has a slider under the picture. Drag it back to any frame, or tap ▶ to play and ⏸ to pause. It shows about how long ago each frame is, and **Share** sends the frame you are on.",
+        ],
+      ],
     ],
   },
   {

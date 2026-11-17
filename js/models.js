@@ -9,7 +9,10 @@
 // 8:30 AM to 8:30 AM. Each step's rain is the rain in the 3 hours to it; wind
 // is the 10 m wind, and temperature the 2 m air, at that time. Between grid points values are blended from
 // the four around (bilinear). The answer is kept for an hour (the models run
-// every 6 to 12 hours), in IndexedDB, so the screen opens offline too.
+// every 6 to 12 hours), in IndexedDB, so the screen opens offline too: with no
+// signal it shows the last run read, labelled with when it was read and how old
+// it is. A "model agreement" line says how closely the six models agree on the
+// rain at the chosen place (js/agree.js).
 //
 // These are the raw models, not IMD's forecast, and the screen says so.
 import { loadLeaflet, addTiles } from "./stationmap.js";
@@ -20,6 +23,7 @@ import { el, niceMax } from "./chart.js";
 import { idbGet, idbPut } from "./idb.js";
 import { makeZoomable } from "./zoom.js";
 import { savedPlaces, addPlace } from "./placestore.js";
+import { agreement } from "./agree.js";
 
 const API = "https://api.open-meteo.com/v1/forecast";
 export const MODELS = [
@@ -230,6 +234,10 @@ async function loadData(force) {
     if (saved?.times?.length && saved.models) data = saved;
   }
   if (data && !force && Date.now() - data.at < FRESH_MS) return { data, fresh: true };
+  if (navigator.onLine === false) {
+    if (data) return { data, fresh: false };
+    throw new Error("offline");
+  }
   const [list, runs] = await Promise.all([getJson(gridUrl()), readRuns()]);
   const d = parseGrid(list);
   d.runs = runs;
@@ -434,6 +442,28 @@ let overlay = null;
 let overlayUrl = "";
 let spotMarker = null;
 let run = 0;
+let stale = false; // showing a saved run that couldn't be refreshed
+
+const ago = (ms) => {
+  const m = Math.max(0, Math.round(ms / 60000));
+  if (m < 90) return `${m} min`;
+  const h = Math.round(m / 60);
+  return h < 48 ? `${h} hours` : `${Math.round(h / 24)} days`;
+};
+const readAt = () => `${istDay(data.at)}, ${istTime(data.at)}`;
+
+// The yellow line that says the maps and charts are from a saved run.
+function paintNet() {
+  const line = $("md-net");
+  const off = navigator.onLine === false;
+  line.hidden = !(data && (off || stale));
+  if (line.hidden) return;
+  const over = data.times.length && data.times[data.times.length - 1] < Date.now();
+  line.textContent = `${off ? "No connection. " : "Couldn't update. "}Showing the last run read on ${readAt()} (${ago(Date.now() - data.at)} ago).${
+    over ? " It is out of date: every time in it has passed." : " Times that have passed are still in it."
+  } It updates when you're back online.`;
+}
+const savedTag = () => (data && (stale || navigator.onLine === false) ? ` · saved run, read ${readAt()}` : "");
 
 function say(text, error = false) {
   const s = $("md-status");
@@ -486,7 +516,7 @@ function legend(target) {
 function renderPanels() {
   const grid = $("md-grid");
   const l = LAYERS[sel.layer];
-  $("md-title").textContent = selLabel();
+  $("md-title").textContent = selLabel() + savedTag();
   grid.replaceChildren(
     ...MODELS.map((m) => {
       const fig = document.createElement("figure");
@@ -606,7 +636,7 @@ async function renderOverlay() {
   else overlay.setUrl(url);
   if (overlayUrl) URL.revokeObjectURL(overlayUrl);
   overlayUrl = url;
-  $("md-map-title").textContent = `${m.long}: ${selLabel()}${f ? "" : " (not available)"}`;
+  $("md-map-title").textContent = `${m.long}: ${selLabel()}${f ? "" : " (not available)"}${savedTag()}`;
   legend($("md-legend2"));
   for (const b of $("md-models").querySelectorAll("button")) b.setAttribute("aria-pressed", String(b.dataset.model === sel.model));
 }
@@ -773,8 +803,30 @@ function barChart(svg, readout) {
     : "";
 }
 
+function renderAgreement() {
+  const box = $("md-agree");
+  const { days, rows } = dailyTotals();
+  const now = Date.now();
+  const coming = days.filter((w) => w.end > now);
+  const use = (coming.length ? coming : days).slice(0, 3);
+  const a = agreement(use.map((w) => ({ label: w.short, vals: rows.map((r) => r.vals[days.indexOf(w)]) })));
+  box.className = "md-agree" + (a ? ` ${a.word.toLowerCase()}` : "");
+  if (!a) {
+    box.textContent = `Model agreement for ${place.name}: not enough models reach a full rain day.`;
+    return;
+  }
+  const tip = a.word === "High" ? "The models tell the same story; trust the rain figures more." : a.word === "Moderate" ? "The models differ somewhat; take the rain as a guide." : "The models disagree; the rain could be much more or less than any one shows.";
+  box.replaceChildren();
+  const head = document.createElement("strong");
+  head.textContent = `Model agreement for ${place.name}: ${a.word} (${a.score}%)`;
+  const small = document.createElement("small");
+  small.textContent = `${tip} Next ${a.days.length} rain day${a.days.length > 1 ? "s" : ""}: ${a.days.map((d) => `${d.label} ${d.score}%`).join(" · ")}.`;
+  box.append(head, small);
+}
+
 function renderCharts() {
   if (!data || !place) return;
+  renderAgreement();
   for (const id of ["md-place-name", "md-place-name2", "md-place-name3", "md-place-name4"]) $(id).textContent = place.name;
   lineChart($("md-rain-chart"), $("md-rain-readout"), "rain");
   lineChart($("md-wind-chart"), $("md-wind-readout"), "wind");
@@ -880,8 +932,10 @@ async function load(force = false) {
       const raster = await districtRaster().catch(() => null);
       pixels = panelPixels(raster);
     }
-    await loadData(force);
+    const got = await loadData(force);
     if (me !== run) return;
+    stale = !got.fresh;
+    paintNet();
     fillTimes();
     redraw();
     renderCharts();
@@ -889,18 +943,22 @@ async function load(force = false) {
     say(`${have} of ${MODELS.length} models. Pinch or double-tap a chart to zoom; tap the map for each model's figure.`);
   } catch (e) {
     if (me !== run) return;
+    stale = !!data;
+    paintNet();
     if (data) {
       fillTimes();
       redraw();
       renderCharts();
     }
     const why =
-      e.message === "limit"
+      e.message === "offline"
+        ? "No connection, and no run is saved yet. Open this screen once with a signal and the last run is kept for next time."
+        : e.message === "limit"
         ? "Open-Meteo's free limit for this phone is used up for now; try again in a few minutes."
         : /Failed to fetch|NetworkError|Load failed|abort/i.test(e.message)
           ? "Couldn't reach Open-Meteo. Check the connection."
           : `Couldn't read the models (${e.message}).`;
-    say(data ? `${why} Showing what was read ${istDay(data.at)}, ${istTime(data.at)}.` : why, true);
+    say(data ? `${why} Showing what was read ${readAt()}.` : why, true);
   }
 }
 
@@ -931,6 +989,11 @@ export function initModels() {
   $("md-prev").addEventListener("click", () => stepTo(sel.step - 1));
   $("md-next").addEventListener("click", () => stepTo(sel.step + 1));
   $("md-refresh").addEventListener("click", () => load(true));
+  window.addEventListener("offline", paintNet);
+  window.addEventListener("online", () => {
+    if ($("view-models").hidden) stale = true; // refreshed when the screen is next opened
+    else load();
+  });
 
   $("md-models").replaceChildren(
     ...MODELS.map((x) => {
@@ -1009,7 +1072,7 @@ export async function showModels() {
   } catch (e) {
     $("md-map").textContent = `Couldn't open the map (${e.message}).`;
   }
-  if (data && Date.now() - data.at < FRESH_MS) return;
+  if (data && !stale && Date.now() - data.at < FRESH_MS) return;
   load();
 }
 
