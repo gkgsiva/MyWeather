@@ -251,8 +251,9 @@ export function initSnaps(root = document) {
           blob,
           name: shareName(slug(title), "image/png"),
           text: shareLook().time ? `${title}, ${when(title)}. Shared from MyWeather.` : `${title}. Shared from MyWeather.`,
-          // Blocks showing IMD's pictures (radar, warnings) credit IMD.
-          imd: "shareImd" in block.dataset,
+          // Blocks showing IMD's pictures (radar, warnings) credit IMD;
+          // data-share-credit names another agency (Cyclone watch).
+          imd: block.dataset.shareCredit || "shareImd" in block.dataset,
         });
         if (how === "downloaded") toast("Sharing isn't available here, so the picture was downloaded.");
       } catch (err) {

@@ -1,0 +1,127 @@
+name: IMD cyclone bulletin
+
+# Also reads every other active tropical cyclone in the world (NHC, JTWC,
+# GDACS: scripts/world_cyclones.py) into cyclone/world.json and world/*.png.
+#
+# Reads IMD's newest National Bulletin on a depression or cyclone (a 3-4 MB
+# PDF linked from mausam.imd.gov.in/responsive/cycloneinformation.php) and
+# the MJO index into JSON for the app's "Cyclone watch" screen
+# (scripts/imd_cyclone.py). The files go to the `data` branch, under cyclone/:
+#
+#   latest.json, history.json, track.jpg, mjo.json, world.json, world/<id>.png
+#
+# Runs every hour. A bulletin already read is skipped, so between systems a
+# run only reads IMD's page and, once a day, the MJO index. Shares the `data`
+# branch with the IMD daily report workflow (same concurrency group), and
+# keeps that workflow's daily-report/ folder when it rewrites the branch.
+# Run it any time from Actions → IMD cyclone bulletin → Run workflow.
+
+on:
+  schedule:
+    - cron: "20 * * * *"
+  workflow_dispatch:
+    inputs:
+      force:
+        description: "Read the bulletin and the MJO index again even if unchanged"
+        type: boolean
+        default: false
+  pull_request:
+    paths: ["scripts/imd_cyclone.py", "scripts/world_cyclones.py", ".github/workflows/imd-cyclone.yml"]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: data-branch
+  cancel-in-progress: false
+
+jobs:
+  cyclone:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install the PDF tools
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq poppler-utils
+          pip install --quiet "pillow==11.*"
+
+      - name: Fetch the data branch
+        run: |
+          if git ls-remote --exit-code --heads origin data >/dev/null; then
+            git fetch --depth 1 origin data
+            git worktree add data FETCH_HEAD
+          else
+            mkdir -p data
+          fi
+          mkdir -p data/cyclone
+
+      - name: Read the bulletin
+        id: read
+        run: |
+          flags=""
+          if [ "${{ github.event_name }}" = pull_request ] || [ "${{ inputs.force }}" = true ]; then flags=--force; fi
+          changed=$(python3 scripts/imd_cyclone.py data/cyclone $flags)
+          verbose=""
+          if [ "${{ github.event_name }}" = pull_request ]; then verbose=--verbose; fi
+          world=$(python3 scripts/world_cyclones.py data/cyclone $verbose) || world=""
+          changed="$changed $world"
+          echo "Changed: ${changed:-nothing}"
+          echo "changed=$(echo $changed)" >> "$GITHUB_OUTPUT"
+          if [ "${{ github.event_name }}" = pull_request ] && [ -f data/cyclone/world.json ]; then
+            echo "----- world.json -----"; cat data/cyclone/world.json; echo; echo "----- end world.json -----"
+          fi
+          {
+            echo "### IMD cyclone bulletin"
+            python3 - <<'PY'
+          import json
+          try:
+              b = json.load(open("data/cyclone/latest.json"))
+              print(f"- Bulletin {b.get('no')} ({b.get('system')}), issued {b.get('issued')}: {b.get('stage')} {b.get('name') or ''}")
+              print(f"- Centre {b.get('lat')}N {b.get('lon')}E; {len(b.get('forecast', []))} forecast rows")
+              lf = b.get("landfall") or {}
+              print(f"- Landfall: {lf.get('text', 'none in the bulletin')}")
+          except OSError:
+              print("- No bulletin read yet")
+          try:
+              m = json.load(open("data/cyclone/mjo.json"))["days"][-1]
+              print(f"- MJO {m['date']}: phase {m['phase']}, amplitude {m['amp']}")
+          except (OSError, KeyError, IndexError):
+              print("- MJO index not read")
+          try:
+              w = json.load(open("data/cyclone/world.json"))
+              print(f"- World: {len(w['storms'])} active storms" + (f"; source errors: {w['errors']}" if w.get("errors") else ""))
+              for s in w["storms"]:
+                  print(f"  - {s.get('type')} {s.get('name')} ({s.get('basin')}, {s.get('agency')}): {s.get('kt')} kt at {s.get('lat')}, {s.get('lon')}")
+          except (OSError, KeyError):
+              print("- World storms not read")
+          PY
+          } >> "$GITHUB_STEP_SUMMARY"
+          cat "$GITHUB_STEP_SUMMARY"
+
+      # On a pull request the reader is only tried, never published.
+      - name: Publish to the data branch
+        if: steps.read.outputs.changed != '' && github.event_name != 'pull_request'
+        working-directory: data
+        run: |
+          rm -rf .git-new && mkdir .git-new
+          for d in daily-report cyclone; do
+            if [ -d "$d" ]; then cp -r "$d" .git-new/; fi
+          done
+          cat > .git-new/README.md <<'MD'
+          Data for the MyWeather app, written by the "IMD daily report" and "IMD cyclone bulletin" workflows on main.
+          This branch is rewritten on every run; don't commit to it by hand.
+          MD
+          cd .git-new
+          git init -q -b data
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -q -m "IMD cyclone: ${{ steps.read.outputs.changed }}"
+          git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" data

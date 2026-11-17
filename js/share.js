@@ -38,8 +38,11 @@ export function shareName(what, type) {
 import { watermarkName, shareLook } from "./prefs.js";
 
 /** The lines drawn on a picture, from the bottom up: [[text, size factor]]. */
+// `imd` is true for IMD's pictures, or another agency's credit line ("Courtesy:
+// NOAA National Hurricane Center") for theirs; the rule is the same.
 export function watermarkLines({ imd = false, name = watermarkName() } = {}) {
-  if (imd) return name ? [[name, 1], [IMD_CREDIT, 0.72]] : [[IMD_CREDIT, 0.72]];
+  const credit = creditOf(imd);
+  if (credit) return name ? [[name, 1], [credit, 0.72]] : [[credit, 0.72]];
   return name ? [[`© ${name}`, 1]] : [];
 }
 const SIZE = { s: 0.75, m: 1, l: 1.35 };
@@ -50,6 +53,7 @@ const STRENGTH = {
   strong: [[0.85, 0.6], [0.95, 1]],
 };
 export const IMD_CREDIT = "Courtesy: India Meteorological Department";
+const creditOf = (imd) => (typeof imd === "string" && imd ? imd : imd ? IMD_CREDIT : null);
 const STAMPABLE = new Set(["image/png", "image/jpeg", "image/webp"]);
 
 async function decode(blob) {
@@ -136,7 +140,8 @@ export async function watermark(blob, { imd = false, look = shareLook(), name = 
  */
 export async function shareImage({ blob, name, text, imd = false }) {
   blob = await watermark(blob, { imd });
-  if (imd && text && !text.includes(IMD_CREDIT)) text = `${text} ${IMD_CREDIT}.`;
+  const credit = creditOf(imd);
+  if (credit && text && !text.includes(credit)) text = `${text} ${credit}.`;
   const type = blob.type || "image/png";
   // The user's own words (Settings) after every picture's message, not the backup's.
   const { caption, brand } = shareLook();
