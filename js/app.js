@@ -25,6 +25,7 @@ const VIEWS = {
   warnings: { title: "MyWeather · Warnings", load: () => import("./warnings.js"), show: "showWarnings" },
   imdreport: { title: "MyWeather · IMD daily report", load: () => import("./imdreport.js"), init: "initImdReport", show: "showImdReport" },
   wind: { title: "MyWeather · Wind & storms", load: () => import("./wind.js"), init: "initWind", show: "showWind", hide: "hideWind" },
+  cyclonewatch: { title: "MyWeather · Cyclone watch", load: () => import("./cyclonewatch.js"), init: "initCycloneWatch", show: "showCycloneWatch" },
   cyclone: { title: "MyWeather · Cyclones", load: () => import("./cyclone.js"), init: "initCyclone", show: "showCyclone" },
   monsoon: { title: "MyWeather · Monsoon", load: () => import("./monsoon.js"), init: "initMonsoon", show: "showMonsoon" },
   yoy: { title: "MyWeather · Year on year", load: () => import("./yoy.js"), init: "initYoy", show: "showYoy" },

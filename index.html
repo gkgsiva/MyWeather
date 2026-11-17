@@ -49,6 +49,7 @@
           <a href="#satellite" data-view="satellite">Satellite</a>
           <a href="#lightning" data-view="lightning">Lightning</a>
           <a href="#wind" data-view="wind">Wind &amp; storms</a>
+          <a href="#cyclonewatch" data-view="cyclonewatch">Cyclone watch</a>
           <a href="#cyclone" data-view="cyclone">Cyclones</a>
         </div>
       </div>
@@ -257,6 +258,12 @@
             <a class="card" href="#wind">
               <strong>Wind &amp; storms</strong>
               <span>Moving wind over the Bay of Bengal, for when a cyclone is near</span>
+            </a>
+          </li>
+          <li>
+            <a class="card" href="#cyclonewatch">
+              <strong>Cyclone watch</strong>
+              <span>The current storm on one screen: IMD's track and landfall, Tamil Nadu warnings, models, steering, MJO and past storms</span>
             </a>
           </li>
           <li>
@@ -716,6 +723,113 @@
         </div>
       </section>
 
+      <!-- Cyclone watch -->
+      <section id="view-cyclonewatch" class="view cw" hidden>
+        <h2>Cyclone watch</h2>
+        <form class="controls" onsubmit="return false">
+          <button id="cw-refresh" type="button">Refresh</button>
+          <a class="button secondary-link" href="#cyclone">IMD bulletins</a>
+        </form>
+        <p id="cw-status" class="status" aria-live="polite"></p>
+
+        <div id="cw-head" class="cw-panel cw-head" data-share="Cyclone watch" data-share-from="cw-name">
+          <p id="cw-kicker" class="cw-kicker"></p>
+          <h3 class="cw-title"><span id="cw-stage"></span> <span id="cw-name" class="cw-name"></span></h3>
+          <p id="cw-alert" class="cw-alert" hidden></p>
+          <p id="cw-landfall" class="cw-landfall" hidden></p>
+          <div id="cw-chips" class="cw-chips"></div>
+        </div>
+
+        <div id="cw-mapbox" class="share-map cw-mapbox" data-share="Cyclone watch · Track" data-share-from="cw-name" hidden>
+          <div id="cw-map" class="station-map dark-tiles cw-map"></div>
+          <div class="cw-layers snap-skip">
+            <label><input id="cw-l-models" type="checkbox" checked /> Models</label>
+            <label><input id="cw-l-earlier" type="checkbox" /> Earlier IMD forecasts</label>
+            <label><input id="cw-l-past" type="checkbox" /> Past storms</label>
+          </div>
+          <p id="cw-legend" class="legend map-legend cw-legend"></p>
+        </div>
+
+        <div id="cw-p-glance" class="cw-panel cw-num" data-share="Cyclone watch · At a glance" data-share-from="cw-name" hidden>
+          <h3>At a glance</h3>
+          <ul id="cw-glance" class="cw-checks"></ul>
+          <p class="cw-foot">IMD's bulletin is the official forecast. The other lines are what the models and indices show, read by the app; they are not a forecast of their own.</p>
+        </div>
+
+        <div id="cw-p-fc" class="cw-panel cw-num" data-share="Cyclone watch · IMD forecast" data-share-from="cw-name" hidden>
+          <h3>IMD forecast track</h3>
+          <div class="table-wrap"><table id="cw-fc" class="cw-table"></table></div>
+          <p class="cw-foot">From IMD's National Bulletin (RSMC New Delhi). Wind is the 3-minute sustained wind, km/h; the distance is from Chennai. The coast crossing row is where this track meets the coast on the app's map.</p>
+        </div>
+
+        <div id="cw-p-tn" class="cw-panel cw-num" data-share="Cyclone watch · Tamil Nadu" data-share-from="cw-name" hidden>
+          <h3>Tamil Nadu &amp; Chennai</h3>
+          <div id="cw-tn"></div>
+          <details class="cw-more"><summary>Warnings for other areas</summary><div id="cw-other"></div></details>
+        </div>
+
+        <div id="cw-p-models" class="cw-panel cw-num" data-share="Cyclone watch · Model guidance" data-share-from="cw-name" hidden>
+          <h3>Model guidance</h3>
+          <p id="cw-models-status" class="status"></p>
+          <div class="table-wrap"><table id="cw-models" class="cw-table"></table></div>
+          <p id="cw-spread" class="cw-verdict"></p>
+          <p class="cw-foot">
+            Each model's lowest sea-level pressure, followed every 6 hours from IMD's latest position on a 1° grid, from
+            <a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer">Open-Meteo</a>. Global models draw a cyclone's
+            core weaker and wider than it is, so the pressures are only for comparing the models. The tracks are the raw
+            models, not IMD's forecast.
+          </p>
+        </div>
+
+        <div id="cw-p-steer" class="cw-panel cw-num" data-share="Cyclone watch · Steering flow" data-share-from="cw-name" hidden>
+          <h3>Steering flow &amp; ridge</h3>
+          <p id="cw-steer-status" class="status"></p>
+          <div class="table-wrap"><table id="cw-steer" class="cw-table"></table></div>
+          <p id="cw-steer-say" class="cw-verdict"></p>
+          <p class="cw-foot">
+            GFS winds at 850, 700, 500, 300 and 200 hPa averaged at the storm's place on IMD's forecast track: the
+            deep-layer flow that carries a cyclone along. The ridge is the 500 hPa subtropical ridge along the storm's
+            longitude: easterly winds south of it push storms west, and storms that reach it turn north and then northeast.
+          </p>
+        </div>
+
+        <div id="cw-p-mjo" class="cw-panel cw-num" data-share="Cyclone watch · MJO" hidden>
+          <h3>MJO (Madden–Julian Oscillation)</h3>
+          <div class="cw-mjo">
+            <svg id="cw-mjo" viewBox="-130 -130 260 260" role="img" aria-label="MJO phase diagram"></svg>
+            <div id="cw-mjo-text"></div>
+          </div>
+          <p class="cw-foot">
+            The RMM index from Australia's Bureau of Meteorology, last 40 days (the dot is the latest). Outside the circle
+            (amplitude over 1) the MJO is active. Phases 2–5 bring its wet half over the Indian Ocean and the Bay of Bengal,
+            when depressions and cyclones form there more often; phases 6–8 and 1 usually mean fewer.
+          </p>
+        </div>
+
+        <div id="cw-p-hist" class="cw-panel cw-num" data-share="Cyclone watch · IMD forecast changes" data-share-from="cw-name" hidden>
+          <h3>How IMD's forecast changed</h3>
+          <ol id="cw-hist" class="cw-hist"></ol>
+        </div>
+
+        <div id="cw-p-past" class="cw-panel cw-num" data-share="Cyclone watch · Past storms" hidden>
+          <h3 id="cw-past-title">Past storms</h3>
+          <div id="cw-past" class="cw-past"></div>
+          <p class="cw-foot">Where each storm crossed the coast, from IMD's reports on them; places are approximate (about 20 km). The distance is from <span id="cw-past-ref">Chennai</span>.</p>
+        </div>
+
+        <figure id="cw-p-img" class="cw-panel cw-imd" data-share="IMD cyclone track and cone" data-share-from="cw-name" data-share-imd hidden>
+          <h3>IMD's track &amp; cone</h3>
+          <img id="cw-img" alt="IMD's observed and forecast track with the cone of uncertainty" loading="lazy" />
+          <figcaption class="cw-foot">The cone shows where the centre may go. Courtesy: India Meteorological Department.</figcaption>
+        </figure>
+
+        <p class="note">
+          From IMD's <a href="https://mausam.imd.gov.in/responsive/cycloneinformation.php" target="_blank" rel="noopener noreferrer">Cyclone Information</a>
+          page: the newest National Bulletin is read every hour (a GitHub workflow turns the PDF into data) and the track
+          comes from IMD's map server. Use the bulletins for decisions; the rest is background.
+        </p>
+      </section>
+
       <!-- Cyclones -->
       <section id="view-cyclone" class="view" hidden>
         <h2>Cyclones</h2>
@@ -723,6 +837,7 @@
           <button id="cyc-refresh" type="button">Refresh</button>
         </form>
         <p id="cyc-status" class="status" aria-live="polite"></p>
+        <p class="note"><a href="#cyclonewatch">Cyclone watch</a> puts the current storm on one screen: track map, landfall, Tamil Nadu warnings and model guidance.</p>
         <h3>Bulletins</h3>
         <ul id="cyc-bulletins" class="posts"></ul>
         <p class="note">Bulletins are PDFs and open in the phone's browser or PDF viewer.</p>

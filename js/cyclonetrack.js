@@ -3,9 +3,9 @@
 // filled while a depression or cyclone is active. IMD doesn't publish the
 // cone of uncertainty as data, only on its track picture, so the app draws the
 // track and links to that picture on the Cyclones screen. The server has no
-// CORS header; the Android app adds it.
+// CORS header; the Android app adds it to requests on /ows (not /wfs).
 const WFS =
-  "https://reactjs.imd.gov.in/geoserver/imd/wfs?service=WFS&version=1.0.0&request=GetFeature" +
+  "https://reactjs.imd.gov.in/geoserver/imd/ows?service=WFS&version=1.0.0&request=GetFeature" +
   "&typeName=imd:Cyclone_Track_V&outputFormat=application/json&srsName=EPSG:4326";
 const TTL = 15 * 60 * 1000;
 
@@ -19,6 +19,9 @@ const STAGES = {
   ESCS: ["Extremely severe cyclonic storm", "#b71c1c"],
   SUCS: ["Super cyclonic storm", "#6a1b9a"],
 };
+// The live layer marks its two lines "observed" and "forecast" instead.
+STAGES.OBSERVED = ["Observed track", "#d32f2f"];
+STAGES.FORECAST = ["IMD forecast track", "#ffb300"];
 const stage = (t) => STAGES[String(t || "").toUpperCase().replace(/[^A-Z]/g, "")] || [t || "Track point", "#9e9e9e"];
 
 let cached = null; // { at, data }
@@ -58,7 +61,8 @@ export function trackLayer(L, data) {
         .addTo(group);
     } else if (g.type === "LineString" || g.type === "MultiLineString") {
       const lines = g.type === "LineString" ? [g.coordinates] : g.coordinates;
-      for (const line of lines) L.polyline(line.map(fix), { color: colour, weight: 3 }).bindTooltip(label).addTo(group);
+      const dash = /forecast/i.test(p.cyclone_type || "") ? "8 6" : null;
+      for (const line of lines) L.polyline(line.map(fix), { color: colour, weight: 3, dashArray: dash }).bindTooltip(label).addTo(group);
     }
   }
   for (const pts of byStorm.values()) {

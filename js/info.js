@@ -9,6 +9,13 @@ export const HISTORY = [
     date: "16 Nov 2026",
     groups: [
       [
+        "Cyclone watch",
+        [
+          "**Cyclone watch** (Radar & sky menu): the current depression or cyclone on one screen, like a forecaster's infographic. The headline gives IMD's own landfall forecast, the map shows the observed track, IMD's forecast track and its **landfall zone** along the coast, and numbered panels follow: at a glance, IMD's forecast table, **Tamil Nadu & Chennai** warnings and the closest approach to Chennai, **model guidance** (where ECMWF, GFS, ECMWF AI, UK Met Office and ICON take it), **steering flow & ridge**, the **MJO**, how IMD's forecast changed, **past storms** that crossed nearby, and IMD's track-and-cone picture. Every panel has Share.",
+          "IMD's newest bulletin is read every hour, so the screen updates soon after IMD issues one. With no active system it says so and keeps the MJO and the past storms near Chennai.",
+        ],
+      ],
+      [
         "Works better without signal",
         [
           "**Home** now shows what was saved straight away: the last **radar picture** of your default radar (a new one is fetched when it is over 10 minutes old and you're online), the last station reading, and the last nearest rain gauge, each marked as saved with its time. A yellow **No connection** line says so, and everything updates by itself when the signal returns.",

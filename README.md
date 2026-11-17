@@ -144,6 +144,30 @@ A small static web app for Chennai weather watchers. A home page and the ☰ men
   bulletins, as PDFs) and the track, wind and storm-surge maps, read from IMD's
   [Cyclone Information](https://mausam.imd.gov.in/responsive/cycloneinformation.php) page. The app adds the
   missing CORS header.
+- **Cyclone watch** (`#cyclonewatch`, `js/cyclonewatch.js`): the current depression or cyclone on one dark,
+  infographic-style screen. The headline and IMD's own landfall sentence, a Leaflet track map (observed track,
+  IMD's forecast track coloured by stage, IMD's landfall zone drawn along the shore between the places the bulletin
+  names, model tracks, earlier IMD forecasts and past storms), then numbered panels: at a glance, IMD's forecast
+  table with the landfall row, Tamil Nadu & Chennai warnings, model guidance, steering flow & ridge, MJO, how IMD's
+  forecast changed, past storms near the landfall zone, and IMD's track-and-cone picture. When nothing is active it
+  says so and keeps the MJO and the past storms near Chennai. Data:
+  - IMD's newest **National Bulletin** (a 3–4 MB PDF) is read every hour by `.github/workflows/imd-cyclone.yml`
+    (`scripts/imd_cyclone.py`, pdftotext) into `cyclone/latest.json` and `history.json` on the `data` branch:
+    number, issue time, name, stage, alert, position and distances, movement, the landfall sentence (coast,
+    "between A and B", when, stage, wind), the forecast table and the warnings by region (rain, wind, sea, surge).
+    IMD's track picture is saved as `cyclone/track.jpg` (1100 px). The daily report workflow keeps `cyclone/` when
+    it rewrites the branch (both use the `data-branch` concurrency group).
+  - The **MJO** index (`cyclone/mjo.json`, last 60 days of the Bureau of Meteorology's RMM index, read twice a day
+    by the same workflow).
+  - **Model tracks** (`js/cyclonemodels.js`): ECMWF, GFS, ECMWF AIFS, UK Met Office and ICON sea-level pressure
+    from Open-Meteo on a 1° grid, every 6 h, followed from IMD's position (lowest pressure within 300 km, fitted
+    between grid points, stops when the low fades below 1 hPa). Where each meets the coast uses `js/coast.js`
+    (the east and west coasts and Sri Lanka as lines through the places IMD names). Kept 3 h per bulletin.
+  - **Steering**: GFS 850–200 hPa mean wind at IMD's forecast positions every 24 h, and the 500 hPa ridge latitude
+    (easterly to westerly turn) along the storm's longitude.
+  - **Past storms**: a fixed list of where 17 storms since 2010 crossed the coast (`PAST` in `js/cyclonewatch.js`).
+  The Radar map's cyclone track now uses the map server's `/ows` path, which is the one the Android app adds the
+  CORS header to.
 - **Monsoon** (`#monsoon`): rain against normal for Chennai, Tamil Nadu, the Tamil Nadu–Puducherry
   subdivision, the districts around Chennai and every Tamil Nadu district, for the season so far (from
   1 October, IMD's cumulative figure), this month, the last week or yesterday. Read from IMD's
@@ -247,6 +271,8 @@ secret and is skipped without it.
 The same list is on the app's **Info** screen (`js/info.js`); keep the two in step.
 
 ### v1.15 (16 Nov 2026)
+- **Cyclone watch** (`#cyclonewatch`, Radar & sky menu): see the screen list above. New hourly workflow
+  `IMD cyclone bulletin` writes `cyclone/` on the `data` branch.
 - **Offline-first Home** (`js/home.js`): the saved radar picture (`js/offline.js`, the default radar from Radar's
   "Set as default") shows at once, then is refreshed if over 10 minutes old, online and the data saver isn't "On".
   The station strip says "Reading at … · updating…" instead of a blank "Loading…", the nearest-gauge row is kept

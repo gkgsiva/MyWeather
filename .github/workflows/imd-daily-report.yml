@@ -32,8 +32,9 @@ on:
 permissions:
   contents: write
 
+# Shared with the IMD cyclone bulletin workflow, which writes the same branch.
 concurrency:
-  group: imd-daily-report
+  group: data-branch
   cancel-in-progress: false
 
 env:
@@ -142,9 +143,12 @@ jobs:
         working-directory: data
         run: |
           rm -rf .git-new && mkdir .git-new
-          cp -r daily-report .git-new/
+          # Keep the cyclone workflow's folder too.
+          for d in daily-report cyclone; do
+            if [ -d "$d" ]; then cp -r "$d" .git-new/; fi
+          done
           cat > .git-new/README.md <<'EOF'
-          Data for the MyWeather app, written by the "IMD daily report" workflow on main.
+          Data for the MyWeather app, written by the "IMD daily report" and "IMD cyclone bulletin" workflows on main.
           This branch is rewritten on every run; don't commit to it by hand.
           EOF
           cd .git-new
