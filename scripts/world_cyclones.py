@@ -37,8 +37,23 @@ from html import unescape
 UA = "Mozilla/5.0 (X11; Linux x86_64) MyWeather cyclone reader (github.com/gkgsiva/myweather)"
 NHC = "https://www.nhc.noaa.gov/CurrentStorms.json"
 JTWC_RSS = "https://www.metoc.navy.mil/jtwc/rss/jtwc.rss"
-GDACS = "https://www.gdacs.org/gdacsapi/api/events/geteventlist/SEARCH?eventlist=TC&fromdate={a}&todate={b}"
+GDACS = [
+    "https://www.gdacs.org/gdacsapi/api/events/geteventlist/SEARCH?eventlist=TC&fromdate={a}&todate={b}&alertlevel=Green;Orange;Red",
+    "https://www.gdacs.org/gdacsapi/api/events/geteventlist/MAP?eventtypes=TC",
+    "https://www.gdacs.org/gdacsapi/api/events/geteventlist/EVENTS4APP",
+]
 KT = 1.852
+# A storm whose latest advisory is older than this is over. NHC and JTWC advise
+# every 6 hours, so a day without one means the storm was dropped.
+STALE_HOURS = 24
+# Words in an agency's text that mean the storm has ended (JTWC's last warning
+# says "FINAL WARNING" or that the system dissipated or is no longer tropical).
+ENDED = re.compile(
+    r"FINAL WARNING|THIS IS THE FINAL|ISSUING THE FINAL|HAS DISSIPATED|HAVE DISSIPATED|DISSIPATED OVER|"
+    r"NO LONGER (?:A )?(?:SIGNIFICANT )?TROPICAL|CEASED TO BE|WARNING (?:IS )?(?:CANCELLED|CANCELED)|"
+    r"WARNINGS? (?:HAS|HAVE) BEEN CANCEL|REMNANT LOW|EXTRATROPICAL TRANSITION COMPLETE|HAS COMPLETED EXTRATROPICAL",
+    re.I,
+)
 VERBOSE = "--verbose" in sys.argv
 
 
@@ -61,11 +76,20 @@ def get(url, tries=3, timeout=60, binary=False):
     raise RuntimeError(f"{url}: {last}")
 
 
-def sample(name, text):
+def sample(name, text, n=2500):
     if VERBOSE:
-        log(f"----- {name} (first 2500 chars) -----")
-        log(text[:2500])
+        log(f"----- {name} (first {n} chars) -----")
+        log(text[:n])
         log("----- end -----")
+
+
+def stale(at, hours=STALE_HOURS):
+    """True when an ISO time like 2026-11-22T12:00Z is more than `hours` ago."""
+    try:
+        t = datetime.strptime(at, "%Y-%m-%dT%H:%MZ").replace(tzinfo=timezone.utc)
+    except (TypeError, ValueError):
+        return False
+    return datetime.now(timezone.utc) - t > timedelta(hours=hours)
 
 
 def now_z():
@@ -177,14 +201,18 @@ def nhc_public(text):
 def nhc_storms(out_dir):
     storms = []
     raw = get(NHC)
-    sample("NHC CurrentStorms.json", raw)
+    sample("NHC CurrentStorms.json", raw, 6000)
     data = json.loads(raw)
+    log(f"NHC lists {len(data.get('activeStorms', []))} storms: " + ", ".join(f"{x.get('id')} {x.get('name')} {x.get('classification')} {x.get('lastUpdate')}" for x in data.get("activeStorms", [])))
     for s in data.get("activeStorms", []):
         sid = s.get("id", "").lower()
         try:
             ref = datetime.fromisoformat(s.get("lastUpdate", "").replace("Z", "+00:00"))
         except ValueError:
             ref = datetime.now(timezone.utc)
+        if stale(ref.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%MZ")):
+            log(f"NHC {sid}: last update {ref.isoformat()} is more than {STALE_HOURS} h old; left out")
+            continue
         kt = int(s["intensity"]) if str(s.get("intensity", "")).isdigit() else None
         cls = s.get("classification", "")
         st = {
@@ -292,7 +320,7 @@ def jtwc_warning(text, sid):
 
 def jtwc_storms(out_dir):
     raw = get(JTWC_RSS)
-    sample("JTWC RSS", raw)
+    sample("JTWC RSS", raw, 8000)
     text = unescape(raw)
     ids = []
     for sid in re.findall(r"/products/([a-z]{2}\d{4})web\.txt", text):
@@ -311,6 +339,15 @@ def jtwc_storms(out_dir):
         if st.get("lat") is None:
             log(f"JTWC {sid}: no position in the warning")
             continue
+        if ENDED.search(t):
+            log(f"JTWC {sid}: the warning says the storm has ended; left out")
+            continue
+        if stale(st.get("at")):
+            log(f"JTWC {sid}: warning of {st.get('at')} is more than {STALE_HOURS} h old; left out")
+            continue
+        if st.get("kt") is not None and st["kt"] < 20:
+            log(f"JTWC {sid}: winds {st['kt']} kt, too weak to list; left out")
+            continue
         st["links"] = {"advisory": url}
         gif = f"https://www.metoc.navy.mil/jtwc/products/{sid}.gif"
         st["picture"] = save_picture(gif, out_dir, sid)
@@ -324,15 +361,36 @@ def jtwc_storms(out_dir):
 def gdacs_events():
     b = datetime.now(timezone.utc)
     a = b - timedelta(days=12)
-    raw = get(GDACS.format(a=a.strftime("%Y-%m-%d"), b=b.strftime("%Y-%m-%d")))
-    sample("GDACS", raw)
-    data = json.loads(raw)
+    data, last = None, "no answer"
+    for url in GDACS:
+        try:
+            raw = get(url.format(a=a.strftime("%Y-%m-%d"), b=b.strftime("%Y-%m-%d")), tries=2)
+        except RuntimeError as e:
+            last = str(e)
+            continue
+        sample("GDACS", raw)
+        try:
+            data = json.loads(raw)
+            break
+        except ValueError:
+            last = f"{url.split('/')[-1][:30]} answered with something that is not JSON: {raw[:80]!r}"
+    if data is None:
+        raise RuntimeError(last)
     out = []
     for f in data.get("features", []):
         p = f.get("properties", {})
         cur = str(p.get("iscurrent", "")).lower() == "true"
+        if p.get("eventtype") not in (None, "TC"):
+            continue
         if not cur:
             continue
+        # GDACS keeps "current" on for days after a storm ends.
+        end = str(p.get("todate") or "")[:16]
+        try:
+            if datetime.now(timezone.utc) - datetime.strptime(end, "%Y-%m-%dT%H:%M").replace(tzinfo=timezone.utc) > timedelta(hours=STALE_HOURS):
+                continue
+        except ValueError:
+            pass
         g = f.get("geometry") or {}
         lon, lat = (g.get("coordinates") or [None, None])[:2]
         countries = [c.get("countryname") for c in p.get("affectedcountries") or [] if c.get("countryname")]

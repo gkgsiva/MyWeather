@@ -292,6 +292,13 @@ secret and is skipped without it.
 
 The same list is on the app's **Info** screen (`js/info.js`); keep the two in step.
 
+### v1.18 (22 Nov 2026)
+- **Cyclone watch drops finished storms.** The IMD storm is active only when its newest bulletin is under 24 h old
+  and doesn't say it weakened into a low pressure area / dissipated; IMD's track layer (which keeps a finished storm
+  for days) now bridges a gap in bulletins for at most 48 h. `scripts/world_cyclones.py` leaves out NHC/JTWC/GDACS
+  storms with no advisory for 24 h, a JTWC "final warning"/dissipated text, or winds under 20 kt, logging why; the app
+  also ignores a world storm older than 24 h. GDACS falls back to its other feeds when the first returns nothing.
+
 ### v1.17 (17 Nov 2026)
 - **My places** (`#myplaces`): see the screen list above. Model charts' place list gained a "My places" group and a
   "Save this spot" button.
