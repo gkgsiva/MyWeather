@@ -15,6 +15,13 @@ export const HISTORY = [
           "The hourly reader that fetches storms from the National Hurricane Center, the Joint Typhoon Warning Center and GDACS now tells you in its log why each storm is left out, and tries GDACS's other feeds when the first one answers with nothing.",
         ],
       ],
+      [
+        "My places",
+        [
+          "**Weather for each place**: My places now shows the weather there now (temperature, feels like, humidity, wind), the **highest and lowest temperature for the last 7 days and the next 7** on a chart, today's chance of rain, a day-by-day **forecast** (rain chance and mm, wind and gusts, humidity) and a **Last 7 days** list with rain, temperatures, wind and humidity. Share works on each block. The last reading is kept for when there is no signal.",
+          "**Nearest rain gauge**: if a TN-SMART gauge is within 15 km of the place, it names the gauge, how far it is, the rain it has measured since 8:30 AM and a chart of its last 7 rain days. With none that close, it says so. With the data saver on it looks at 2 days instead of 7.",
+        ],
+      ],
     ],
   },
   {

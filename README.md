@@ -298,6 +298,12 @@ The same list is on the app's **Info** screen (`js/info.js`); keep the two in st
   for days) now bridges a gap in bulletins for at most 48 h. `scripts/world_cyclones.py` leaves out NHC/JTWC/GDACS
   storms with no advisory for 24 h, a JTWC "final warning"/dissipated text, or winds under 20 kt, logging why; the app
   also ignores a world storm older than 24 h. GDACS falls back to its other feeds when the first returns nothing.
+- **My places** now shows weather for the chosen place (`js/placeweather.js`): the current conditions, a
+  temperature chart (highest and lowest, 7 days back and 7 ahead), a 7-day forecast and a last-7-days list, all from
+  one Open-Meteo call (cached 15 minutes in IndexedDB, shown with its age when offline). The **nearest TN-SMART rain
+  gauge** within 15 km (by great-circle distance over gauges that reported on any of the last 7 rain days; 2 days with
+  the data saver on) is named with its distance, the rain since 8:30 AM and a 7-rain-day chart; past rain days come
+  from the saved days in `js/gaugedays.js`. Wunderground stations have no positions in the app, so they are not used.
 
 ### v1.17 (17 Nov 2026)
 - **My places** (`#myplaces`): see the screen list above. Model charts' place list gained a "My places" group and a
