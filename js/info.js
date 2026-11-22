@@ -6,8 +6,15 @@ import { APP_VERSION } from "./version.js";
 export const HISTORY = [
   {
     version: "1.18",
-    date: "upcoming",
+    date: "22 Nov 2026",
     groups: [
+      [
+        "Cyclone watch",
+        [
+          "**Finished storms drop off the list.** A storm IMD says has weakened into a low pressure area or dissipated is no longer shown as active (Akvan stayed on for a day after landfall), and IMD's track layer no longer keeps a storm alive for days. Storms from the other agencies disappear when they issue a final warning, say the storm has ended, or have not issued an advisory for 24 hours.",
+          "The hourly reader that fetches storms from the National Hurricane Center, the Joint Typhoon Warning Center and GDACS now tells you in its log why each storm is left out, and tries GDACS's other feeds when the first one answers with nothing.",
+        ],
+      ],
       [
         "My places",
         [

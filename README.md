@@ -292,7 +292,12 @@ secret and is skipped without it.
 
 The same list is on the app's **Info** screen (`js/info.js`); keep the two in step.
 
-### v1.18 (upcoming)
+### v1.18 (22 Nov 2026)
+- **Cyclone watch drops finished storms.** The IMD storm is active only when its newest bulletin is under 24 h old
+  and doesn't say it weakened into a low pressure area / dissipated; IMD's track layer (which keeps a finished storm
+  for days) now bridges a gap in bulletins for at most 48 h. `scripts/world_cyclones.py` leaves out NHC/JTWC/GDACS
+  storms with no advisory for 24 h, a JTWC "final warning"/dissipated text, or winds under 20 kt, logging why; the app
+  also ignores a world storm older than 24 h. GDACS falls back to its other feeds when the first returns nothing.
 - **My places** now shows weather for the chosen place (`js/placeweather.js`): the current conditions, a
   temperature chart (highest and lowest, 7 days back and 7 ahead), a 7-day forecast and a last-7-days list, all from
   one Open-Meteo call (cached 15 minutes in IndexedDB, shown with its age when offline). The **nearest TN-SMART rain
