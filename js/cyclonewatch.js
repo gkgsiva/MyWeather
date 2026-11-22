@@ -31,7 +31,12 @@ export const DATA = "https://raw.githubusercontent.com/gkgsiva/MyWeather/data/cy
 const SAVED = "myweather.cyclonewatch.last";
 const MODEL_CACHE = "myweather.cyclonewatch.models";
 const MODEL_TTL = 3 * 3600 * 1000;
-const ACTIVE_HOURS = 30; // a bulletin newer than this means a live system
+const ACTIVE_HOURS = 24; // a bulletin newer than this means a live system
+const WFS_HOURS = 48; // IMD's track layer keeps a finished storm for days, so it only bridges a gap this long
+const WORLD_STALE_HOURS = 24; // a world storm whose latest advisory is older than this is over
+// IMD's own words for a system that has ended (weakened into a low, dissipated).
+const ENDED = /weakened\s+into\s+(?:a\s+|an\s+)?(?:well[\s-]*marked\s+)?low\s+pressure|dissipated|ceased\s+to\s+be|has\s+merged|remnant\s+low/i;
+const bulletinEnded = (b) => ENDED.test(`${b?.subject || ""}`);
 const CHENNAI = [13.08, 80.27];
 
 const $ = (id) => document.getElementById(id);
@@ -270,10 +275,15 @@ async function refresh() {
     } catch {}
   }
   const issued = Date.parse(b?.issued || "");
-  const recent = Number.isFinite(issued) && Date.now() - issued < ACTIVE_HOURS * 3600 * 1000;
-  const wfsLive = (wfs?.features || []).some((f) => f.geometry);
+  // Offline, judge ages from when the data was read, not from now.
+  const now = offline && saved?.at ? saved.at : Date.now();
+  const age = Number.isFinite(issued) ? now - issued : Infinity;
+  const recent = age < ACTIVE_HOURS * 3600 * 1000;
+  const wfsLive = (wfs?.features || []).some((f) => f.geometry) && age < WFS_HOURS * 3600 * 1000;
+  // Storms whose latest advisory is old are over, even if the data still lists them.
+  if (world?.storms) world = { ...world, storms: world.storms.filter((w) => !(Date.parse(w.at) < now - WORLD_STALE_HOURS * 3600 * 1000)) };
   const prev = state?.sel;
-  state = { b, hist, mjo, wfs, world, archive, active: recent || (wfsLive && !!b), wfsLive, issued };
+  state = { b, hist, mjo, wfs, world, archive, active: !!b && !bulletinEnded(b) && (recent || wfsLive), wfsLive, issued };
   state.sel = pickDefault(prev);
   loadedAt = Date.now();
   render();
