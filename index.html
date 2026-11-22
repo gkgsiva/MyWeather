@@ -582,8 +582,8 @@
       <section id="view-myplaces" class="view" hidden>
         <h2>My places</h2>
         <p class="note nw-intro">
-          Save the places you care about: a village, a street, a farm. Each one gets its own <a href="#models">Model charts</a>
-          and the rain of the last 30 days. Places are kept on this phone only.
+          Save the places you care about: a village, a street, a farm. Each one gets its own <a href="#models">Model charts</a>,
+          the weather now, the last 7 days and the next 7, the nearest rain gauge (if one is within 15 km) and the rain of the last 30 days. Places are kept on this phone only.
         </p>
         <form class="controls" onsubmit="return false">
           <label class="heat-search">
@@ -616,6 +616,32 @@
             <button id="mp-open" type="button" class="secondary">Model charts for this place</button>
             <span id="mp-nomodels" class="note" hidden>Model charts cover Tamil Nadu and about 40 km round it, so this place has rain history only.</span>
           </p>
+          <p id="mp-wx-status" class="status" aria-live="polite"></p>
+          <div id="mp-now" class="now-card"></div>
+          <div data-share="Temperature · my place" data-share-from="mp-title">
+            <div class="chart-head"><strong>Temperature · last 7 days and next 7 · <span id="mp-title-t"></span></strong></div>
+            <svg id="mp-temp" class="chart" role="group" aria-label="Highest and lowest temperature each day"></svg>
+            <p id="mp-temp-readout" class="readout" aria-live="polite"></p>
+            <p class="line-legend"><span class="key mp-hi"></span> highest <span class="key mp-low"></span> lowest · the line marks today</p>
+            <div id="mp-temp-sums" class="mp-sums"></div>
+            <p class="note md-credit">Weather: Open-Meteo.com, CC BY 4.0. Past days are its analysis for the spot, the coming days its forecast.</p>
+          </div>
+          <div data-share="Forecast · my place" data-share-from="mp-title">
+            <h3>Today and the next 7 days</h3>
+            <ul id="mp-days" class="fc-days"></ul>
+          </div>
+          <div data-share="Last 7 days · my place" data-share-from="mp-title">
+            <h3>Last 7 days</h3>
+            <ul id="mp-past" class="fc-days"></ul>
+          </div>
+          <div data-share="Nearest rain gauge · my place" data-share-from="mp-title">
+            <h3>Nearest rain gauge</h3>
+            <p id="mp-gauge-line" class="note"></p>
+            <svg id="mp-gauge" class="chart" role="group" aria-label="Rain at the nearest gauge, each rain day"></svg>
+            <p id="mp-gauge-readout" class="readout" aria-live="polite"></p>
+            <p class="note md-credit">Rain gauges: TN-SMART (Tamil Nadu disaster management, RIMES). A rain day runs 8:30 AM to 8:30 AM.</p>
+          </div>
+          <p id="mp-gauge-status" class="status" aria-live="polite"></p>
           <div data-share="Rain history · my place" data-share-from="mp-title">
             <div class="chart-head"><strong>Rain, last 30 days · <span id="mp-title"></span></strong></div>
             <svg id="mp-chart" class="chart" role="group" aria-label="Rain each day for the last 30 days"></svg>
@@ -623,7 +649,7 @@
             <div id="mp-sums" class="mp-sums"></div>
             <p class="note md-credit">Rain data: Open-Meteo.com, CC BY 4.0. Calendar days, midnight to midnight IST; a weather analysis for the spot, not a rain gauge.</p>
           </div>
-          <p><button id="mp-refresh" type="button" class="secondary">Refresh rain history</button></p>
+          <p><button id="mp-refresh" type="button" class="secondary">Refresh this place</button></p>
         </div>
       </section>
 

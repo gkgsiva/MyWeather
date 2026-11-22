@@ -1841,6 +1841,10 @@ table.cw-table { width: 100%; border-collapse: collapse; font-size: 0.78rem; fon
 .mp-sums div { border: 1px solid var(--border); border-radius: 8px; padding: 6px 8px; display: grid; }
 .mp-sums b { font-size: 1.1rem; }
 .mp-sums small { color: var(--muted); }
+.line-legend .key.mp-hi { border-top-color: var(--s2); }
+.line-legend .key.mp-low { border-top-color: var(--s1); margin-left: 8px; }
+#mp-days small, #mp-past small { display: block; }
+#mp-days .fc-rain b, #mp-past .fc-rain b { white-space: nowrap; }
 #mp-list .rank-row[aria-pressed="true"] { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
 #mp-map { margin: 8px 0; }
 
