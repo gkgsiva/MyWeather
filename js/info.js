@@ -6,8 +6,14 @@ import { APP_VERSION } from "./version.js";
 export const HISTORY = [
   {
     version: "1.19",
-    date: "upcoming",
+    date: "23 Nov 2026",
     groups: [
+      [
+        "My places",
+        [
+          "**Works offline.** With no signal, My places opens straight from what the phone saved last time: the weather and 7-day forecast, the rain history and the nearest rain gauge's reading, each with a note saying when it was saved. The gauge reading is also kept if the signal drops while it is updating, instead of being replaced by older days.",
+        ],
+      ],
       [
         "Month card",
         [

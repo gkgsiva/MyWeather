@@ -292,7 +292,10 @@ secret and is skipped without it.
 
 The same list is on the app's **Info** screen (`js/info.js`); keep the two in step.
 
-### v1.19 (upcoming)
+### v1.19 (23 Nov 2026)
+- **My places works offline.** With no connection the weather, forecast, rain history and nearest-gauge reading come
+  from the copy saved on the phone (IndexedDB), each with a "No connection. Showing … saved at …" note. A gauge
+  reading is kept if the running day fails to load, rather than replaced by older days.
 - **Month card** (`#monthcard`, Rain menu, `js/monthcard.js`): this month's rain vs normal. IMD's monthly rainfall
   figures (`figuresFor("M")` in `js/monsoon.js`: Chennai, KTCC districts, Tamil Nadu, the TN–Puducherry subdivision)
   and TN-SMART's Chennai district mean from the 1st (running total, wettest days; shares Rain records' saved days)
