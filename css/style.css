@@ -1875,3 +1875,12 @@ table.cw-table { width: 100%; border-collapse: collapse; font-size: 0.78rem; fon
 .radar-canvas { display: block; width: 100%; height: auto; border-radius: 6px; }
 .radar-canvas[hidden], .radar-player[hidden] { display: none; }
 .radar-player { position: sticky; bottom: 0; padding: 8px 2px; background: var(--card); }
+
+/* Neighbourhood weather (#weatherunion) */
+#wu-wrap { padding: 0 10px 4px; }
+.wu-rows { list-style: none; margin: 0; padding: 0; }
+.wu-row { display: grid; grid-template-columns: 1fr auto; column-gap: 8px; padding: 6px 4px; border-top: 1px solid var(--border); }
+.wu-row .wu-name { min-width: 0; }
+.wu-row .wu-t { font-weight: 700; text-align: right; }
+.wu-row .wu-m { grid-column: 1 / -1; font-size: 0.78rem; color: var(--muted); }
+.wu-row.wu-wet { border-left: 3px solid #1c7ed6; padding-left: 8px; }

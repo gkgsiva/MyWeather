@@ -5,6 +5,18 @@ import { APP_VERSION } from "./version.js";
 
 export const HISTORY = [
   {
+    version: "1.20",
+    date: "23 Nov 2026",
+    groups: [
+      [
+        "Neighbourhood weather",
+        [
+          "**Neighbourhood weather** (Radar & sky menu): temperature, humidity, wind and rain right now for 16 areas of Chennai (T. Nagar, Anna Nagar, Adyar, Velachery, Tambaram, Porur and more) from Weather Union's automatic weather stations. Tiles show the hottest and coolest area, how many areas have rain now and the most rain today; the list can be sorted by heat, rain or name, areas with rain are marked, and a chart shows the last 24 hours of temperature for the area you pick. Share works on it, and the last reading is kept for offline use. Each area shows the station nearest to it, so two areas can show the same station. The readings come through GitHub every 30 minutes, so the access key never reaches your phone.",
+        ],
+      ],
+    ],
+  },
+  {
     version: "1.19",
     date: "23 Nov 2026",
     groups: [

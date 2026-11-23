@@ -296,6 +296,13 @@ secret and is skipped without it.
 
 The same list is on the app's **Info** screen (`js/info.js`); keep the two in step.
 
+### v1.20 (23 Nov 2026)
+- **Neighbourhood weather** (`#weatherunion`, Radar & sky menu, `js/weatherunion.js`): temperature, humidity, wind and rain
+  for 16 Chennai areas from Weather Union's weather stations (the one nearest each area), with hottest/coolest/rain
+  tiles, sorting, a 24-hour temperature chart, Share and an offline copy. The key is the repository secret
+  `WEATHER_UNION_KEY`, used only by `.github/workflows/weather-union.yml` (every 30 min, `scripts/weather_union.py`),
+  which writes `weatherunion/latest.json` and `history.json` to the `data` branch.
+
 ### v1.19 (23 Nov 2026)
 - **Heat trend** (Heat & humidity → Last 30 days): hottest feels-like and air temperature and average humidity of
   each of the last 30 days for Chennai (or the place chosen), a strip of heat stress levels, and a **hot-day
@@ -314,6 +321,10 @@ The same list is on the app's **Info** screen (`js/info.js`); keep the two in st
 - **Compare two rain gauges.** TN rain gauges has a **Compare** tab: pick two gauges (typing a name, or "Use gauge from
   map") and chart their daily rain for 7 or 30 rain days together, with totals, rainy days and wettest day side by
   side (`js/gaugecompare.js`, days from `js/gaugedays.js`). Shareable.
+- **Neighbourhood weather** (`#weatherunion`, `js/weatherunion.js`): reads `weatherunion/latest.json` and `history.json`
+  from the data branch (written by `weather-union.yml` with the secret `WEATHER_UNION_KEY`; the app never calls Weather
+  Union or holds the key). Areas and points are listed in `scripts/weather_union.py`. 16 calls per run, 30-minute
+  schedule: about 770 of Weather Union's 1000 daily calls.
 - **Month card** (`#monthcard`, Rain menu, `js/monthcard.js`): this month's rain vs normal. IMD's monthly rainfall
   figures (`figuresFor("M")` in `js/monsoon.js`: Chennai, KTCC districts, Tamil Nadu, the TN–Puducherry subdivision)
   and TN-SMART's Chennai district mean from the 1st (running total, wettest days; shares Rain records' saved days)

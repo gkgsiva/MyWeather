@@ -53,6 +53,7 @@
           <a href="#wind" data-view="wind">Wind &amp; storms</a>
           <a href="#cyclonewatch" data-view="cyclonewatch">Cyclone watch</a>
           <a href="#cyclone" data-view="cyclone">Cyclones</a>
+          <a href="#weatherunion" data-view="weatherunion">Neighbourhood weather</a>
         </div>
       </div>
       <div class="menu-group">
@@ -268,6 +269,12 @@
             <a class="card" href="#imdreport">
               <strong>IMD daily report</strong>
               <span>RMC Chennai's daily weather report as charts: station temperatures, rain, districts, forecast and maps</span>
+            </a>
+          </li>
+          <li>
+            <a class="card" href="#weatherunion">
+              <strong>Neighbourhood weather</strong>
+              <span>Temperature, humidity, wind and rain right now in 16 areas of Chennai, from Weather Union stations</span>
             </a>
           </li>
           <li>
@@ -2366,6 +2373,48 @@
           same days. Normal is within 19% of normal, Excess 20 to 59% above, Deficient 20 to 59% below. TN-SMART
           publishes no normals, so its Chennai total is set against IMD's normal for Chennai district. Use Share (top
           right of the card) to send it as a picture; the name in the corner follows Settings → Shared pictures.
+        </p>
+      </section>
+
+      <section id="view-weatherunion" class="view" hidden>
+        <h2>Neighbourhood weather</h2>
+        <form class="controls" onsubmit="return false">
+          <label>Sort by
+            <select id="wu-sort">
+              <option value="temp">Hottest first</option>
+              <option value="rain">Most rain first</option>
+              <option value="name">Area name</option>
+            </select>
+          </label>
+          <button id="wu-refresh" type="button">Refresh</button>
+        </form>
+        <p id="wu-status" class="status" aria-live="polite"></p>
+        <div data-share="Neighbourhood weather" data-share-from="wu-sub">
+          <div class="sc-card">
+            <header class="sc-banner">
+              <p class="sc-title">Chennai · Neighbourhood weather</p>
+              <p id="wu-sub" class="sc-sub"></p>
+            </header>
+            <div id="wu-tiles" class="sc-tiles"></div>
+            <div id="wu-wrap" hidden>
+              <ul id="wu-rows" class="wu-rows"></ul>
+            </div>
+            <p class="sc-source">Data: Weather Union (weatherunion.com) automatic weather stations; each area shows the station nearest to it</p>
+          </div>
+        </div>
+        <div id="wu-trend-wrap" hidden>
+          <div class="chart-head">
+            <strong>Temperature, last 24 hours</strong>
+            <select id="wu-area" aria-label="Area"></select>
+          </div>
+          <svg id="wu-trend" class="chart" role="group" aria-label="Temperature over the last day"></svg>
+          <p id="wu-readout" class="readout" aria-live="polite"></p>
+        </div>
+        <p class="note">
+          Weather Union puts small automatic weather stations in city neighbourhoods. The app reads them every 30
+          minutes through GitHub (so the access key stays off your phone) and shows the station nearest each area, so
+          two areas can show the same station. Rain is the rate now (mm/h) and the total so far today. These are not
+          official IMD readings. Use Share (top right of the card) to send it as a picture.
         </p>
       </section>
 
