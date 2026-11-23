@@ -24,7 +24,7 @@ import { loadLeaflet, isDark } from "./stationmap.js";
 import { decodeGif } from "./gif.js";
 import { IMD_RADAR_BASE, radarImageUrl } from "./stations.js";
 import { routeParams } from "./route.js";
-import { nowcastAt, headline, saveNowcast, distanceKm, nowcastPlace, setNowcastPlace } from "./nowcast.js";
+import { nowcastAt, headline, saveNowcast, savePlacesNowcast, distanceKm, nowcastPlace, setNowcastPlace } from "./nowcast.js";
 import { MOSAIC, MOSAIC_RADARS, DBZ_BANDS, buildMosaic, frameImage } from "./mosaic.js";
 import { fetchTrack, trackLayer } from "./cyclonetrack.js";
 import { bindSaver } from "./datasaver.js";
@@ -903,20 +903,64 @@ function drawNowcast() {
  * Downloads the nearest radar's loop and nowcasts for a place, for Home:
  * the saved entry (see js/nowcast.js), or throws.
  */
-export async function runNowcast(place = nowcastPlace()) {
-  const near = RADARS.map((r) => ({ r, d: distanceKm([place.lat, place.lon], [r.lat, r.lon]) }))
+const nearestLoopRadar = (place) =>
+  RADARS.map((r) => ({ r, d: distanceKm([place.lat, place.lon], [r.lat, r.lon]) }))
     .filter(({ r }) => r.products.some((p) => p.loop && p.motion))
     .sort((a, b) => a.d - b.d)[0];
-  if (!near || near.d > 230) throw new Error("No radar loop covers this place.");
-  const r = near.r;
+
+// One loop is downloaded and read once for every place it covers (and kept
+// for 3 minutes, so Home's two checks in a row share it).
+const loops = new Map(); // radar code -> { at, promise }
+function readLoop(r) {
+  const hit = loops.get(r.code);
+  if (hit && Date.now() - hit.at < 3 * 60 * 1000) return hit.promise;
   const p = r.products.find((x) => x.loop && x.motion);
-  const a = await analyseLoop(r, p);
-  const m = motion(a.masks, a.times, p, a.w, a.h);
-  const grid = gridOf(p, a.masks[a.masks.length - 1], a.w, a.h);
-  const time = a.times[a.times.length - 1];
-  const entry = { at: Date.now(), frame: time ? time.valueOf() : null, place: place.name, lat: place.lat, lon: place.lon, radar: r.name, result: nowcastAt(grid, m, place.lat, place.lon) };
+  const promise = analyseLoop(r, p).then((a) => ({
+    p,
+    a,
+    m: motion(a.masks, a.times, p, a.w, a.h),
+    grid: gridOf(p, a.masks[a.masks.length - 1], a.w, a.h),
+    time: a.times[a.times.length - 1],
+  }));
+  loops.set(r.code, { at: Date.now(), promise });
+  promise.catch(() => loops.delete(r.code));
+  return promise;
+}
+
+/**
+ * Downloads the nearest radar's loop and nowcasts for a place, for Home:
+ * the saved entry (see js/nowcast.js), or throws.
+ */
+export async function runNowcast(place = nowcastPlace()) {
+  const near = nearestLoopRadar(place);
+  if (!near || near.d > 230) throw new Error("No radar loop covers this place.");
+  const { grid, m, time } = await readLoop(near.r);
+  const entry = { at: Date.now(), frame: time ? time.valueOf() : null, place: place.name, lat: place.lat, lon: place.lon, radar: near.r.name, result: nowcastAt(grid, m, place.lat, place.lon) };
   saveNowcast(entry);
   return entry;
+}
+
+/**
+ * Nowcasts every saved place (My places) from the radar loops that cover
+ * them, for Home's notice. Saves and returns the list ({ id, name, lat, lon,
+ * result, frame }); a place no loop covers, or whose loop can't be read, is
+ * left out.
+ */
+export async function runPlacesNowcast(places) {
+  const byRadar = new Map();
+  for (const pl of places) {
+    const near = nearestLoopRadar(pl);
+    if (near && near.d <= 230) byRadar.set(near.r, [...(byRadar.get(near.r) || []), pl]);
+  }
+  const items = [];
+  for (const [r, list] of byRadar) {
+    try {
+      const { grid, m, time } = await readLoop(r);
+      for (const pl of list) items.push({ id: pl.id, name: pl.name, lat: pl.lat, lon: pl.lon, frame: time ? time.valueOf() : null, result: nowcastAt(grid, m, pl.lat, pl.lon) });
+    } catch {}
+  }
+  savePlacesNowcast(items);
+  return items;
 }
 
 // ---- Clouds (INSAT-3DS infrared, IMD's Asia sector picture) ----

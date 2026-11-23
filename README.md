@@ -293,6 +293,10 @@ secret and is skipped without it.
 The same list is on the app's **Info** screen (`js/info.js`); keep the two in step.
 
 ### v1.19 (23 Nov 2026)
+- **Rain notice for My places on Home.** *Check radar* now also runs the rain nowcast (`js/nowcast.js`) for every saved
+  place (`runPlacesNowcast` in `js/radarmap.js`; each nearby radar's loop is downloaded once and shared with the
+  Home spot's check for 3 minutes). Places with rain now or due within 2 hours are listed under the card
+  (`#home-places-rain`, linking to My places) for 20 minutes. In-app only; no push notifications.
 - **My places works offline.** With no connection the weather, forecast, rain history and nearest-gauge reading come
   from the copy saved on the phone (IndexedDB), each with a "No connection. Showing … saved at …" note. A gauge
   reading is kept if the running day fails to load, rather than replaced by older days.
