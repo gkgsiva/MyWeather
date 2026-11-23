@@ -351,6 +351,15 @@ function renderDays(data) {
   );
 }
 
+// The last-30-days trend loads on its own, so the forecast shows first.
+let trend = null;
+function loadTrend(where) {
+  trend ||= import("./heattrend.js").then((m) => (m.initTrend(), m));
+  trend.then((m) => m.showTrend(where)).catch((e) => {
+    $("heat-trend-status").textContent = `Couldn't load the last 30 days (${e.message}).`;
+  });
+}
+
 function render(data, where) {
   renderNow(data, where);
   renderStation();
@@ -368,6 +377,7 @@ async function refresh() {
     const data = await res.json();
     if (!res.ok || data.error) throw new Error(data.reason || `HTTP ${res.status}`);
     render(data, where);
+    loadTrend(where);
     loadedAt = Date.now();
     try {
       localStorage.setItem(SAVED_KEY, JSON.stringify({ at: loadedAt, data, where }));
@@ -380,6 +390,7 @@ async function refresh() {
     } catch {}
     if (saved?.data) {
       render(saved.data, saved.where || CHENNAI);
+      loadTrend(saved.where || CHENNAI);
       say(`Couldn't load a new forecast. Showing the one from ${when(saved.at)}.`, true);
     } else say(`Couldn't load the forecast (${e.message}). Try Refresh.`, true);
   }

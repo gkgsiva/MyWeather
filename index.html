@@ -436,6 +436,25 @@
           <h3>Hottest feel each day</h3>
           <ul id="heat-days" class="fc-days heat-days"></ul>
         </div>
+        <div data-share="Heat & humidity · last 30 days" data-share-from="heat-place">
+          <h3>Last 30 days</h3>
+          <form class="controls" onsubmit="return false">
+            <label>
+              Hot day: feels like at least
+              <select id="heat-hot-at"></select>
+            </label>
+          </form>
+          <div id="heat-streak" class="heat-now heat-none"></div>
+          <div class="chart-head"><strong>Hottest feel each day</strong></div>
+          <svg id="heat-trend" class="chart" role="group" aria-label="Hottest air temperature and feels-like temperature each day for the last 30 days"></svg>
+          <p class="legend line-legend"><span class="key air"></span> Air <span class="key feels"></span> Feels like (heat index)</p>
+          <p id="heat-trend-readout" class="readout" aria-live="polite"></p>
+          <div id="heat-trend-strip" class="heat-strip heat-trend-strip" role="img" aria-label="Heat stress level of each of the last 30 days"></div>
+          <div class="chart-head"><strong>Humidity each day (average)</strong></div>
+          <svg id="heat-hum" class="chart" role="group" aria-label="Average humidity each day for the last 30 days"></svg>
+          <p id="heat-hum-readout" class="readout" aria-live="polite"></p>
+          <p id="heat-trend-status" class="note"></p>
+        </div>
         <p class="note">
           Feels like is the heat index: what the air temperature feels like with the humidity, in the shade. Full sun
           can add up to 8°. Levels follow the US weather service's heat index bands. Wet bulb is the lowest temperature
