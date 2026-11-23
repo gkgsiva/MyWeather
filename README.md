@@ -314,6 +314,10 @@ The same list is on the app's **Info** screen (`js/info.js`); keep the two in st
 - **Compare two rain gauges.** TN rain gauges has a **Compare** tab: pick two gauges (typing a name, or "Use gauge from
   map") and chart their daily rain for 7 or 30 rain days together, with totals, rainy days and wettest day side by
   side (`js/gaugecompare.js`, days from `js/gaugedays.js`). Shareable.
+- **Month card** (`#monthcard`, Rain menu, `js/monthcard.js`): this month's rain vs normal. IMD's monthly rainfall
+  figures (`figuresFor("M")` in `js/monsoon.js`: Chennai, KTCC districts, Tamil Nadu, the TN–Puducherry subdivision)
+  and TN-SMART's Chennai district mean from the 1st (running total, wettest days; shares Rain records' saved days)
+  set against IMD's Chennai normal. Shared through `data-share`, so it follows Settings → Shared pictures.
 
 ### v1.18 (22 Nov 2026)
 - **Cyclone watch drops finished storms.** The IMD storm is active only when its newest bulletin is under 24 h old

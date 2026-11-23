@@ -284,6 +284,7 @@ const SKIP = [
   /^myweather\.rain\./,
   /^myweather\.yoy\.season\./,
   /^myweather\.monsoon\./,
+  /^myweather\.monthcard$/,
   /^myweather\.imdreport\./,
   /^myweather\.gauges\.normals$/,
   /^myweather\.records\.hours$/,

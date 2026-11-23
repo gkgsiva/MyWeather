@@ -33,6 +33,12 @@ export const HISTORY = [
           "**Compare two gauges**: a new **Compare** tab on TN rain gauges. Type or pick two gauges (or tap one on the map and use it as A or B) and see their rain each day for the last 7 or 30 rain days on one chart, with rain total, rainy days, wettest day and days with data side by side. Share works on it, with the usual watermark. Your two gauges are remembered.",
         ],
       ],
+      [
+        "Month card",
+        [
+          "**Month card** (Rain menu): this month's rain against normal on one card to share. Chennai district and Tamil Nadu from IMD's monthly rainfall figures with IMD's category (Normal, Excess, Deficient), the running total and wettest days from TN-SMART's Chennai gauges set against IMD's Chennai normal, and the other KTCC districts and the Tamil Nadu–Puducherry subdivision. The picture follows Settings → Shared pictures.",
+        ],
+      ],
     ],
   },
   {
