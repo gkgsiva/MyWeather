@@ -21,15 +21,34 @@ AREAS = [
     ("T. Nagar", 13.0418, 80.2341), ("Anna Nagar", 13.0850, 80.2101),
     ("Adyar", 13.0012, 80.2565), ("Velachery", 12.9815, 80.2180),
     ("Tambaram", 12.9249, 80.1000), ("Guindy", 13.0067, 80.2206),
-    ("Mylapore", 13.0368, 80.2676), ("Egmore", 13.0732, 80.2609),
-    ("Perambur", 13.1186, 80.2330), ("Manali", 13.1667, 80.2606),
-    ("Ambattur", 13.1143, 80.1548), ("Porur", 13.0382, 80.1565),
-    ("Sholinganallur", 12.9010, 80.2279), ("Perungudi", 12.9650, 80.2461),
-    ("Avadi", 13.1067, 80.0970), ("Pallavaram", 12.9675, 80.1491),
+    ("Mylapore", 13.0368, 80.2676), ("Ambattur", 13.1143, 80.1548),
+    ("Porur", 13.0382, 80.1565), ("Sholinganallur", 12.9010, 80.2279),
+    ("Perungudi", 12.9650, 80.2461), ("Pallavaram", 12.9675, 80.1491),
+]
+# Other Tamil Nadu cities, read once an hour. Weather Union doesn't say which
+# cities it covers: a city it has no station near simply gives no reading and
+# is left out (listed under "errors" in latest.json).
+CITIES = [
+    ("Coimbatore", 11.0168, 76.9558), ("Madurai", 9.9252, 78.1198),
+    ("Tiruchirappalli", 10.7905, 78.7047), ("Salem", 11.6643, 78.1460),
+    ("Tirunelveli", 8.7139, 77.7567), ("Erode", 11.3410, 77.7172),
+    ("Vellore", 12.9165, 79.1325), ("Thoothukudi", 8.7642, 78.1348),
+    ("Thanjavur", 10.7870, 79.1378), ("Tiruppur", 11.1085, 77.3411),
+    ("Hosur", 12.7409, 77.8253), ("Kanyakumari", 8.0883, 77.5385),
 ]
 KEEP = 48
 verbose = "--verbose" in sys.argv
 out = sys.argv[1]
+os.makedirs(out, exist_ok=True)
+try:
+    prev = json.load(open(os.path.join(out, "latest.json")))
+except (OSError, ValueError):
+    prev = {}
+prev_cities = [r for r in prev.get("readings", []) if r.get("region") == "tn"]
+# Chennai every run (every 30 minutes); the other cities on the first run of
+# each hour, or when none were read yet. That is 12 x 48 + 12 x 24 = 864 calls
+# a day, under Weather Union's 1000.
+with_cities = "--all" in sys.argv or datetime.now(timezone.utc).minute < 30 or not prev_cities
 key = os.environ.get("WEATHER_UNION_KEY", "").strip()
 if not key:
     print("WEATHER_UNION_KEY is not set", file=sys.stderr)
@@ -60,7 +79,10 @@ def fetch(lat, lon):
 
 
 readings, errors = [], []
-for name, lat, lon in AREAS:
+todo = [(n, la, lo, "chennai") for n, la, lo in AREAS]
+if with_cities:
+    todo += [(n, la, lo, "tn") for n, la, lo in CITIES]
+for name, lat, lon, region in todo:
     try:
         j = fetch(lat, lon)
     except RuntimeError as e:
@@ -70,7 +92,7 @@ for name, lat, lon in AREAS:
     if verbose:
         print(name, "keys:", sorted(j.keys()), "data keys:", sorted(d.keys()))
     r = {
-        "name": name, "lat": lat, "lon": lon,
+        "name": name, "region": region, "lat": lat, "lon": lon,
         "temp": num(d.get("temperature")), "humidity": num(d.get("humidity")),
         "wind": num(d.get("wind_speed")), "dir": num(d.get("wind_direction")),
         "rain": num(d.get("rain_intensity")), "rainTotal": num(d.get("rain_accumulation")),
@@ -81,12 +103,13 @@ for name, lat, lon in AREAS:
     readings.append(r)
     time.sleep(0.3)
 
-if not readings:
+if not [r for r in readings if r["region"] == "chennai"]:
     print("No readings; errors: " + "; ".join(errors), file=sys.stderr)
     sys.exit(1)
 
+if not with_cities:
+    readings += prev_cities  # not read this run: keep the last hour's
 now = datetime.now(IST)
-os.makedirs(out, exist_ok=True)
 latest = {"at": now.isoformat(timespec="minutes"), "readings": readings, "errors": errors}
 json.dump(latest, open(os.path.join(out, "latest.json"), "w"), separators=(",", ":"))
 

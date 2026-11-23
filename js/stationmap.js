@@ -10,13 +10,13 @@ import { loadStations, apiKey, fetchReading, loadLast } from "./wunderground.js"
 import { when } from "./offline.js";
 import { toTemp, tempUnit } from "./prefs.js";
 import { loadWuLatest } from "./weatherunion.js";
+import { getScope, setScope, inScope, SCOPE_OPTIONS } from "./scope.js";
 import { pwsFlags, isSuspect, skipSuspects } from "./health.js";
 
 const COORDS_KEY = "myweather.pws.coords";
 const SHOW_KEY = "myweather.map.show";
 const TTL = 5 * 60 * 1000;
 const CHENNAI = [13.04, 80.22];
-const NEAR_DEG = 0.6; // stations within ~65 km fit the first view
 
 const $ = (id) => document.getElementById(id);
 const status = $("map-status");
@@ -31,7 +31,6 @@ let wuData = null; // Weather Union latest.json (purple pins)
 let readings = new Map(); // id -> observation | null | Error
 let loadedAt = 0;
 let fitted = false;
-let fitAll = false; // "All stations" fits the far ones too (Vellore, Puducherry…)
 
 function say(text, error = false) {
   status.textContent = text;
@@ -183,6 +182,7 @@ function draw() {
       missing++;
       continue;
     }
+    if (!inScope(pos)) continue;
     const v = obs ? m.value(obs.metric || {}) : undefined;
     const flag = flags.get(s.id);
     const suspect = isSuspect(flag);
@@ -223,6 +223,7 @@ function draw() {
     placed.push(pos);
   }
   for (const r of wuData?.readings || []) {
+    if (!inScope([r.lat, r.lon])) continue;
     const v = { rain: r.rainTotal, rate: isNum(r.rain) ? r.rain * 60 : null, temp: r.temp }[mode];
     const c = colour(m.scale, v);
     const icon = L.divIcon({
@@ -242,8 +243,7 @@ function draw() {
     placed.push([r.lat, r.lon]);
   }
   if (!fitted && placed.length) {
-    const near = placed.filter(([la, lo]) => Math.abs(la - CHENNAI[0]) < NEAR_DEG && Math.abs(lo - CHENNAI[1]) < NEAR_DEG);
-    map.fitBounds(L.latLngBounds(near.length && !fitAll ? near : placed), { padding: [24, 24], maxZoom: 12 });
+    map.fitBounds(L.latLngBounds(placed), { padding: [24, 24], maxZoom: getScope() === "tn" ? 8 : 12 });
     fitted = true;
   }
   return missing;
@@ -324,14 +324,18 @@ export function initMap() {
     if (map) draw();
   });
   $("map-refresh").addEventListener("click", refresh);
-  $("map-fit").addEventListener("click", () => {
+  const scope = $("map-scope");
+  scope.replaceChildren(...SCOPE_OPTIONS.map(([k, v]) => new Option(v, k)));
+  scope.value = getScope();
+  scope.addEventListener("change", () => {
+    setScope(scope.value);
     fitted = false;
-    fitAll = true;
     if (map) draw();
   });
 }
 
 export async function showMap() {
+  $("map-scope").value = getScope();
   try {
     L = await loadLeaflet();
   } catch (e) {

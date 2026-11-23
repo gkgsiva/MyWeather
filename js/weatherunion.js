@@ -1,5 +1,5 @@
 // Neighbourhood weather (#weatherunion): temperature, humidity, wind and rain
-// for 16 areas of Chennai, from Weather Union's automatic weather stations
+// for 12 areas of Chennai and 12 other Tamil Nadu cities, from Weather Union's automatic weather stations
 // (weatherunion.com).
 //
 // Weather Union's API needs a key, so the app never calls it. The "Weather
@@ -12,6 +12,7 @@
 import { when } from "./offline.js";
 import { toTemp, tempUnit } from "./prefs.js";
 import { drawLines } from "./chart.js";
+import { getScope, setScope, inScope, SCOPE_OPTIONS } from "./scope.js";
 
 export const DATA = "https://raw.githubusercontent.com/gkgsiva/MyWeather/data/weatherunion/";
 const SAVED_KEY = "myweather.weatherunion.latest";
@@ -60,7 +61,7 @@ function tile(label, r, text) {
 }
 
 function render() {
-  const list = data?.readings || [];
+  const list = (data?.readings || []).filter((r) => inScope([r.lat, r.lon]));
   const age = data ? Date.now() - Date.parse(data.at) : 0;
   const stamp = data ? new Date(data.at).toLocaleString("en-IN", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" }) : "";
   $("wu-sub").textContent = data ? `Weather Union stations · read ${stamp}` : "";
@@ -144,7 +145,17 @@ export async function getJson(name) {
 function fillAreas() {
   const pick = $("wu-area");
   if (pick.options.length || !data) return;
+  pick.dataset.filled = "1";
   for (const r of data.readings) pick.add(new Option(r.name, r.name));
+  fitAreaPick();
+}
+
+// The chart's area picker follows the Chennai / Whole Tamil Nadu choice.
+function fitAreaPick() {
+  const pick = $("wu-area");
+  const keep = pick.value;
+  pick.replaceChildren(...(data?.readings || []).filter((r) => inScope([r.lat, r.lon])).map((r) => new Option(r.name, r.name)));
+  if ([...pick.options].some((o) => o.value === keep)) pick.value = keep;
 }
 
 async function refresh(force = false) {
@@ -181,11 +192,20 @@ async function refresh(force = false) {
 
 export function initWeatherUnion() {
   $("wu-refresh").addEventListener("click", () => refresh(true));
+  const scope = $("wu-scope");
+  scope.replaceChildren(...SCOPE_OPTIONS.map(([k, v]) => new Option(v, k)));
+  scope.value = getScope();
+  scope.addEventListener("change", () => {
+    setScope(scope.value);
+    fitAreaPick();
+    render();
+  });
   $("wu-sort").addEventListener("change", render);
   $("wu-area").addEventListener("change", drawTrend);
 }
 
 export function showWeatherUnion() {
+  $("wu-scope").value = getScope();
   refresh();
 }
 

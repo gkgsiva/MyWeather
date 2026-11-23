@@ -285,7 +285,7 @@
           <li>
             <a class="card" href="#weatherunion">
               <strong>Neighbourhood weather</strong>
-              <span>Temperature, humidity, wind and rain right now in 16 areas of Chennai, from Weather Union stations</span>
+              <span>Temperature, humidity, wind and rain right now in 12 Chennai areas and 12 other Tamil Nadu cities, from Weather Union stations</span>
             </a>
           </li>
           <li>
@@ -1390,6 +1390,10 @@
         <h2>Compare stations</h2>
         <form class="controls" onsubmit="return false">
           <label>
+            Area
+            <select id="cmp-scope"></select>
+          </label>
+          <label>
             Station 1
             <select id="cmp-s1"></select>
           </label>
@@ -1452,7 +1456,9 @@
             <select id="map-show"></select>
           </label>
           <button id="map-refresh" type="button">Refresh</button>
-          <button id="map-fit" type="button" class="secondary">All stations</button>
+          <label>Area
+            <select id="map-scope"></select>
+          </label>
         </form>
         <p id="map-status" class="status" aria-live="polite"></p>
         <div class="share-map" data-share="Station map" data-share-from="map-show">
@@ -2394,6 +2400,9 @@
       <section id="view-weatherunion" class="view" hidden>
         <h2>Neighbourhood weather</h2>
         <form class="controls" onsubmit="return false">
+          <label>Area
+            <select id="wu-scope"></select>
+          </label>
           <label>Sort by
             <select id="wu-sort">
               <option value="temp">Hottest first</option>

@@ -1,13 +1,13 @@
 name: Weather Union readings
 
 # Reads Weather Union's nearest-station weather (temperature, humidity, wind,
-# rain) for 16 areas of Chennai with scripts/weather_union.py and publishes
+# rain) for 12 areas of Chennai and 12 other Tamil Nadu cities with scripts/weather_union.py and publishes
 # weatherunion/latest.json and history.json on the `data` branch, for the
 # app's "Neighbourhood weather" screen.
 #
 # The API key is the repository secret WEATHER_UNION_KEY (Settings → Secrets
 # and variables → Actions). It is used only here and never reaches the app or
-# the repository. 16 calls every 30 minutes is about 770 a day, under Weather
+# the repository. 12 calls every 30 minutes plus 12 more once an hour is about 860 a day, under Weather
 # Union's 1000 a day. Shares the `data` branch with the other data workflows.
 
 on:
@@ -47,7 +47,7 @@ jobs:
           WEATHER_UNION_KEY: ${{ secrets.WEATHER_UNION_KEY }}
         run: |
           flags=""
-          if [ "${{ github.event_name }}" = pull_request ]; then flags=--verbose; fi
+          if [ "${{ github.event_name }}" = pull_request ] || [ "${{ github.event_name }}" = workflow_dispatch ]; then flags="--verbose --all"; fi
           changed=$(python3 scripts/weather_union.py data/weatherunion $flags)
           echo "changed=$changed" >> "$GITHUB_OUTPUT"
           if [ "${{ github.event_name }}" = pull_request ]; then

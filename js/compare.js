@@ -11,7 +11,9 @@
 import { loadStations, apiKey } from "./wunderground.js";
 import { routeParams } from "./route.js";
 import { drawLines } from "./chart.js";
-import { loadWuHistory, forgetWuHistory } from "./weatherunion.js";
+import { getScope, setScope, inScope, SCOPE_OPTIONS } from "./scope.js";
+import { loadCoords } from "./stationmap.js";
+import { loadWuHistory, forgetWuHistory, loadWuLatest } from "./weatherunion.js";
 import {
   get,
   KeyError,
@@ -43,6 +45,7 @@ const readout = $("cmp-readout");
 const totals = $("cmp-totals");
 
 let stations = [];
+let wuLatest = null; // Weather Union area positions (latest.json)
 let wuHist = null; // Weather Union history.json, when an area is chosen
 let run = 0;
 const daySeries = new Map(); // "ID|YYYY-MM-DD" -> { slots: [mm|null], total, peakRate } (past days only)
@@ -89,13 +92,18 @@ async function loadWu() {
   try {
     wuHist = await loadWuHistory();
   } catch {}
+  try {
+    wuLatest = (await loadWuLatest()).readings;
+  } catch {}
 }
 
 function fillWuPicker(area) {
   const pick = $("cmp-wu");
-  const names = Object.keys(wuHist?.areas || {});
+  const pos = new Map((wuLatest || []).map((r) => [r.name, [r.lat, r.lon]]));
+  const names = Object.keys(wuHist?.areas || {}).filter((n) => n === area || inScope(pos.get(n)));
   if (area && !names.includes(area)) names.push(area);
-  if (pick.options.length - 1 !== names.length) pick.replaceChildren(new Option("— none —", ""), ...names.map((n) => new Option(n, n)));
+  if (pick.options.length - 1 !== names.length || pick.dataset.scope !== getScope()) pick.replaceChildren(new Option("— none —", ""), ...names.map((n) => new Option(n, n)));
+  pick.dataset.scope = getScope();
   pick.value = area;
 }
 
@@ -309,9 +317,12 @@ function renderTotals(ids, rows, heads, extra = null) {
 // ---- Screen ----
 
 function renderControls(s) {
+  // Chennai or Whole Tamil Nadu: stations picked now stay listed either way.
+  const coords = loadCoords();
+  const listed = stations.filter((x) => s.ids.includes(x.id) || inScope(coords[x.id]));
   const opts = (blank) => [
     ...(blank ? [new Option(blank, "")] : []),
-    ...stations.map((x) => new Option(`${x.name} (${x.id})`, x.id)),
+    ...listed.map((x) => new Option(`${x.name} (${x.id})`, x.id)),
   ];
   picks.forEach((p, i) => {
     p.replaceChildren(...opts(i === 2 ? "— none —" : i === 1 && !stations.length ? "—" : ""));
@@ -340,6 +351,7 @@ async function show() {
   }
   await loadWu();
   if (myRun !== run) return;
+  $("cmp-scope").value = getScope();
   renderControls(s);
   fillWuPicker(s.wu || "");
   const ids = [...new Set(s.ids)];
@@ -417,6 +429,13 @@ async function show() {
 export function initCompare() {
   const pickIds = () => picks.map((p) => p.value).filter(Boolean);
   for (const p of picks) p.addEventListener("change", () => go({ ids: pickIds() }));
+  const scope = $("cmp-scope");
+  scope.replaceChildren(...SCOPE_OPTIONS.map(([k, v]) => new Option(v, k)));
+  scope.value = getScope();
+  scope.addEventListener("change", () => {
+    setScope(scope.value);
+    show();
+  });
   $("cmp-wu").addEventListener("change", () => go({ ids: pickIds(), wu: $("cmp-wu").value }));
   modePick.addEventListener("change", () => {
     if (modePick.value === "month") go({ month: new Date(new Date().getFullYear(), new Date().getMonth(), 1) });
