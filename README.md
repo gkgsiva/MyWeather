@@ -32,6 +32,10 @@ A small static web app for Chennai weather watchers. A home page and the ☰ men
 - **Heat & humidity** (`#heat`): the heat index ("feels like", US weather service formula) and wet-bulb
   temperature now and for the next 48 hours, with heat stress levels hour by hour and the hottest feel of each
   day, from Open-Meteo (the phone's place when Near you is on). The home station's latest reading is shown too.
+  **Last 30 days** (`js/heattrend.js`): each day's hottest feels-like and air temperature, average humidity, a
+  strip of heat stress levels, and the **hot-day streak** (days in a row at or above a feels-like you pick, 38° by
+  default; today counts only once hot and doesn't break the streak before 5 pm), hot days and longest run in the
+  month. Model values for past hours, not measurements. Share works on it like the other blocks.
 - **Radars** (`#radar`): the current India Meteorological Department (IMD) Doppler radar image.
   - Choose a **city** (36 IMD radar stations) and a **product** (MAX (Z), PPI, rainfall intensity, etc.).
   - The image loads straight from IMD, e.g. `https://mausam.imd.gov.in/Radar/caz_cni.gif` for Chennai,
@@ -291,6 +295,11 @@ secret and is skipped without it.
 ## Version history
 
 The same list is on the app's **Info** screen (`js/info.js`); keep the two in step.
+
+### v1.19 (23 Nov 2026)
+- **Heat trend** (Heat & humidity → Last 30 days): hottest feels-like and air temperature and average humidity of
+  each of the last 30 days for Chennai (or the place chosen), a strip of heat stress levels, and a **hot-day
+  streak** (days in a row at or above a feels-like you choose), hot days in the month and the longest run.
 
 ### v1.18 (22 Nov 2026)
 - **Cyclone watch drops finished storms.** The IMD storm is active only when its newest bulletin is under 24 h old
