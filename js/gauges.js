@@ -14,6 +14,7 @@ import { loadLeaflet, isDark } from "./stationmap.js";
 import { drawBars } from "./chart.js";
 import { getDays, missing, daysEnding, remember, weeklyNormals, imdDistrict, gaugeKey, niceDay as dayLabel } from "./gaugedays.js";
 import { IN_APP, routeParams } from "./route.js";
+import { initCompare, refreshCompare, drawCompare } from "./gaugecompare.js";
 import { gaugeFlags, skipSuspects, setSkipSuspects } from "./health.js";
 
 const BASE = "https://beta-tnsmart.rimes.int/Rainfall_Python_IDW/Hourly_json/";
@@ -687,10 +688,11 @@ function drawTable(list) {
 function setTab(name) {
   tab = name;
   for (const b of document.querySelectorAll("#view-gauges [role=tab]")) b.setAttribute("aria-selected", String(b.dataset.tab === name));
-  for (const t of ["map", "table", "charts"]) $(`tg-tab-${t}`).hidden = t !== name;
+  for (const t of ["map", "table", "charts", "compare"]) $(`tg-tab-${t}`).hidden = t !== name;
   try {
     localStorage.setItem(TAB_KEY, name);
   } catch {}
+  if (name === "compare") drawCompare();
   if (name === "map" && map)
     setTimeout(() => {
       map.invalidateSize();
@@ -714,6 +716,7 @@ function draw() {
   drawWet(counted);
   drawTop(counted);
   drawDistricts();
+  refreshCompare();
 }
 
 // ---- Screen ----
@@ -770,7 +773,7 @@ export function initGauges() {
   for (const b of document.querySelectorAll("#view-gauges [role=tab]")) b.addEventListener("click", () => setTab(b.dataset.tab));
   try {
     const t = localStorage.getItem(TAB_KEY);
-    if (["map", "table", "charts"].includes(t)) setTab(t);
+    if (["map", "table", "charts", "compare"].includes(t)) setTab(t);
   } catch {}
   dateInput.addEventListener("change", () => {
     userDay = Boolean(dateInput.value);
@@ -784,6 +787,7 @@ export function initGauges() {
     load(true);
   });
   $("tg-source").href = PAGE;
+  initCompare({ rows: () => rows, picked: () => picked, day: () => loadedDay });
   for (const b of document.querySelectorAll("#tg-hist-pick button"))
     b.addEventListener("click", () => {
       histDays = Number(b.dataset.days);

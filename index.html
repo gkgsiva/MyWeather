@@ -1486,6 +1486,7 @@
           <button type="button" role="tab" data-tab="map" aria-selected="true">Map</button>
           <button type="button" role="tab" data-tab="table" aria-selected="false">Table</button>
           <button type="button" role="tab" data-tab="charts" aria-selected="false">Charts</button>
+          <button type="button" role="tab" data-tab="compare" aria-selected="false">Compare</button>
         </div>
 
         <div id="tg-tab-map" class="tg-tab">
@@ -1563,6 +1564,37 @@
             <ol id="tg-district-list" class="rank-list"></ol>
           </div>
         </div>
+        <div id="tg-tab-compare" class="tg-tab" hidden>
+          <form class="controls tgc-form" onsubmit="return false">
+            <label>
+              Gauge A
+              <input id="tgc-a" list="tgc-list" type="search" placeholder="Type a gauge name" autocomplete="off" />
+            </label>
+            <button id="tgc-use-a" type="button" class="secondary small">Use gauge from map</button>
+            <label>
+              Gauge B
+              <input id="tgc-b" list="tgc-list" type="search" placeholder="Type a gauge name" autocomplete="off" />
+            </label>
+            <button id="tgc-use-b" type="button" class="secondary small">Use gauge from map</button>
+            <button id="tgc-swap" type="button" class="secondary small">Swap A and B</button>
+            <datalist id="tgc-list"></datalist>
+          </form>
+          <div data-share="TN rain gauges · compare" data-share-from="tgc-head">
+            <div class="chart-head">
+              <strong id="tgc-head">Two gauges</strong>
+              <span id="tgc-pick" class="seg snap-skip">
+                <button type="button" class="secondary small" data-days="7" aria-pressed="false">7 days</button>
+                <button type="button" class="secondary small" data-days="30" aria-pressed="true">30 days</button>
+              </span>
+            </div>
+            <p id="tgc-legend" class="legend" hidden></p>
+            <svg id="tgc-chart" class="chart" role="group" aria-label="Rain each day at the two gauges"></svg>
+            <p id="tgc-readout" class="readout" aria-live="polite"></p>
+            <div class="table-wrap"><table id="tgc-stats" class="readings"></table></div>
+            <p id="tgc-note" class="note" aria-live="polite"></p>
+          </div>
+        </div>
+
         <p class="note">
           Automatic rain gauges of the Tamil Nadu government (TN-SMART), reported hourly. A rain day runs 8:30 AM to
           8:30 AM IST, and each hour is the hour ending at that time. Filters apply to the map, table and charts.
