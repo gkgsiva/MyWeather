@@ -2103,7 +2103,20 @@
 
           <details class="manage">
             <summary>Manage stations</summary>
-            <h3>Add a station</h3>
+            <h3>Find stations near a place</h3>
+            <form id="pws-find" class="controls">
+              <label>
+                Place or pincode
+                <input id="pws-find-q" maxlength="60" placeholder="e.g. Coimbatore or 641001" autocomplete="off" enterkeyhint="search" />
+              </label>
+              <button type="submit">Search</button>
+            </form>
+            <p id="pws-find-note" class="note" aria-live="polite">
+              Finds Wunderground stations around any town in Tamil Nadu (or elsewhere). Uses your API key.
+            </p>
+            <ul id="pws-find-results" class="pws-find-list"></ul>
+
+            <h3>Add a station by ID</h3>
             <form id="pws-add" class="controls">
               <label>
                 Nickname
@@ -2120,6 +2133,19 @@
               The station ID is the code at the end of the Wunderground address,
               e.g. wunderground.com/dashboard/pws/<b>ICHENNAI1</b>.
             </p>
+
+            <h3>Change a nickname</h3>
+            <form id="pws-rename" class="controls" onsubmit="return false">
+              <label>
+                Station
+                <select id="pws-rename-pick"></select>
+              </label>
+              <label>
+                New nickname
+                <input id="pws-rename-name" maxlength="40" />
+              </label>
+              <button id="pws-rename-btn" type="button" class="secondary">Save</button>
+            </form>
 
             <h3>Remove a station</h3>
             <form id="pws-remove" class="controls" onsubmit="return false">

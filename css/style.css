@@ -1891,3 +1891,6 @@ table.cw-table { width: 100%; border-collapse: collapse; font-size: 0.78rem; fon
 .map-legend .wu-key { border: 2px solid var(--wu); border-radius: 5px; padding: 0 5px; margin-left: 6px; }
 .wu-strip { border-left: 4px solid var(--wu); }
 .wu-tag { font-size: 0.7rem; font-weight: 700; color: var(--wu); text-transform: uppercase; letter-spacing: 0.04em; }
+.pws-find-list { list-style: none; margin: 0 0 8px; padding: 0; }
+.pws-find-row { display: grid; grid-template-columns: 1fr minmax(0, 9rem) auto; gap: 8px; align-items: center; padding: 6px 0; border-top: 1px solid var(--border); }
+.pws-find-row small { display: block; color: var(--muted); font-size: 0.75rem; }

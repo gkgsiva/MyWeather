@@ -326,7 +326,7 @@ The same list is on the app's **Info** screen (`js/info.js`); keep the two in st
 - **Neighbourhood weather** (`#weatherunion`, `js/weatherunion.js`): reads `weatherunion/latest.json` and `history.json`
   from the data branch (written by `weather-union.yml` with the secret `WEATHER_UNION_KEY`; the app never calls Weather
   Union or holds the key). Areas and points are listed in `scripts/weather_union.py`. 12 Chennai calls every 30 min plus 12 city calls hourly:
-  about 860 of Weather Union's 1000 daily calls. `js/scope.js` holds the Chennai / Whole Tamil Nadu choice used by the Station
+  about 860 of Weather Union's 1000 daily calls. Wunderground → Manage stations can **find stations near a place** (`js/pwsfind.js`: `js/places.js` geocoding, then api.weather.com `v3/location/near?product=pws`) and **rename** saved stations. `js/scope.js` holds the Chennai / Whole Tamil Nadu choice used by the Station
   map, Neighbourhood weather and Compare (Chennai = within ~65 km of the city).
 - **Month card** (`#monthcard`, Rain menu, `js/monthcard.js`): this month's rain vs normal. IMD's monthly rainfall
   figures (`figuresFor("M")` in `js/monsoon.js`: Chennai, KTCC districts, Tamil Nadu, the TN–Puducherry subdivision)
