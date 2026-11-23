@@ -1099,6 +1099,9 @@ a.near-row .near-text b { color: var(--accent); }
 .line-legend .key.feels { border-top: 3px solid #e65100; margin-left: 8px; }
 .heat-strip { display: grid; grid-template-columns: repeat(48, 1fr); gap: 1px; height: 18px; margin: 4px 0; }
 .heat-strip i { display: block; border-radius: 2px; }
+.chart .line.humid { stroke: #1e88e5; stroke-width: 2.5; }
+.heat-trend-strip i.hot { box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.45); }
+#heat-streak:empty { display: none; }
 .heat-days li { grid-template-columns: 3.4em 1fr auto; }
 .heat-day-text { min-width: 0; font-size: 0.9rem; }
 

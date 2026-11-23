@@ -32,6 +32,10 @@ A small static web app for Chennai weather watchers. A home page and the ☰ men
 - **Heat & humidity** (`#heat`): the heat index ("feels like", US weather service formula) and wet-bulb
   temperature now and for the next 48 hours, with heat stress levels hour by hour and the hottest feel of each
   day, from Open-Meteo (the phone's place when Near you is on). The home station's latest reading is shown too.
+  **Last 30 days** (`js/heattrend.js`): each day's hottest feels-like and air temperature, average humidity, a
+  strip of heat stress levels, and the **hot-day streak** (days in a row at or above a feels-like you pick, 38° by
+  default; today counts only once hot and doesn't break the streak before 5 pm), hot days and longest run in the
+  month. Model values for past hours, not measurements. Share works on it like the other blocks.
 - **Radars** (`#radar`): the current India Meteorological Department (IMD) Doppler radar image.
   - Choose a **city** (36 IMD radar stations) and a **product** (MAX (Z), PPI, rainfall intensity, etc.).
   - The image loads straight from IMD, e.g. `https://mausam.imd.gov.in/Radar/caz_cni.gif` for Chennai,
@@ -293,6 +297,9 @@ secret and is skipped without it.
 The same list is on the app's **Info** screen (`js/info.js`); keep the two in step.
 
 ### v1.19 (23 Nov 2026)
+- **Heat trend** (Heat & humidity → Last 30 days): hottest feels-like and air temperature and average humidity of
+  each of the last 30 days for Chennai (or the place chosen), a strip of heat stress levels, and a **hot-day
+  streak** (days in a row at or above a feels-like you choose), hot days in the month and the longest run.
 - **Rain notice for My places on Home.** *Check radar* now also runs the rain nowcast (`js/nowcast.js`) for every saved
   place (`runPlacesNowcast` in `js/radarmap.js`; each nearby radar's loop is downloaded once and shared with the
   Home spot's check for 3 minutes). Places with rain now or due within 2 hours are listed under the card
