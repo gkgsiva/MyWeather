@@ -16,6 +16,7 @@ export async function placeWeather(p, force = false) {
   const key = `places.wx.${p.lat.toFixed(2)},${p.lon.toFixed(2)}`;
   const hit = await idbGet("misc", key);
   if (!force && hit && Date.now() - hit.at < FRESH_MS) return hit;
+  if (hit && navigator.onLine === false) return { ...hit, stale: true, offline: true };
   const q = new URLSearchParams({
     latitude: String(p.lat),
     longitude: String(p.lon),
@@ -49,12 +50,15 @@ export async function nearestGauge(p, force = false) {
   const key = `places.gauge.${p.lat.toFixed(2)},${p.lon.toFixed(2)}`;
   const hit = await idbGet("misc", key);
   if (!force && hit && Date.now() - hit.at < FRESH_MS) return hit;
+  if (hit && navigator.onLine === false) return { ...hit, stale: true, offline: true };
   try {
     const end = currentRainDay();
     // Each finished day is one 700 KB file, downloaded once; with the data saver on, only the last 2 days.
     const names = daysEnding(end, savingData() ? 2 : 7);
     const days = await getDays(names);
     if (days.every((d) => !d)) throw new Error("no gauge data");
+    // The running day didn't load (signal dropped): keep the last full reading rather than replace it with older days.
+    if (!days[days.length - 1] && hit?.gauge) return { ...hit, stale: true };
     // Gauges that reported on any of these days, nearest first.
     const near = new Map();
     for (const d of days) {

@@ -293,6 +293,9 @@ secret and is skipped without it.
 The same list is on the app's **Info** screen (`js/info.js`); keep the two in step.
 
 ### v1.19 (23 Nov 2026)
+- **My places works offline.** With no connection the weather, forecast, rain history and nearest-gauge reading come
+  from the copy saved on the phone (IndexedDB), each with a "No connection. Showing … saved at …" note. A gauge
+  reading is kept if the running day fails to load, rather than replaced by older days.
 - **Cyclone dot in the menu** (`js/cyclonebadge.js`): a red dot on the Cyclone watch item and the menu button while a
   storm is active near India. It reads `cyclone/latest.json` and `world.json` from the data branch (at start and when the
   menu opens, at most every 30 minutes) and uses the screen's rules: IMD's bulletin under 24 h old and not "weakened /

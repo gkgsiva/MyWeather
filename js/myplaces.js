@@ -42,6 +42,7 @@ export async function rainHistory(p, force = false) {
   const key = `places.rain.${p.lat.toFixed(2)},${p.lon.toFixed(2)}`;
   const hit = await idbGet("misc", key);
   if (!force && hit && Date.now() - hit.at < FRESH_MS) return hit;
+  if (hit && navigator.onLine === false) return { ...hit, stale: true, offline: true };
   const q = new URLSearchParams({
     latitude: String(p.lat),
     longitude: String(p.lon),
@@ -241,7 +242,7 @@ async function loadWx(p, force) {
     const w = await placeWeather(p, force);
     if (my !== runWx) return;
     renderWx(w);
-    sayWx(w.stale ? `Couldn't update just now. Showing the weather saved at ${when(w.at)}.` : "", !!w.stale);
+    sayWx(w.stale ? `${w.offline ? "No connection." : "Couldn't update just now."} Showing the weather saved at ${when(w.at)}.` : "", !!w.stale);
   } catch (e) {
     if (my !== runWx) return;
     for (const id of ["mp-now", "mp-temp", "mp-temp-sums", "mp-days", "mp-past"]) $(id).replaceChildren();
@@ -267,7 +268,7 @@ async function loadGauge(p, force) {
   try {
     const g = await nearestGauge(p, force);
     if (my !== runGauge) return;
-    sayGauge(g.stale ? `Couldn't update just now. Showing the gauge reading saved at ${when(g.at)}.` : "", !!g.stale);
+    sayGauge(g.stale ? `${g.offline ? "No connection." : "Couldn't update just now."} Showing the gauge reading saved at ${when(g.at)}.` : "", !!g.stale);
     if (g.none) {
       line.textContent = g.nearest
         ? `No rain gauge within ${GAUGE_KM} km of this place. The nearest, ${g.nearest.name} (${g.nearest.district}), is ${g.nearest.km.toFixed(1)} km away, too far to stand for it.`
@@ -320,7 +321,7 @@ async function loadRain(p, force) {
       `<div><b>${r1(sum(DAYS))} mm</b><small>last 30 days</small></div>` +
       `<div><b>${wet}</b><small>rainy days (2.5 mm+)</small></div>` +
       `<div><b>${best && best.mm > 0 ? r1(best.mm) + " mm" : "–"}</b><small>${best && best.mm > 0 ? "wettest, " + day(best.date) : "wettest day"}</small></div>`;
-    say(h.stale ? "Showing the saved rain history; couldn't update just now." : "");
+    say(h.stale ? `${h.offline ? "No connection." : "Couldn't update just now."} Showing the rain history saved at ${when(h.at)}.` : "");
   } catch (e) {
     if (my !== run) return;
     svg.replaceChildren();
