@@ -292,6 +292,12 @@ secret and is skipped without it.
 
 The same list is on the app's **Info** screen (`js/info.js`); keep the two in step.
 
+### v1.19 (upcoming)
+- **Month card** (`#monthcard`, Rain menu, `js/monthcard.js`): this month's rain vs normal. IMD's monthly rainfall
+  figures (`figuresFor("M")` in `js/monsoon.js`: Chennai, KTCC districts, Tamil Nadu, the TN–Puducherry subdivision)
+  and TN-SMART's Chennai district mean from the 1st (running total, wettest days; shares Rain records' saved days)
+  set against IMD's Chennai normal. Shared through `data-share`, so it follows Settings → Shared pictures.
+
 ### v1.18 (22 Nov 2026)
 - **Cyclone watch drops finished storms.** The IMD storm is active only when its newest bulletin is under 24 h old
   and doesn't say it weakened into a low pressure area / dissipated; IMD's track layer (which keeps a finished storm

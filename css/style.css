@@ -1566,10 +1566,10 @@ h4 { margin: 12px 0 6px; font-size: 0.95rem; }
 .sc-track i { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 4px; background: var(--cat, #1e88e5); }
 .sc-track u { position: absolute; top: -3px; bottom: -3px; width: 2px; margin-left: -1px; background: var(--fg); }
 .sc-normal { font-size: 0.72rem; color: var(--muted); }
-#sc-chart-wrap { padding: 0 10px; }
+#sc-chart-wrap, #mc-chart-wrap { padding: 0 10px; }
 .chart .line.sc-line { stroke: #1e88e5; stroke-width: 2.5; }
 .sc-wet { margin: 2px 0 8px; font-size: 0.8rem; }
-#sc-rows-wrap { padding: 0 10px 4px; }
+#sc-rows-wrap, #mc-rows-wrap { padding: 0 10px 4px; }
 .sc-rows-head { display: flex; justify-content: space-between; margin: 6px 0 4px; font-size: 0.7rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
 .sc-rows { list-style: none; margin: 0; padding: 0; }
 .sc-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 0 8px; padding: 6px 0 6px 8px; border-left: 4px solid var(--cat); border-bottom: 1px solid var(--border); font-size: 0.88rem; }

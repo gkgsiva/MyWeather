@@ -129,6 +129,13 @@ export async function seasonByDistrict() {
   return page;
 }
 
+/** IMD's district, state and subdivision figures for one period (C, M, W or D), for other screens. */
+export async function figuresFor(period) {
+  const [district, state, subdivision] = await Promise.all(Object.values(PAGES).map((p) => getPage(p, period)));
+  if (!Object.keys(district.areas).length) throw new Error("no figures on IMD's page");
+  return { district, state, subdivision };
+}
+
 function card(label, a, sub) {
   const li = document.createElement("li");
   const c = category(a?.departure);

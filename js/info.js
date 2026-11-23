@@ -5,6 +5,18 @@ import { APP_VERSION } from "./version.js";
 
 export const HISTORY = [
   {
+    version: "1.19",
+    date: "upcoming",
+    groups: [
+      [
+        "Month card",
+        [
+          "**Month card** (Rain menu): this month's rain against normal on one card to share. Chennai district and Tamil Nadu from IMD's monthly rainfall figures with IMD's category (Normal, Excess, Deficient), the running total and wettest days from TN-SMART's Chennai gauges set against IMD's Chennai normal, and the other KTCC districts and the Tamil Nadu–Puducherry subdivision. The picture follows Settings → Shared pictures.",
+        ],
+      ],
+    ],
+  },
+  {
     version: "1.18",
     date: "22 Nov 2026",
     groups: [

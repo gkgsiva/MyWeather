@@ -64,6 +64,7 @@
           <a href="#rain" data-view="rain">Rain history</a>
           <a href="#season" data-view="season">Rain season</a>
           <a href="#seasoncard" data-view="seasoncard">Season card</a>
+          <a href="#monthcard" data-view="monthcard">Month card</a>
           <a href="#spell" data-view="spell">Rain spell</a>
           <a href="#records" data-view="records">Rain records</a>
           <a href="#yoy" data-view="yoy">Year on year</a>
@@ -2277,6 +2278,42 @@
           19% of normal, Excess 20 to 59% above, Deficient 20 to 59% below. TN-SMART publishes no normals, so its Chennai
           total is set against IMD's normal for Chennai district. Use Share (top right of the card) to send it as a
           picture; the name in the corner follows Settings → Shared pictures.
+        </p>
+      </section>
+
+      <!-- Month card -->
+      <section id="view-monthcard" class="view" hidden>
+        <h2>Month card</h2>
+        <form class="controls" onsubmit="return false">
+          <button id="mc-refresh" type="button">Refresh</button>
+          <a class="button secondary-link" href="#monsoon">Monsoon</a>
+        </form>
+        <p id="mc-status" class="status" aria-live="polite"></p>
+        <div data-share="Month card" data-share-from="mc-sub">
+          <div class="sc-card">
+            <header class="sc-banner">
+              <p id="mc-title" class="sc-title">Chennai · Rain this month</p>
+              <p id="mc-sub" class="sc-sub"></p>
+            </header>
+            <div id="mc-tiles" class="sc-tiles"></div>
+            <div id="mc-chart-wrap" hidden>
+              <div class="chart-head"><strong>Chennai gauges, running total</strong></div>
+              <svg id="mc-chart" class="chart" role="group" aria-label="Chennai rain so far this month"></svg>
+              <p id="mc-readout" class="readout" aria-live="polite"></p>
+              <p id="mc-wet" class="sc-wet"></p>
+            </div>
+            <div id="mc-rows-wrap" hidden>
+              <p class="sc-rows-head"><span>This month (IMD)</span><span>mm / normal</span></p>
+              <ul id="mc-rows" class="sc-rows"></ul>
+            </div>
+            <p class="sc-source">Data: IMD rainfall pages (mausam.imd.gov.in), monthly figures · TN-SMART (TNDRRA) automatic rain gauges, Chennai district mean</p>
+          </div>
+        </div>
+        <p class="note">
+          IMD's monthly figures run from the 1st of the month to 8:30 AM of the day shown, against IMD's normal for the
+          same days. Normal is within 19% of normal, Excess 20 to 59% above, Deficient 20 to 59% below. TN-SMART
+          publishes no normals, so its Chennai total is set against IMD's normal for Chennai district. Use Share (top
+          right of the card) to send it as a picture; the name in the corner follows Settings → Shared pictures.
         </p>
       </section>
 
