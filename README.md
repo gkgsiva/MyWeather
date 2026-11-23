@@ -296,6 +296,10 @@ The same list is on the app's **Info** screen (`js/info.js`); keep the two in st
 - **My places works offline.** With no connection the weather, forecast, rain history and nearest-gauge reading come
   from the copy saved on the phone (IndexedDB), each with a "No connection. Showing … saved at …" note. A gauge
   reading is kept if the running day fails to load, rather than replaced by older days.
+- **Cyclone dot in the menu** (`js/cyclonebadge.js`): a red dot on the Cyclone watch item and the menu button while a
+  storm is active near India. It reads `cyclone/latest.json` and `world.json` from the data branch (at start and when the
+  menu opens, at most every 30 minutes) and uses the screen's rules: IMD's bulletin under 24 h old and not "weakened /
+  dissipated", or a world storm inside 0–30°N, 40–100°E with an advisory under 24 h old.
 - **Compare two rain gauges.** TN rain gauges has a **Compare** tab: pick two gauges (typing a name, or "Use gauge from
   map") and chart their daily rain for 7 or 30 rain days together, with totals, rainy days and wettest day side by
   side (`js/gaugecompare.js`, days from `js/gaugedays.js`). Shareable.

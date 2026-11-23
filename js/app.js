@@ -161,6 +161,8 @@ route();
 const idle = window.requestIdleCallback || ((fn) => setTimeout(fn, 1500));
 // A newer release on GitHub shows a strip with its APK (js/update.js).
 window.addEventListener("load", () => setTimeout(() => import("./update.js").then((m) => m.initUpdateCheck()).catch(() => {}), 4000));
+// A red dot on Cyclone watch in the menu while a storm is active near India.
+window.addEventListener("load", () => setTimeout(() => import("./cyclonebadge.js").then((m) => m.initCycloneBadge()).catch(() => {}), 5000));
 window.addEventListener("load", () =>
   setTimeout(() => idle(() => {
     const queue = Object.keys(VIEWS).filter((v) => v !== shown);
