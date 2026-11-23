@@ -5,6 +5,18 @@ import { APP_VERSION } from "./version.js";
 
 export const HISTORY = [
   {
+    version: "1.19",
+    date: "23 Nov 2026",
+    groups: [
+      [
+        "Menu",
+        [
+          "**Cyclone dot**: a small red dot shows on **Cyclone watch** in the menu, and on the menu button, while a storm is active near India: IMD's newest bulletin is under 24 hours old and doesn't say the storm weakened, or another agency's storm is over the north Indian Ocean. Press and hold the item to see the storm's name. It checks when the app starts and when the menu is opened (at most every 30 minutes).",
+        ],
+      ],
+    ],
+  },
+  {
     version: "1.18",
     date: "22 Nov 2026",
     groups: [

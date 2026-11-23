@@ -292,6 +292,12 @@ secret and is skipped without it.
 
 The same list is on the app's **Info** screen (`js/info.js`); keep the two in step.
 
+### v1.19 (23 Nov 2026)
+- **Cyclone dot in the menu** (`js/cyclonebadge.js`): a red dot on the Cyclone watch item and the menu button while a
+  storm is active near India. It reads `cyclone/latest.json` and `world.json` from the data branch (at start and when the
+  menu opens, at most every 30 minutes) and uses the screen's rules: IMD's bulletin under 24 h old and not "weakened /
+  dissipated", or a world storm inside 0–30°N, 40–100°E with an advisory under 24 h old.
+
 ### v1.18 (22 Nov 2026)
 - **Cyclone watch drops finished storms.** The IMD storm is active only when its newest bulletin is under 24 h old
   and doesn't say it weakened into a low pressure area / dissipated; IMD's track layer (which keeps a finished storm
