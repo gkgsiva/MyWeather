@@ -15,6 +15,12 @@ export const HISTORY = [
         ],
       ],
       [
+        "Menu",
+        [
+          "**Cyclone dot**: a small red dot shows on **Cyclone watch** in the menu, and on the menu button, while a storm is active near India: IMD's newest bulletin is under 24 hours old and doesn't say the storm weakened, or another agency's storm is over the north Indian Ocean. Press and hold the item to see the storm's name. It checks when the app starts and when the menu is opened (at most every 30 minutes).",
+        ],
+      ],
+      [
         "Month card",
         [
           "**Month card** (Rain menu): this month's rain against normal on one card to share. Chennai district and Tamil Nadu from IMD's monthly rainfall figures with IMD's category (Normal, Excess, Deficient), the running total and wettest days from TN-SMART's Chennai gauges set against IMD's Chennai normal, and the other KTCC districts and the Tamil Nadu–Puducherry subdivision. The picture follows Settings → Shared pictures.",
