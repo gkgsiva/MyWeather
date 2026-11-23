@@ -5,6 +5,18 @@ import { APP_VERSION } from "./version.js";
 
 export const HISTORY = [
   {
+    version: "1.19",
+    date: "upcoming",
+    groups: [
+      [
+        "TN rain gauges",
+        [
+          "**Compare two gauges**: a new **Compare** tab on TN rain gauges. Type or pick two gauges (or tap one on the map and use it as A or B) and see their rain each day for the last 7 or 30 rain days on one chart, with rain total, rainy days, wettest day and days with data side by side. Share works on it, with the usual watermark. Your two gauges are remembered.",
+        ],
+      ],
+    ],
+  },
+  {
     version: "1.18",
     date: "22 Nov 2026",
     groups: [
