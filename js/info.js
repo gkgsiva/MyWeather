@@ -11,6 +11,7 @@ export const HISTORY = [
       [
         "My places",
         [
+          "**Rain notice on Home**: when you tap **Check radar** in *Rain coming?*, the app now also follows the rain on the radar towards each place you saved in My places. If rain is on, or heading for, any of them, a line under the card says which place and in about how many minutes (for example \"Rain at your places: Farm: rain in about 25 min\"). Tap it to open My places. It only shows in the app, with no notifications, and goes away after 20 minutes or when no saved place has rain coming. The radar loop is downloaded once for all your places.",
           "**Works offline.** With no signal, My places opens straight from what the phone saved last time: the weather and 7-day forecast, the rain history and the nearest rain gauge's reading, each with a note saying when it was saved. The gauge reading is also kept if the signal drops while it is updating, instead of being replaced by older days.",
         ],
       ],
@@ -18,6 +19,12 @@ export const HISTORY = [
         "Menu",
         [
           "**Cyclone dot**: a small red dot shows on **Cyclone watch** in the menu, and on the menu button, while a storm is active near India: IMD's newest bulletin is under 24 hours old and doesn't say the storm weakened, or another agency's storm is over the north Indian Ocean. Press and hold the item to see the storm's name. It checks when the app starts and when the menu is opened (at most every 30 minutes).",
+        ],
+      ],
+      [
+        "TN rain gauges",
+        [
+          "**Compare two gauges**: a new **Compare** tab on TN rain gauges. Type or pick two gauges (or tap one on the map and use it as A or B) and see their rain each day for the last 7 or 30 rain days on one chart, with rain total, rainy days, wettest day and days with data side by side. Share works on it, with the usual watermark. Your two gauges are remembered.",
         ],
       ],
       [

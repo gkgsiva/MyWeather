@@ -293,6 +293,10 @@ secret and is skipped without it.
 The same list is on the app's **Info** screen (`js/info.js`); keep the two in step.
 
 ### v1.19 (23 Nov 2026)
+- **Rain notice for My places on Home.** *Check radar* now also runs the rain nowcast (`js/nowcast.js`) for every saved
+  place (`runPlacesNowcast` in `js/radarmap.js`; each nearby radar's loop is downloaded once and shared with the
+  Home spot's check for 3 minutes). Places with rain now or due within 2 hours are listed under the card
+  (`#home-places-rain`, linking to My places) for 20 minutes. In-app only; no push notifications.
 - **My places works offline.** With no connection the weather, forecast, rain history and nearest-gauge reading come
   from the copy saved on the phone (IndexedDB), each with a "No connection. Showing … saved at …" note. A gauge
   reading is kept if the running day fails to load, rather than replaced by older days.
@@ -300,6 +304,9 @@ The same list is on the app's **Info** screen (`js/info.js`); keep the two in st
   storm is active near India. It reads `cyclone/latest.json` and `world.json` from the data branch (at start and when the
   menu opens, at most every 30 minutes) and uses the screen's rules: IMD's bulletin under 24 h old and not "weakened /
   dissipated", or a world storm inside 0–30°N, 40–100°E with an advisory under 24 h old.
+- **Compare two rain gauges.** TN rain gauges has a **Compare** tab: pick two gauges (typing a name, or "Use gauge from
+  map") and chart their daily rain for 7 or 30 rain days together, with totals, rainy days and wettest day side by
+  side (`js/gaugecompare.js`, days from `js/gaugedays.js`). Shareable.
 - **Month card** (`#monthcard`, Rain menu, `js/monthcard.js`): this month's rain vs normal. IMD's monthly rainfall
   figures (`figuresFor("M")` in `js/monsoon.js`: Chennai, KTCC districts, Tamil Nadu, the TN–Puducherry subdivision)
   and TN-SMART's Chennai district mean from the 1st (running total, wettest days; shares Rain records' saved days)

@@ -16,7 +16,8 @@ import { saverMode } from "./datasaver.js";
 import { sunTimes, moonTimes, moonIllumination, phaseName, nextPhases } from "./astro.js";
 import { loadCoords, addTiles, loadLeaflet } from "./stationmap.js";
 import { searchPlaces } from "./places.js";
-import { loadNowcast, headline, nowcastPlace, setNowcastPlace } from "./nowcast.js";
+import { loadNowcast, headline, nowcastPlace, setNowcastPlace, loadPlacesNowcast, placesWithRain, placeLine } from "./nowcast.js";
+import { savedPlaces } from "./placestore.js";
 import { km } from "./geo.js";
 import { homePlace, toTemp, tempUnit, toWind, windUnit, hiddenViews } from "./prefs.js";
 // The radar map's code (the radar list and the loop reader) and the gauges
@@ -531,6 +532,30 @@ function renderNowcast(msg) {
   }
   line.textContent = msg || "";
   line.className = "strip-status";
+  renderPlacesRain();
+}
+
+// Saved places (My places) the radar says rain is on or heading for. Shown
+// in the app only; no notifications. Only a check made in the last 20
+// minutes counts, as rain moves on.
+function renderPlacesRain() {
+  const a = $("home-places-rain");
+  const saved = loadPlacesNowcast();
+  const list = saved && Date.now() - saved.at < NOWCAST_FRESH ? placesWithRain(saved, savedPlaces()) : [];
+  a.hidden = !list.length;
+  if (!list.length) return;
+  const icon = document.createElement("span");
+  icon.className = "near-icon";
+  icon.setAttribute("aria-hidden", "true");
+  icon.textContent = list[0].raining ? "🌧️" : "☔";
+  const text = document.createElement("span");
+  text.className = "near-text";
+  const b = document.createElement("b");
+  b.textContent = `Rain at your places: ${list.slice(0, 3).map(placeLine).join(" · ")}${list.length > 3 ? ` · and ${list.length - 3} more` : ""}`;
+  const small = document.createElement("small");
+  small.textContent = `From the radar's last hour, checked ${when(saved.at)}. A rough guide.`;
+  text.append(b, small);
+  a.replaceChildren(icon, text);
 }
 
 async function checkNowcast() {
@@ -540,8 +565,10 @@ async function checkNowcast() {
   btn.disabled = true;
   renderNowcast("Reading the radar loop…");
   try {
-    const { runNowcast } = await radarMap();
+    const { runNowcast, runPlacesNowcast } = await radarMap();
     await runNowcast(nowcastPlace());
+    const places = savedPlaces();
+    if (places.length) await runPlacesNowcast(places).catch(() => {});
     renderNowcast("Worked out by the app from the radar's last hour; rain can grow, fade or turn.");
   } catch (e) {
     renderNowcast(
@@ -689,6 +716,7 @@ export function initHome() {
     }
   });
   $("home-nowcast-btn").addEventListener("click", checkNowcast);
+  window.addEventListener("myweather:places", () => renderPlacesRain());
   initSpotPicker();
 }
 
