@@ -292,6 +292,12 @@ secret and is skipped without it.
 
 The same list is on the app's **Info** screen (`js/info.js`); keep the two in step.
 
+### v1.19 (23 Nov 2026)
+- **Rain notice for My places on Home.** *Check radar* now also runs the rain nowcast (`js/nowcast.js`) for every saved
+  place (`runPlacesNowcast` in `js/radarmap.js`; each nearby radar's loop is downloaded once and shared with the
+  Home spot's check for 3 minutes). Places with rain now or due within 2 hours are listed under the card
+  (`#home-places-rain`, linking to My places) for 20 minutes. In-app only; no push notifications.
+
 ### v1.18 (22 Nov 2026)
 - **Cyclone watch drops finished storms.** The IMD storm is active only when its newest bulletin is under 24 h old
   and doesn't say it weakened into a low pressure area / dissipated; IMD's track layer (which keeps a finished storm

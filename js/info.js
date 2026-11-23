@@ -5,6 +5,18 @@ import { APP_VERSION } from "./version.js";
 
 export const HISTORY = [
   {
+    version: "1.19",
+    date: "23 Nov 2026",
+    groups: [
+      [
+        "My places",
+        [
+          "**Rain notice on Home**: when you tap **Check radar** in *Rain coming?*, the app now also follows the rain on the radar towards each place you saved in My places. If rain is on, or heading for, any of them, a line under the card says which place and in about how many minutes (for example \"Rain at your places: Farm: rain in about 25 min\"). Tap it to open My places. It only shows in the app, with no notifications, and goes away after 20 minutes or when no saved place has rain coming. The radar loop is downloaded once for all your places.",
+        ],
+      ],
+    ],
+  },
+  {
     version: "1.18",
     date: "22 Nov 2026",
     groups: [

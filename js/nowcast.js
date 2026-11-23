@@ -170,6 +170,49 @@ export function loadNowcast() {
   }
 }
 
+// ---- Saved places (My places) ----
+
+const PLACES_KEY = "myweather.nowcast.places";
+
+export function savePlacesNowcast(items) {
+  try {
+    localStorage.setItem(PLACES_KEY, JSON.stringify({ at: Date.now(), items }));
+  } catch {}
+}
+
+/** { at, items: [{ id, name, lat, lon, frame, result }] } from the last check, or null. */
+export function loadPlacesNowcast() {
+  try {
+    const s = JSON.parse(localStorage.getItem(PLACES_KEY));
+    return s && s.at && Array.isArray(s.items) ? s : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * The saved places rain is on or heading for, soonest first: [{ name, id,
+ * raining, eta (min), lasts }]. Places no longer saved are ignored; places
+ * moved since the check are ignored too.
+ */
+export function placesWithRain(saved, places) {
+  if (!saved) return [];
+  const out = [];
+  for (const it of saved.items) {
+    const p = places.find((x) => x.id === it.id);
+    if (!p || Math.abs(p.lat - it.lat) > 0.005 || Math.abs(p.lon - it.lon) > 0.005) continue;
+    const r = it.result;
+    if (r && (r.raining || r.eta !== null)) out.push({ id: p.id, name: p.name, raining: r.raining, eta: r.raining ? 0 : r.eta, lasts: r.lasts });
+  }
+  return out.sort((a, b) => a.eta - b.eta);
+}
+
+/** "Rain reaching Mom's house in about 25 min" style line for one place. */
+export function placeLine(w) {
+  const min = (m) => (m < 60 ? `${Math.max(5, Math.round(m / 5) * 5)} min` : `${Math.floor(m / 60)} h ${String(Math.round((m % 60) / 5) * 5).padStart(2, "0")} min`);
+  return w.raining ? `${w.name}: raining now` : `${w.name}: rain in about ${min(w.eta)}`;
+}
+
 // ---- The place to nowcast for ----
 
 const readJson = (key) => {

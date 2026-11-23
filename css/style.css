@@ -1039,6 +1039,8 @@ a.near-row .near-text b { color: var(--accent); }
 .nowcast-body .near-text b { color: var(--fg); }
 .nowcast-body.wet .near-text b { color: var(--accent); }
 .nowcast-body.stale { opacity: 0.65; }
+#home-places-rain { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border, rgba(128, 128, 128, 0.3)); }
+#home-places-rain[hidden] { display: none; }
 
 /* Heat & humidity */
 .heat-now {
