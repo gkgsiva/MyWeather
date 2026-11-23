@@ -188,3 +188,26 @@ export function initWeatherUnion() {
 export function showWeatherUnion() {
   refresh();
 }
+
+// For Compare stations: Weather Union's history.json (the last 24 hours of
+// readings per area, and each day's rain total), kept on the phone for offline.
+let histPromise = null;
+export function loadWuHistory() {
+  histPromise ??= getJson("history.json")
+    .then((h) => {
+      try {
+        localStorage.setItem("myweather.weatherunion.compare", JSON.stringify(h));
+      } catch {}
+      return h;
+    })
+    .catch((e) => {
+      histPromise = null;
+      try {
+        const h = JSON.parse(localStorage.getItem("myweather.weatherunion.compare"));
+        if (h) return h;
+      } catch {}
+      throw e;
+    });
+  return histPromise;
+}
+export const forgetWuHistory = () => (histPromise = null);

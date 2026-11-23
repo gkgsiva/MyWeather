@@ -465,16 +465,18 @@ table.lakes th, table.lakes td { white-space: normal; }
   --s1: #1565c0;
   --s2: #e65100;
   --s3: #2e7d32;
+  --wu: #8e24aa;
   --wet: #0d47a1;
 }
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) { --s1: #64a8ff; --s2: #ffab40; --s3: #81c784; --wet: #9cc8ff; }
+  :root:not([data-theme="light"]) { --s1: #64a8ff; --s2: #ffab40; --s3: #81c784; --wu: #d98cff; --wet: #9cc8ff; }
 }
-:root[data-theme="dark"] { --s1: #64a8ff; --s2: #ffab40; --s3: #81c784; --wet: #9cc8ff; }
+:root[data-theme="dark"] { --s1: #64a8ff; --s2: #ffab40; --s3: #81c784; --wu: #d98cff; --wet: #9cc8ff; }
 .chart .line { fill: none; stroke: var(--bar); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
 .chart .line.s1 { stroke: var(--s1); }
 .chart .line.s2 { stroke: var(--s2); }
 .chart .line.s3 { stroke: var(--s3); }
+.chart .line.wu { stroke: var(--wu); stroke-dasharray: 6 3; }
 .chart .now { stroke: var(--muted); stroke-dasharray: 3 3; }
 .chart .mark { fill: var(--card); stroke: var(--bar); stroke-width: 2; }
 .chart .mark.low { stroke: var(--muted); }
@@ -483,6 +485,7 @@ table.lakes th, table.lakes td { white-space: normal; }
 .swatch { display: inline-block; width: 10px; height: 10px; margin-right: 6px; border-radius: 2px; background: var(--s1); }
 .swatch.s2 { background: var(--s2); }
 .swatch.s3 { background: var(--s3); }
+.swatch.wu { background: var(--wu); border-radius: 50%; }
 .cmp-when { margin-top: 12px; }
 .cmp-when .month-nav { flex: 1 1 200px; padding-bottom: 4px; }
 .cmp-date input { width: 100%; }

@@ -301,7 +301,8 @@ The same list is on the app's **Info** screen (`js/info.js`); keep the two in st
   for 16 Chennai areas from Weather Union's weather stations (the one nearest each area), with hottest/coolest/rain
   tiles, sorting, a 24-hour temperature chart, Share and an offline copy. The key is the repository secret
   `WEATHER_UNION_KEY`, used only by `.github/workflows/weather-union.yml` (every 30 min, `scripts/weather_union.py`),
-  which writes `weatherunion/latest.json` and `history.json` to the `data` branch.
+  which writes `weatherunion/latest.json` and `history.json` (24 h of readings, plus daily rain for 62 days) to the `data` branch.
+  **Compare stations** (`js/compare.js`) can add one Weather Union area (`#compare?...&wu=Adyar`) as a purple dashed line and a table row.
 
 ### v1.19 (23 Nov 2026)
 - **Heat trend** (Heat & humidity → Last 30 days): hottest feels-like and air temperature and average humidity of

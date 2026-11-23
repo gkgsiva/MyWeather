@@ -9,7 +9,7 @@ secret WEATHER_UNION_KEY and this script runs in a workflow
   python3 scripts/weather_union.py OUTDIR [--verbose]
 
 Writes OUTDIR/latest.json (one reading per area) and OUTDIR/history.json (the
-last 48 readings per area, for the temperature trend). Prints "latest" when
+last 48 readings per area, plus each day's rain total for 62 days). Prints "latest" when
 something was written. The key is never printed or written.
 """
 import json, os, sys, time, urllib.request, urllib.parse
@@ -99,6 +99,12 @@ for r in readings:
     rows = hist["areas"].setdefault(r["name"], [])
     rows.append([latest["at"], r["temp"], r["humidity"], r["rain"], r["rainTotal"]])
     del rows[:-KEEP]
+    if r["rainTotal"] is not None:
+        days = hist.setdefault("days", {}).setdefault(r["name"], {})
+        day = latest["at"][:10]
+        days[day] = max(days.get(day, 0), r["rainTotal"])
+        for old in sorted(days)[:-62]:
+            del days[old]
 json.dump(hist, open(hp, "w"), separators=(",", ":"))
 print(f"{len(readings)} areas" + (f"; errors: {errors}" if errors else ""), file=sys.stderr)
 print("latest")
