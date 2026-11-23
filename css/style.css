@@ -160,6 +160,17 @@ main {
   overflow-wrap: anywhere;
 }
 .menu a[hidden] { display: none; }
+/* Red dot: a storm is active near India (js/cyclonebadge.js). */
+.menu-badge, .menu-btn.has-badge::after {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #e53935;
+  box-shadow: 0 0 0 2px var(--card, #fff);
+}
+.menu-badge { display: inline-block; margin-left: 6px; vertical-align: middle; }
+.menu-btn { position: relative; }
+.menu-btn.has-badge::after { content: ""; position: absolute; top: 7px; right: 7px; box-shadow: 0 0 0 2px var(--header-bg); }
 .menu a:active { background: var(--grid); }
 .menu a[aria-current="page"] {
   border-left-color: var(--accent);
