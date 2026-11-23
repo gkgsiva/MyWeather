@@ -134,7 +134,7 @@ function loadSaved() {
   }
 }
 
-async function getJson(name) {
+export async function getJson(name) {
   const r = await fetch(`${DATA}${name}?t=${Math.floor(Date.now() / 60000)}`, { cache: "no-store" });
   if (r.status === 404) throw new Error("not published yet");
   if (!r.ok) throw new Error(`HTTP ${r.status}`);
@@ -211,3 +211,22 @@ export function loadWuHistory() {
   return histPromise;
 }
 export const forgetWuHistory = () => (histPromise = null);
+
+// Latest readings for the map and Home strip: the saved copy first when the
+// network fails (the screen's own copy is kept under the same key).
+export async function loadWuLatest() {
+  try {
+    const d = await getJson("latest.json");
+    try {
+      const saved = loadSaved();
+      localStorage.setItem(SAVED_KEY, JSON.stringify({ at: Date.now(), data: d, history: saved?.history || null }));
+    } catch {}
+    return d;
+  } catch (e) {
+    const saved = loadSaved();
+    if (saved?.data) return saved.data;
+    throw e;
+  }
+}
+export const wuRaining = raining;
+export const wuRainTxt = rainTxt;

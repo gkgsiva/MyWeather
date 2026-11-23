@@ -19,6 +19,7 @@ import { searchPlaces } from "./places.js";
 import { loadNowcast, headline, nowcastPlace, setNowcastPlace, loadPlacesNowcast, placesWithRain, placeLine } from "./nowcast.js";
 import { savedPlaces } from "./placestore.js";
 import { km } from "./geo.js";
+import { refreshWuStrip } from "./wustrip.js";
 import { homePlace, toTemp, tempUnit, toWind, windUnit, hiddenViews } from "./prefs.js";
 // The radar map's code (the radar list and the loop reader) and the gauges
 // are loaded only when Home needs them, so the app opens faster.
@@ -216,6 +217,7 @@ function tellWidget(station, key) {
 }
 
 async function refreshStrip() {
+  refreshWuStrip();
   const main = mainStation();
   renderPicker();
   if (!main) {

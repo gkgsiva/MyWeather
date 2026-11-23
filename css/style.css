@@ -1887,3 +1887,7 @@ table.cw-table { width: 100%; border-collapse: collapse; font-size: 0.78rem; fon
 .wu-row .wu-t { font-weight: 700; text-align: right; }
 .wu-row .wu-m { grid-column: 1 / -1; font-size: 0.78rem; color: var(--muted); }
 .wu-row.wu-wet { border-left: 3px solid #1c7ed6; padding-left: 8px; }
+.pin.wu { border-radius: 5px; border: 2px solid var(--wu); box-shadow: 0 0 0 2px #fff, 0 1px 3px rgba(0, 0, 0, 0.4); }
+.map-legend .wu-key { border: 2px solid var(--wu); border-radius: 5px; padding: 0 5px; margin-left: 6px; }
+.wu-strip { border-left: 4px solid var(--wu); }
+.wu-tag { font-size: 0.7rem; font-weight: 700; color: var(--wu); text-transform: uppercase; letter-spacing: 0.04em; }

@@ -9,6 +9,7 @@
 import { loadStations, apiKey, fetchReading, loadLast } from "./wunderground.js";
 import { when } from "./offline.js";
 import { toTemp, tempUnit } from "./prefs.js";
+import { loadWuLatest } from "./weatherunion.js";
 import { pwsFlags, isSuspect, skipSuspects } from "./health.js";
 
 const COORDS_KEY = "myweather.pws.coords";
@@ -26,6 +27,7 @@ const box = $("map-box");
 let L = null;
 let map = null;
 let layer = null;
+let wuData = null; // Weather Union latest.json (purple pins)
 let readings = new Map(); // id -> observation | null | Error
 let loadedAt = 0;
 let fitted = false;
@@ -71,6 +73,7 @@ const MODES = {
 export const colour = (scale, v) => (typeof v === "number" ? scale.find(([max]) => v < max)[1] : "#9aa4af");
 // Dark text on light pills.
 export const LIGHT = new Set(["#9fd3ff", "#9ccc65", "#ffca28", "#9aa4af", "#26a69a", "#4aa3ff", "#fb8c00"]);
+const isNum = (v) => typeof v === "number" && Number.isFinite(v);
 const fmt = (v) => (typeof v === "number" ? (Math.abs(v) < 10 && v % 1 ? v.toFixed(1) : String(Math.round(v * 10) / 10)) : "–");
 
 function renderLegend(mode) {
@@ -83,7 +86,8 @@ function renderLegend(mode) {
       s.textContent = mode === "temp" && tempUnit() === "°F" ? label.replace(/\d+/g, (n) => Math.round(toTemp(Number(n)))) : label;
       return s;
     }),
-    Object.assign(document.createElement("small"), { textContent: mode === "temp" ? tempUnit() : m.unit })
+    Object.assign(document.createElement("small"), { textContent: mode === "temp" ? tempUnit() : m.unit }),
+    Object.assign(document.createElement("span"), { className: "wu-key", textContent: "Weather Union" })
   );
 }
 
@@ -218,6 +222,25 @@ function draw() {
     marker.addTo(layer);
     placed.push(pos);
   }
+  for (const r of wuData?.readings || []) {
+    const v = { rain: r.rainTotal, rate: isNum(r.rain) ? r.rain * 60 : null, temp: r.temp }[mode];
+    const c = colour(m.scale, v);
+    const icon = L.divIcon({
+      className: "",
+      html: `<span class="pin wu" style="background:${c};color:${LIGHT.has(c) ? "#111" : "#fff"}">${isNum(v) ? fmt(mode === "temp" ? toTemp(v) : v) : "–"}</span>`,
+      iconSize: null,
+    });
+    const marker = L.marker([r.lat, r.lon], { icon, title: `${r.name} (Weather Union)`, keyboard: true });
+    const pop = document.createElement("div");
+    pop.className = "map-pop";
+    pop.innerHTML = `<strong></strong><span></span><small></small><a href="#weatherunion">Neighbourhood weather</a>`;
+    pop.querySelector("strong").textContent = `${r.name} · Weather Union`;
+    pop.querySelector("span").textContent = `Rain ${fmt(r.rainTotal)} mm today · ${fmt(isNum(r.rain) ? r.rain * 60 : null)} mm/h now · ${fmt(toTemp(r.temp))}${tempUnit()}`;
+    pop.querySelector("small").textContent = `Station nearest ${r.name} · read ${when(Date.parse(wuData.at))}`;
+    marker.bindPopup(pop);
+    marker.addTo(layer);
+    placed.push([r.lat, r.lon]);
+  }
   if (!fitted && placed.length) {
     const near = placed.filter(([la, lo]) => Math.abs(la - CHENNAI[0]) < NEAR_DEG && Math.abs(lo - CHENNAI[1]) < NEAR_DEG);
     map.fitBounds(L.latLngBounds(near.length && !fitAll ? near : placed), { padding: [24, 24], maxZoom: 12 });
@@ -250,7 +273,15 @@ export async function fetchAll(key) {
   return { fresh, reached, keyError };
 }
 
+async function refreshWu() {
+  try {
+    wuData = await loadWuLatest();
+  } catch {}
+  if (map) draw();
+}
+
 async function refresh() {
+  refreshWu();
   const key = apiKey();
   if (!key) {
     readings = new Map();
@@ -315,5 +346,5 @@ export async function showMap() {
     if (last) readings = new Map(Object.entries(last.readings));
   }
   draw();
-  if (Date.now() - loadedAt > TTL) refresh();
+  if (Date.now() - loadedAt > TTL || !wuData) refresh();
 }
