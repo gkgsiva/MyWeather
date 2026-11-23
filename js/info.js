@@ -20,6 +20,12 @@ export const HISTORY = [
           "**Heat trend, last 30 days**: the hottest feels-like and air temperature and the average humidity of each of the last 30 days for Chennai (or the place you pick), a strip colouring each day by heat stress, and a **hot-day streak**: how many days in a row it felt like your chosen temperature (38° to start with) or more, how many hot days there were this month and the longest run. Tap any day for its figures. Share works on it. These are model estimates for past hours, not measurements.",
         ],
       ],
+      [
+        "Menu",
+        [
+          "**Cyclone dot**: a small red dot shows on **Cyclone watch** in the menu, and on the menu button, while a storm is active near India: IMD's newest bulletin is under 24 hours old and doesn't say the storm weakened, or another agency's storm is over the north Indian Ocean. Press and hold the item to see the storm's name. It checks when the app starts and when the menu is opened (at most every 30 minutes).",
+        ],
+      ],
     ],
   },
   {
