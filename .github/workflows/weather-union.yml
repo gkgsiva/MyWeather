@@ -41,8 +41,8 @@ jobs:
           fi
           mkdir -p data/weatherunion
 
-      # TEMPORARY: every v01 endpoint answered 404. Try other versions and
-      # read the locality list (ids, names, positions) the site's own page holds.
+      # TEMPORARY: v0 works. List the cities and localities the site's page
+      # holds, and read a few Chennai localities to see which give temperature.
       - name: Probe the API
         if: github.event_name == 'pull_request'
         continue-on-error: true
@@ -50,23 +50,37 @@ jobs:
           K: ${{ secrets.WEATHER_UNION_KEY }}
         run: |
           curl -sL -m 30 -o /tmp/p.html https://www.weatherunion.com/
-          echo "=== around ZWL001036"
-          grep -aoE ".{700}ZWL001036.{900}" /tmp/p.html | head -c 2200
-          echo; echo "=== Chennai mentions"
-          grep -aoE ".{200}Chennai.{300}" /tmp/p.html | head -c 1500
-          echo; echo "=== api/endpoint words"
-          grep -aoE "(external/v[0-9]+[a-z_/]*|get_[a-z_]+|x-zomato[a-z-]*|api\.weatherunion[^\"\\ ]*)" /tmp/p.html | sort -u | head
-          B=https://www.weatherunion.com/gw/weather/external
-          for u in \
-            "$B/v0/get_weather_data?latitude=13.0418&longitude=80.2341" \
-            "$B/v0/get_locality_weather_data?locality_id=ZWL001156" \
-            "$B/v1/get_weather_data?latitude=13.0418&longitude=80.2341" \
-            "$B/v1/get_locality_weather_data?locality_id=ZWL001156" \
-            "$B/v2/get_locality_weather_data?locality_id=ZWL001156" \
-            "$B/v0/get_equipment_weather_data?equipment_id=ZWE000001"; do
-            echo "=== $u"
-            curl -s -m 30 -w "\nHTTP %{http_code}\n" -H "X-Zomato-API-Key: $K" "$u" | head -c 500
-          done
+          python3 - <<'PY'
+          import json, re, os, urllib.request
+          t = open("/tmp/p.html", encoding="utf-8", errors="replace").read().replace('\\"', '"')
+          dec = json.JSONDecoder()
+          cities = {}
+          for m in re.finditer(r'\{"city_id":"(ZWC\d+)"', t):
+              try:
+                  o, _ = dec.raw_decode(t[m.start():])
+              except ValueError:
+                  continue
+              cities[o["city_id"]] = o
+          print("cities:", len(cities))
+          for o in cities.values():
+              l = o.get("localities", {})
+              n1 = sum(1 for v in l.values() if v.get("device_type") == 1)
+              print(f'{o["city_name"]}: {len(l)} localities, type1={n1}, type2={len(l)-n1}, at {o.get("city_latitude")},{o.get("city_longitude")}')
+          ch = next((o for o in cities.values() if o["city_name"] == "Chennai"), None)
+          if ch:
+              print("CHENNAI:")
+              for v in ch["localities"].values():
+                  print(v["locality_id"], v["locality_name"], v["latitude"], v["longitude"], v["device_type"])
+              n = 0
+              for v in ch["localities"].values():
+                  if n >= 8: break
+                  n += 1
+                  req = urllib.request.Request("https://www.weatherunion.com/gw/weather/external/v0/get_locality_weather_data?locality_id=" + v["locality_id"], headers={"X-Zomato-API-Key": os.environ["K"]})
+                  try:
+                      print(v["locality_name"], v["device_type"], urllib.request.urlopen(req, timeout=30).read().decode()[:400])
+                  except Exception as e:
+                      print(v["locality_name"], "ERR", e)
+          PY
 
       - name: Read Weather Union
         id: read
