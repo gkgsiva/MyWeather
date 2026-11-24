@@ -1,18 +1,20 @@
 name: Weather Union readings
 
-# Reads Weather Union's nearest-station weather (temperature, humidity, wind,
-# rain) for 12 areas of Chennai and 12 other Tamil Nadu cities with scripts/weather_union.py and publishes
-# weatherunion/latest.json and history.json on the `data` branch, for the
-# app's "Neighbourhood weather" screen.
+# Reads Weather Union's locality stations (weather stations and rain gauges)
+# in Chennai every hour, and in other Tamil Nadu cities every third hour, with
+# scripts/weather_union.py, and publishes weatherunion/latest.json,
+# history.json and localities.json on the `data` branch, for the app's
+# "Neighbourhood weather" screen.
 #
 # The API key is the repository secret WEATHER_UNION_KEY (Settings → Secrets
 # and variables → Actions). It is used only here and never reaches the app or
-# the repository. 12 calls every 30 minutes plus 12 more once an hour is about 860 a day, under Weather
-# Union's 1000 a day. Shares the `data` branch with the other data workflows.
+# the repository. About 28 calls an hour for Chennai plus up to 25 every third
+# hour is about 880 a day, under Weather Union's 1000 a day. Shares the `data`
+# branch with the other data workflows.
 
 on:
   schedule:
-    - cron: "10,40 * * * *"
+    - cron: "10 * * * *"
   workflow_dispatch:
   pull_request:
     paths: ["scripts/weather_union.py", ".github/workflows/weather-union.yml"]

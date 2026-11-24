@@ -237,7 +237,7 @@ function draw() {
     pop.innerHTML = `<strong></strong><span></span><small></small><a href="#weatherunion">Neighbourhood weather</a>`;
     pop.querySelector("strong").textContent = `${r.name} · Weather Union`;
     pop.querySelector("span").textContent = `Rain ${fmt(r.rainTotal)} mm today · ${fmt(isNum(r.rain) ? r.rain * 60 : null)} mm/h now · ${fmt(toTemp(r.temp))}${tempUnit()}`;
-    pop.querySelector("small").textContent = `Station nearest ${r.name} · read ${when(Date.parse(wuData.at))}`;
+    pop.querySelector("small").textContent = `Weather Union locality · read ${when(Date.parse(wuData.at))}`;
     marker.bindPopup(pop);
     marker.addTo(layer);
     placed.push([r.lat, r.lon]);
