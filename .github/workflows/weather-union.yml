@@ -41,6 +41,31 @@ jobs:
           fi
           mkdir -p data/weatherunion
 
+      # TEMPORARY: the lat/long endpoint answered 404 for every point. Find
+      # the right one from the docs and by trying candidates (no key printed).
+      - name: Probe the API
+        if: github.event_name == 'pull_request'
+        continue-on-error: true
+        env:
+          K: ${{ secrets.WEATHER_UNION_KEY }}
+        run: |
+          for u in https://www.weatherunion.com/ https://www.weatherunion.com/weather-union-api-docs https://www.weatherunion.com/documentation https://www.weatherunion.com/docs; do
+            echo "=== $u"; curl -sL -m 30 -o /tmp/p.html -w "%{http_code} %{content_type}\n" "$u"
+            grep -aoE "(gw/weather|get_[a-z_]+|zomato-api-key|locality_id|ZWL[0-9]+)[^\"' <]{0,80}" /tmp/p.html | sort -u | head -30
+            grep -aoE 'src="[^"]+\.js"' /tmp/p.html | head -8
+          done
+          B=https://www.weatherunion.com/gw/weather/external/v01
+          for u in \
+            "$B/get_weather_data?latitude=13.0418&longitude=80.2341" \
+            "$B/get_weather_data?lat=13.0418&lon=80.2341" \
+            "$B/get_locality_weather_data?locality_id=ZWL001156" \
+            "$B/get_locality_weather_data?locality_id=ZWL002349" \
+            "https://weatherunion.com/gw/weather/external/v01/get_weather_data?latitude=13.0418&longitude=80.2341" \
+            "https://www.weatherunion.com/gw/weather/external/v01/get_equipment_weather_data?equipment_id=ZWE000001"; do
+            echo "=== $u"
+            curl -s -m 30 -w "\nHTTP %{http_code}\n" -H "X-Zomato-API-Key: $K" -H "content-type: application/json" "$u" | head -c 600
+          done
+
       - name: Read Weather Union
         id: read
         env:
