@@ -5,6 +5,18 @@ import { APP_VERSION } from "./version.js";
 
 export const HISTORY = [
   {
+    version: "1.22",
+    date: "24 Nov 2026",
+    groups: [
+      [
+        "Sharing",
+        [
+          "**Full-size shared pictures.** WhatsApp and similar apps shrink a picture sent as a photo to about 1600 px on its longest side, so a tall card such as the KTCC Top 30 arrived tiny and blurry. Pictures now go out as a file, with every pixel kept (the app already draws them at up to 3 times the screen's detail, as lossless PNG). In WhatsApp they appear as a file you tap to open; if you would rather have a quick preview, turn off **Send pictures at full size** in Settings → Shared pictures.",
+        ],
+      ],
+    ],
+  },
+  {
     version: "1.21",
     date: "24 Nov 2026",
     groups: [

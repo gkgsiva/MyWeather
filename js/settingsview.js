@@ -207,7 +207,7 @@ function initShareLook() {
       say("Saved. The next picture you share uses it.");
     });
   }
-  for (const [key, el] of [["time", $("set-share-time")], ["brand", $("set-share-brand")]]) {
+  for (const [key, el] of [["time", $("set-share-time")], ["brand", $("set-share-brand")], ["full", $("set-share-full")]]) {
     el.checked = look[key];
     el.addEventListener("change", () => {
       setShareLook({ [key]: el.checked });

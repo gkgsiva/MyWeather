@@ -144,14 +144,15 @@ export async function shareImage({ blob, name, text, imd = false }) {
   if (credit && text && !text.includes(credit)) text = `${text} ${credit}.`;
   const type = blob.type || "image/png";
   // The user's own words (Settings) after every picture's message, not the backup's.
-  const { caption, brand } = shareLook();
+  const { caption, brand, full } = shareLook();
   // Without the MyWeather name the message leaves out "Shared from MyWeather." too.
   if (!brand && text) text = text.replace(/\s*Shared from MyWeather\.?/g, "").trim();
   if (caption && type.startsWith("image/")) text = text ? `${text} ${caption}` : caption;
   const bridge = window.MyWeatherAndroid;
   if (bridge && typeof bridge.postMessage === "function") {
     const data = await toBase64(blob);
-    bridge.postMessage(JSON.stringify({ action: "shareImage", data, type, name, text }));
+    // asFile: sent as a plain file, so WhatsApp and similar apps keep every pixel instead of shrinking it as a "photo".
+    bridge.postMessage(JSON.stringify({ action: "shareImage", data, type, name, text, asFile: full && STAMPABLE.has(type) }));
     return "shared";
   }
   const file = new File([blob], name, { type });

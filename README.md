@@ -296,6 +296,9 @@ secret and is skipped without it.
 
 The same list is on the app's **Info** screen (`js/info.js`); keep the two in step.
 
+### v1.22 (24 Nov 2026)
+- **Full-size shared pictures** (`js/share.js`, `MainActivity.shareImage`): the picture (lossless PNG, up to 3x) is sent as a plain file (`application/octet-stream`) so WhatsApp and similar apps no longer shrink it as a photo (about 1600 px on the longest side). Settings → Shared pictures → *Send pictures at full size* (on by default) turns it off; then very tall tables are also split into parts by shape (`js/snap.js`).
+
 ### v1.21 (24 Nov 2026)
 - **Sharper shared pictures** (`js/snap.js`): pictures are drawn at up to 3x the screen's detail (was 2x) and, when a long table would be too tall for the phone's canvas at 2x, it is split into parts ("part 1 of 3"), each sharp, instead of being shrunk blurry.
 
