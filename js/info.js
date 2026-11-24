@@ -5,6 +5,18 @@ import { APP_VERSION } from "./version.js";
 
 export const HISTORY = [
   {
+    version: "1.21",
+    date: "24 Nov 2026",
+    groups: [
+      [
+        "Sharing",
+        [
+          "**Sharper shared pictures.** Pictures are now drawn at up to 3 times the screen's detail (they were capped at 2), so text in tables and charts stays crisp. A very long table, such as all the Tamil Nadu rain gauges, is no longer shrunk to fit: it is shared in a few parts (part 1 of 3 and so on), each sharp.",
+        ],
+      ],
+    ],
+  },
+  {
     version: "1.20",
     date: "23 Nov 2026",
     groups: [

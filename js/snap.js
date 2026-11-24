@@ -92,31 +92,73 @@ function inlineSvgStyles(block) {
   };
 }
 
-/** The block as a picture with a band naming it and the time on top. */
-export async function snapBlock(block, title) {
+// Canvas limits on phones: one side up to 16384 px, and a modest total area.
+const MAX_SIDE = 16000;
+const MAX_AREA = 48e6;
+const WANT = 3; // sharp on every phone screen; the picture is never smaller than the screen's own pixels
+const SHARP = 2; // below this a tall picture is split into parts instead of shrunk
+
+// The biggest pixel ratio (up to what the screen has, at least 2) that fits the canvas.
+function ratioFor(width, height) {
+  const want = Math.min(WANT, Math.max(2, window.devicePixelRatio || 1));
+  const side = MAX_SIDE / Math.max(width, height);
+  const area = Math.sqrt(MAX_AREA / Math.max(1, width * height));
+  return Math.max(1, Math.min(want, side, area));
+}
+
+async function shoot(h2i, block, bg) {
+  const width = Math.ceil(Math.max(block.scrollWidth, block.getBoundingClientRect().width));
+  const height = Math.ceil(Math.max(block.scrollHeight, block.getBoundingClientRect().height));
+  return {
+    ratio: ratioFor(width, height),
+    shot: await h2i.toCanvas(block, {
+      width,
+      height,
+      pixelRatio: ratioFor(width, height),
+      backgroundColor: bg,
+      filter: keep,
+      // The block's own padding and margins stay out; the picture adds its own.
+      style: { margin: "0" },
+    }),
+  };
+}
+
+/** The block as pictures with a band naming each and the time on top: one, or parts when a long table would not stay sharp. */
+export async function snapBlocks(block, title) {
   const h2i = await loadLib();
   const bg = css("--bg") || "#ffffff";
   // Whole tables, not just the part scrolled into view.
   block.classList.add("snapping");
   const undo = inlineSvgStyles(block);
-  let shot;
+  const shots = [];
   try {
-    const width = Math.ceil(Math.max(block.scrollWidth, block.getBoundingClientRect().width));
-    const height = Math.ceil(Math.max(block.scrollHeight, block.getBoundingClientRect().height));
-    shot = await h2i.toCanvas(block, {
-      width,
-      height,
-      pixelRatio: Math.min(2, Math.max(1, window.devicePixelRatio || 1)),
-      backgroundColor: bg,
-      filter: keep,
-      // The block's own padding and margins stay out; the picture adds its own.
-      style: { margin: "0" },
-    });
+    let { ratio, shot } = await shoot(h2i, block, bg);
+    const rows = [...block.querySelectorAll("tbody tr")];
+    if (ratio < SHARP && rows.length > 20) {
+      // Too tall to keep sharp in one picture: show a share of the rows at a time.
+      const parts = Math.min(8, Math.ceil(SHARP / ratio));
+      const per = Math.ceil(rows.length / parts);
+      for (let i = 0; i < parts; i++) {
+        rows.forEach((r, n) => {
+          r.style.display = n >= i * per && n < (i + 1) * per ? "" : "none";
+        });
+        shots.push((await shoot(h2i, block, bg)).shot);
+      }
+      rows.forEach((r) => (r.style.display = ""));
+    } else shots.push(shot);
   } finally {
     undo();
     block.classList.remove("snapping");
   }
-  return frame(shot, title);
+  const blobs = [];
+  for (let i = 0; i < shots.length; i++) {
+    blobs.push(await frame(shots[i], shots.length > 1 ? `${title} (part ${i + 1} of ${shots.length})` : title));
+  }
+  return blobs;
+}
+
+export async function snapBlock(block, title) {
+  return (await snapBlocks(block, title))[0];
 }
 
 // Words split into lines that fit the width.
@@ -246,15 +288,21 @@ export function initSnaps(root = document) {
       button.disabled = true;
       button.setAttribute("aria-busy", "true");
       try {
-        const blob = await snapBlock(block, title);
-        const how = await shareImage({
-          blob,
-          name: shareName(slug(title), "image/png"),
-          text: shareLook().time ? `${title}, ${when(title)}. Shared from MyWeather.` : `${title}. Shared from MyWeather.`,
-          // Blocks showing IMD's pictures (radar, warnings) credit IMD;
-          // data-share-credit names another agency (Cyclone watch).
-          imd: block.dataset.shareCredit || "shareImd" in block.dataset,
-        });
+        const blobs = await snapBlocks(block, title);
+        let how;
+        for (let i = 0; i < blobs.length; i++) {
+          const part = blobs.length > 1 ? ` (part ${i + 1} of ${blobs.length})` : "";
+          if (i) toast(`Sharing part ${i + 1} of ${blobs.length}…`);
+          how = await shareImage({
+            blob: blobs[i],
+            name: shareName(slug(title + part), "image/png"),
+            text: shareLook().time ? `${title}${part}, ${when(title)}. Shared from MyWeather.` : `${title}${part}. Shared from MyWeather.`,
+            // Blocks showing IMD's pictures (radar, warnings) credit IMD;
+            // data-share-credit names another agency (Cyclone watch).
+            imd: block.dataset.shareCredit || "shareImd" in block.dataset,
+          });
+          if (how === "cancelled") break;
+        }
         if (how === "downloaded") toast("Sharing isn't available here, so the picture was downloaded.");
       } catch (err) {
         toast(`Couldn't make the picture (${err.message || err}).`, true);

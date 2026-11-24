@@ -296,6 +296,9 @@ secret and is skipped without it.
 
 The same list is on the app's **Info** screen (`js/info.js`); keep the two in step.
 
+### v1.21 (24 Nov 2026)
+- **Sharper shared pictures** (`js/snap.js`): pictures are drawn at up to 3x the screen's detail (was 2x) and, when a long table would be too tall for the phone's canvas at 2x, it is split into parts ("part 1 of 3"), each sharp, instead of being shrunk blurry.
+
 ### v1.20 (23 Nov 2026)
 - **Neighbourhood weather** (`#weatherunion`, Radar & sky menu, `js/weatherunion.js`): temperature, humidity, wind and rain
   for Weather Union's localities in Chennai (28: 12 weather stations, 16 rain gauges) and other Tamil Nadu cities (Coimbatore, Salem), with hottest/coolest/rain
