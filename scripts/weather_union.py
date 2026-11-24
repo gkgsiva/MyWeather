@@ -1,59 +1,51 @@
 #!/usr/bin/env python3
-"""Reads Weather Union's nearest-station weather for points around Chennai.
+"""Reads Weather Union's locality stations in Chennai and other Tamil Nadu cities.
 
-Weather Union (weatherunion.com, Zomato) runs automatic weather stations in
-city localities. Its API needs a key, so the key lives only in the repository
-secret WEATHER_UNION_KEY and this script runs in a workflow
+Weather Union (weatherunion.com, Zomato) runs automatic weather stations
+(device type 1: temperature, humidity, wind and rain) and rain gauges (type 2:
+rain only) in city localities. Its API needs a key, so the key lives only in
+the repository secret WEATHER_UNION_KEY and this script runs in a workflow
 (.github/workflows/weather-union.yml); the app reads the JSON it writes.
 
-  python3 scripts/weather_union.py OUTDIR [--verbose]
+  python3 scripts/weather_union.py OUTDIR [--verbose] [--all]
 
-Writes OUTDIR/latest.json (one reading per area) and OUTDIR/history.json (the
-last 48 readings per area, plus each day's rain total for 62 days). Prints "latest" when
-something was written. The key is never printed or written.
+The list of localities (id, name, position) is read from weatherunion.com's own
+page and kept in OUTDIR/localities.json, which is used if the page can't be
+read. Chennai's localities are read on every run (hourly); the other Tamil Nadu
+cities every third hour (or with --all). Writes OUTDIR/latest.json (one reading
+per locality) and OUTDIR/history.json (the last 48 readings per locality, plus
+each day's rain total for 62 days). Prints "latest" when something was written.
+The key is never printed or written.
 """
-import json, os, sys, time, urllib.request, urllib.parse
+import json, os, re, sys, time, urllib.request, urllib.parse
 from datetime import datetime, timezone, timedelta
 
-BASE = "https://www.weatherunion.com/gw/weather/external/v01/get_weather_data"
-# Areas of Chennai. Weather Union answers with the station nearest each point.
-AREAS = [
-    ("T. Nagar", 13.0418, 80.2341), ("Anna Nagar", 13.0850, 80.2101),
-    ("Adyar", 13.0012, 80.2565), ("Velachery", 12.9815, 80.2180),
-    ("Tambaram", 12.9249, 80.1000), ("Guindy", 13.0067, 80.2206),
-    ("Mylapore", 13.0368, 80.2676), ("Ambattur", 13.1143, 80.1548),
-    ("Porur", 13.0382, 80.1565), ("Sholinganallur", 12.9010, 80.2279),
-    ("Perungudi", 12.9650, 80.2461), ("Pallavaram", 12.9675, 80.1491),
-]
-# Other Tamil Nadu cities, read once an hour. Weather Union doesn't say which
-# cities it covers: a city it has no station near simply gives no reading and
-# is left out (listed under "errors" in latest.json).
-CITIES = [
-    ("Coimbatore", 11.0168, 76.9558), ("Madurai", 9.9252, 78.1198),
-    ("Tiruchirappalli", 10.7905, 78.7047), ("Salem", 11.6643, 78.1460),
-    ("Tirunelveli", 8.7139, 77.7567), ("Erode", 11.3410, 77.7172),
-    ("Vellore", 12.9165, 79.1325), ("Thoothukudi", 8.7642, 78.1348),
-    ("Thanjavur", 10.7870, 79.1378), ("Tiruppur", 11.1085, 77.3411),
-    ("Hosur", 12.7409, 77.8253), ("Kanyakumari", 8.0883, 77.5385),
-]
+API = "https://www.weatherunion.com/gw/weather/external/v0/get_locality_weather_data"
+PAGE = "https://www.weatherunion.com/"
+# Cities (as Weather Union names them) shown in the app.
+TN_CITIES = {
+    "Chennai", "Coimbatore", "Salem", "Madurai", "Tiruchirappalli", "Trichy",
+    "Tirunelveli", "Erode", "Vellore", "Thoothukudi", "Tuticorin", "Thanjavur",
+    "Tiruppur", "Hosur", "Kanyakumari", "Nagercoil", "Karur", "Dindigul",
+    "Kanchipuram", "Tiruvannamalai", "Cuddalore", "Puducherry", "Pondicherry",
+}
+OTHER_CAP = 25  # localities outside Chennai, to stay under 1000 calls a day
 KEEP = 48
 verbose = "--verbose" in sys.argv
 out = sys.argv[1]
 os.makedirs(out, exist_ok=True)
-try:
-    prev = json.load(open(os.path.join(out, "latest.json")))
-except (OSError, ValueError):
-    prev = {}
-prev_cities = [r for r in prev.get("readings", []) if r.get("region") == "tn"]
-# Chennai every run (every 30 minutes); the other cities on the first run of
-# each hour, or when none were read yet. That is 12 x 48 + 12 x 24 = 864 calls
-# a day, under Weather Union's 1000.
-with_cities = "--all" in sys.argv or datetime.now(timezone.utc).minute < 30 or not prev_cities
 key = os.environ.get("WEATHER_UNION_KEY", "").strip()
 if not key:
     print("WEATHER_UNION_KEY is not set", file=sys.stderr)
     sys.exit(1)
 IST = timezone(timedelta(hours=5, minutes=30))
+
+
+def jload(name, default):
+    try:
+        return json.load(open(os.path.join(out, name)))
+    except (OSError, ValueError):
+        return default
 
 
 def num(v):
@@ -64,9 +56,65 @@ def num(v):
     return f if f == f else None
 
 
-def fetch(lat, lon):
-    url = BASE + "?" + urllib.parse.urlencode({"latitude": lat, "longitude": lon})
-    req = urllib.request.Request(url, headers={"X-Zomato-Api-Key": key, "User-Agent": "MyWeather"})
+def discover():
+    """TN localities from the site's page: [{id, name, city, lat, lon, dev}]."""
+    req = urllib.request.Request(PAGE, headers={"User-Agent": "MyWeather"})
+    with urllib.request.urlopen(req, timeout=40) as r:
+        t = r.read().decode("utf-8", "replace").replace('\\"', '"')
+    dec = json.JSONDecoder()
+    found = []
+    for m in re.finditer(r'\{"city_id":"ZWC\d+"', t):
+        try:
+            c, _ = dec.raw_decode(t[m.start():])
+        except ValueError:
+            continue
+        city = c.get("city_name")
+        if city not in TN_CITIES:
+            continue
+        for v in (c.get("localities") or {}).values():
+            la, lo = num(v.get("latitude")), num(v.get("longitude"))
+            if v.get("locality_id") and la is not None and lo is not None:
+                found.append({
+                    "id": v["locality_id"], "name": v.get("locality_name") or v["locality_id"],
+                    "city": city, "lat": la, "lon": lo, "dev": v.get("device_type"),
+                })
+    seen, uniq = set(), []
+    for l in found:
+        if l["id"] not in seen:
+            seen.add(l["id"])
+            uniq.append(l)
+    chennai = [l for l in uniq if l["city"] == "Chennai"]
+    other = [l for l in uniq if l["city"] != "Chennai"][:OTHER_CAP]
+    return chennai + other
+
+
+try:
+    locs = discover()
+    if not locs:
+        raise RuntimeError("no localities in the page")
+    json.dump(locs, open(os.path.join(out, "localities.json"), "w"), separators=(",", ":"))
+except Exception as e:  # noqa: BLE001
+    print(f"Couldn't read the locality list from the page ({type(e).__name__}: {e}); using the saved one", file=sys.stderr)
+    locs = jload("localities.json", [])
+if not locs:
+    print("No localities known", file=sys.stderr)
+    sys.exit(1)
+if verbose:
+    by = {}
+    for l in locs:
+        by.setdefault(l["city"], []).append(l)
+    for c, ls in by.items():
+        print(f"{c}: {len(ls)} localities ({sum(1 for l in ls if l['dev'] == 1)} weather stations, {sum(1 for l in ls if l['dev'] == 2)} rain gauges)")
+
+prev = jload("latest.json", {})
+prev_other = [r for r in prev.get("readings", []) if r.get("region") == "tn"]
+with_other = "--all" in sys.argv or datetime.now(timezone.utc).hour % 3 == 0 or not prev_other
+
+
+def fetch(lid):
+    url = API + "?" + urllib.parse.urlencode({"locality_id": lid})
+    req = urllib.request.Request(url, headers={"X-Zomato-API-Key": key, "User-Agent": "MyWeather"})
+    err = "error"
     for attempt in range(2):
         try:
             with urllib.request.urlopen(req, timeout=30) as r:
@@ -78,47 +126,48 @@ def fetch(lat, lon):
     raise RuntimeError(f"failed ({err})")
 
 
+def label(l):
+    return l["name"] if l["city"] == "Chennai" else f"{l['name']}, {l['city']}"
+
+
 readings, errors = [], []
-todo = [(n, la, lo, "chennai") for n, la, lo in AREAS]
-if with_cities:
-    todo += [(n, la, lo, "tn") for n, la, lo in CITIES]
-for name, lat, lon, region in todo:
-    try:
-        j = fetch(lat, lon)
-    except RuntimeError as e:
-        errors.append(f"{name}: {e}")
+for l in locs:
+    region = "chennai" if l["city"] == "Chennai" else "tn"
+    if region == "tn" and not with_other:
         continue
-    d = j.get("locality_weather_data") or j.get("data") or {}
-    if verbose:
-        print(name, "keys:", sorted(j.keys()), "data keys:", sorted(d.keys()))
+    try:
+        j = fetch(l["id"])
+    except RuntimeError as e:
+        errors.append(f"{label(l)}: {e}")
+        continue
+    d = j.get("locality_weather_data") or {}
     r = {
-        "name": name, "region": region, "lat": lat, "lon": lon,
+        "name": label(l), "region": region, "id": l["id"], "dev": j.get("device_type") or l["dev"],
+        "lat": l["lat"], "lon": l["lon"],
         "temp": num(d.get("temperature")), "humidity": num(d.get("humidity")),
         "wind": num(d.get("wind_speed")), "dir": num(d.get("wind_direction")),
         "rain": num(d.get("rain_intensity")), "rainTotal": num(d.get("rain_accumulation")),
     }
     if all(r[k] is None for k in ("temp", "humidity", "wind", "rain", "rainTotal")):
-        errors.append(f"{name}: no readings in the answer")
+        errors.append(f"{label(l)}: no readings in the answer")
         continue
     readings.append(r)
-    time.sleep(0.3)
+    time.sleep(0.2)
 
 if not [r for r in readings if r["region"] == "chennai"]:
-    print("No readings; errors: " + "; ".join(errors), file=sys.stderr)
+    print("No Chennai readings; errors: " + "; ".join(errors), file=sys.stderr)
     sys.exit(1)
+fresh = list(readings)
+if not with_other:
+    readings += prev_other  # not read this run: keep the last ones
 
-if not with_cities:
-    readings += prev_cities  # not read this run: keep the last hour's
 now = datetime.now(IST)
 latest = {"at": now.isoformat(timespec="minutes"), "readings": readings, "errors": errors}
 json.dump(latest, open(os.path.join(out, "latest.json"), "w"), separators=(",", ":"))
 
-hp = os.path.join(out, "history.json")
-try:
-    hist = json.load(open(hp))
-except (OSError, ValueError):
-    hist = {"areas": {}}
-for r in readings:
+hist = jload("history.json", {"areas": {}})
+hist.setdefault("areas", {})
+for r in fresh:
     rows = hist["areas"].setdefault(r["name"], [])
     rows.append([latest["at"], r["temp"], r["humidity"], r["rain"], r["rainTotal"]])
     del rows[:-KEEP]
@@ -128,6 +177,6 @@ for r in readings:
         days[day] = max(days.get(day, 0), r["rainTotal"])
         for old in sorted(days)[:-62]:
             del days[old]
-json.dump(hist, open(hp, "w"), separators=(",", ":"))
-print(f"{len(readings)} areas" + (f"; errors: {errors}" if errors else ""), file=sys.stderr)
+json.dump(hist, open(os.path.join(out, "history.json"), "w"), separators=(",", ":"))
+print(f"{len(readings)} localities" + (f"; errors: {errors}" if errors else ""), file=sys.stderr)
 print("latest")

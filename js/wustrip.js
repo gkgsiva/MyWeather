@@ -25,7 +25,7 @@ function show(data) {
     try {
       saved = localStorage.getItem(KEY) || "";
     } catch {}
-    pick.value = data.readings.some((r) => r.name === saved) ? saved : data.readings[0].name;
+    pick.value = data.readings.some((r) => r.name === saved) ? saved : (data.readings.find((r) => isNum(r.temp)) || data.readings[0]).name;
     pick.addEventListener("change", () => {
       try {
         localStorage.setItem(KEY, pick.value);
@@ -42,7 +42,7 @@ function show(data) {
   );
   $("home-wu-body").classList.toggle("wet", isNum(r.rain) && r.rain > 0);
   const at = new Date(data.at);
-  $("home-wu-status").textContent = `Weather Union station nearest ${r.name} · ${wuRainTxt(r)} · read ${at.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`;
+  $("home-wu-status").textContent = `Weather Union · ${r.name} · ${wuRainTxt(r)} · read ${at.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`;
   $("home-wu").hidden = false;
 }
 

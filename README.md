@@ -298,10 +298,10 @@ The same list is on the app's **Info** screen (`js/info.js`); keep the two in st
 
 ### v1.20 (23 Nov 2026)
 - **Neighbourhood weather** (`#weatherunion`, Radar & sky menu, `js/weatherunion.js`): temperature, humidity, wind and rain
-  for 12 Chennai areas and 12 other Tamil Nadu cities from Weather Union's weather stations (the one nearest each area), with hottest/coolest/rain
+  for Weather Union's localities in Chennai (28: 12 weather stations, 16 rain gauges) and other Tamil Nadu cities (Coimbatore, Salem), with hottest/coolest/rain
   tiles, sorting, a 24-hour temperature chart, Share and an offline copy. The key is the repository secret
   `WEATHER_UNION_KEY`, used only by `.github/workflows/weather-union.yml` (every 30 min, `scripts/weather_union.py`),
-  which writes `weatherunion/latest.json` and `history.json` (24 h of readings, plus daily rain for 62 days) to the `data` branch.
+  which writes `weatherunion/latest.json` and `history.json` (48 readings per locality, plus daily rain for 62 days) to the `data` branch.
   The **Station map** (`js/stationmap.js`) draws the areas as purple-edged square pins, and Home has a purple strip (`js/wustrip.js`).
   **Compare stations** (`js/compare.js`) can add one Weather Union area (`#compare?...&wu=Adyar`) as a purple dashed line and a table row.
 
@@ -325,8 +325,7 @@ The same list is on the app's **Info** screen (`js/info.js`); keep the two in st
   side (`js/gaugecompare.js`, days from `js/gaugedays.js`). Shareable.
 - **Neighbourhood weather** (`#weatherunion`, `js/weatherunion.js`): reads `weatherunion/latest.json` and `history.json`
   from the data branch (written by `weather-union.yml` with the secret `WEATHER_UNION_KEY`; the app never calls Weather
-  Union or holds the key). Areas and points are listed in `scripts/weather_union.py`. 12 Chennai calls every 30 min plus 12 city calls hourly:
-  about 860 of Weather Union's 1000 daily calls. Wunderground → Manage stations can **find stations near a place** (`js/pwsfind.js`: `js/places.js` geocoding, then api.weather.com `v3/location/near?product=pws`) and **rename** saved stations. `js/scope.js` holds the Chennai / Whole Tamil Nadu choice used by the Station
+  Union or holds the key). Areas and points are listed in `scripts/weather_union.py`. Chennai's localities hourly, other TN cities every third hour (about 880 of Weather Union's 1000 daily calls); the locality list (ids, names, positions) is read from weatherunion.com's page each run and kept in `localities.json`; API: `/gw/weather/external/v0/get_locality_weather_data`, header `X-Zomato-API-Key`. Wunderground → Manage stations can **find stations near a place** (`js/pwsfind.js`: `js/places.js` geocoding, then api.weather.com `v3/location/near?product=pws`) and **rename** saved stations. `js/scope.js` holds the Chennai / Whole Tamil Nadu choice used by the Station
   map, Neighbourhood weather and Compare (Chennai = within ~65 km of the city).
 - **Month card** (`#monthcard`, Rain menu, `js/monthcard.js`): this month's rain vs normal. IMD's monthly rainfall
   figures (`figuresFor("M")` in `js/monsoon.js`: Chennai, KTCC districts, Tamil Nadu, the TN–Puducherry subdivision)

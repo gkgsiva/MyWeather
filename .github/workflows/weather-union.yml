@@ -1,18 +1,20 @@
 name: Weather Union readings
 
-# Reads Weather Union's nearest-station weather (temperature, humidity, wind,
-# rain) for 12 areas of Chennai and 12 other Tamil Nadu cities with scripts/weather_union.py and publishes
-# weatherunion/latest.json and history.json on the `data` branch, for the
-# app's "Neighbourhood weather" screen.
+# Reads Weather Union's locality stations (weather stations and rain gauges)
+# in Chennai every hour, and in other Tamil Nadu cities every third hour, with
+# scripts/weather_union.py, and publishes weatherunion/latest.json,
+# history.json and localities.json on the `data` branch, for the app's
+# "Neighbourhood weather" screen.
 #
 # The API key is the repository secret WEATHER_UNION_KEY (Settings → Secrets
 # and variables → Actions). It is used only here and never reaches the app or
-# the repository. 12 calls every 30 minutes plus 12 more once an hour is about 860 a day, under Weather
-# Union's 1000 a day. Shares the `data` branch with the other data workflows.
+# the repository. About 28 calls an hour for Chennai plus up to 25 every third
+# hour is about 880 a day, under Weather Union's 1000 a day. Shares the `data`
+# branch with the other data workflows.
 
 on:
   schedule:
-    - cron: "10,40 * * * *"
+    - cron: "10 * * * *"
   workflow_dispatch:
   pull_request:
     paths: ["scripts/weather_union.py", ".github/workflows/weather-union.yml"]
@@ -40,47 +42,6 @@ jobs:
             mkdir -p data
           fi
           mkdir -p data/weatherunion
-
-      # TEMPORARY: v0 works. List the cities and localities the site's page
-      # holds, and read a few Chennai localities to see which give temperature.
-      - name: Probe the API
-        if: github.event_name == 'pull_request'
-        continue-on-error: true
-        env:
-          K: ${{ secrets.WEATHER_UNION_KEY }}
-        run: |
-          curl -sL -m 30 -o /tmp/p.html https://www.weatherunion.com/
-          python3 - <<'PY'
-          import json, re, os, urllib.request
-          t = open("/tmp/p.html", encoding="utf-8", errors="replace").read().replace('\\"', '"')
-          dec = json.JSONDecoder()
-          cities = {}
-          for m in re.finditer(r'\{"city_id":"(ZWC\d+)"', t):
-              try:
-                  o, _ = dec.raw_decode(t[m.start():])
-              except ValueError:
-                  continue
-              cities[o["city_id"]] = o
-          print("cities:", len(cities))
-          for o in cities.values():
-              l = o.get("localities", {})
-              n1 = sum(1 for v in l.values() if v.get("device_type") == 1)
-              print(f'{o["city_name"]}: {len(l)} localities, type1={n1}, type2={len(l)-n1}, at {o.get("city_latitude")},{o.get("city_longitude")}')
-          ch = next((o for o in cities.values() if o["city_name"] == "Chennai"), None)
-          if ch:
-              print("CHENNAI:")
-              for v in ch["localities"].values():
-                  print(v["locality_id"], v["locality_name"], v["latitude"], v["longitude"], v["device_type"])
-              n = 0
-              for v in ch["localities"].values():
-                  if n >= 8: break
-                  n += 1
-                  req = urllib.request.Request("https://www.weatherunion.com/gw/weather/external/v0/get_locality_weather_data?locality_id=" + v["locality_id"], headers={"X-Zomato-API-Key": os.environ["K"]})
-                  try:
-                      print(v["locality_name"], v["device_type"], urllib.request.urlopen(req, timeout=30).read().decode()[:400])
-                  except Exception as e:
-                      print(v["locality_name"], "ERR", e)
-          PY
 
       - name: Read Weather Union
         id: read

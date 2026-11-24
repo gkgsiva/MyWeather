@@ -1,6 +1,6 @@
 // Neighbourhood weather (#weatherunion): temperature, humidity, wind and rain
-// for 12 areas of Chennai and 12 other Tamil Nadu cities, from Weather Union's automatic weather stations
-// (weatherunion.com).
+// for Weather Union's stations in Chennai and other Tamil Nadu cities, from Weather Union's automatic weather stations
+// (weatherunion.com): its weather stations and rain gauges.
 //
 // Weather Union's API needs a key, so the app never calls it. The "Weather
 // Union readings" workflow (.github/workflows/weather-union.yml, key in the
@@ -89,7 +89,7 @@ function render() {
     li.innerHTML = `<b class="wu-name"></b><span class="wu-t"></span><span class="wu-m"></span>`;
     li.querySelector(".wu-name").textContent = r.name;
     li.querySelector(".wu-t").textContent = isNum(r.temp) ? `${f1(toTemp(r.temp))}${tempUnit()}` : "–";
-    li.querySelector(".wu-m").textContent = `${isNum(r.humidity) ? Math.round(r.humidity) + "%" : "–"} · ${wind} · ${rainTxt(r)}`;
+    li.querySelector(".wu-m").textContent = `${r.dev === 2 && !isNum(r.temp) ? "Rain gauge · " : ""}${isNum(r.humidity) ? Math.round(r.humidity) + "%" : "–"} · ${wind} · ${rainTxt(r)}`;
     ul.append(li);
   }
   $("wu-wrap").hidden = !list.length;
