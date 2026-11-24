@@ -465,16 +465,18 @@ table.lakes th, table.lakes td { white-space: normal; }
   --s1: #1565c0;
   --s2: #e65100;
   --s3: #2e7d32;
+  --wu: #8e24aa;
   --wet: #0d47a1;
 }
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) { --s1: #64a8ff; --s2: #ffab40; --s3: #81c784; --wet: #9cc8ff; }
+  :root:not([data-theme="light"]) { --s1: #64a8ff; --s2: #ffab40; --s3: #81c784; --wu: #d98cff; --wet: #9cc8ff; }
 }
-:root[data-theme="dark"] { --s1: #64a8ff; --s2: #ffab40; --s3: #81c784; --wet: #9cc8ff; }
+:root[data-theme="dark"] { --s1: #64a8ff; --s2: #ffab40; --s3: #81c784; --wu: #d98cff; --wet: #9cc8ff; }
 .chart .line { fill: none; stroke: var(--bar); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
 .chart .line.s1 { stroke: var(--s1); }
 .chart .line.s2 { stroke: var(--s2); }
 .chart .line.s3 { stroke: var(--s3); }
+.chart .line.wu { stroke: var(--wu); stroke-dasharray: 6 3; }
 .chart .now { stroke: var(--muted); stroke-dasharray: 3 3; }
 .chart .mark { fill: var(--card); stroke: var(--bar); stroke-width: 2; }
 .chart .mark.low { stroke: var(--muted); }
@@ -483,6 +485,7 @@ table.lakes th, table.lakes td { white-space: normal; }
 .swatch { display: inline-block; width: 10px; height: 10px; margin-right: 6px; border-radius: 2px; background: var(--s1); }
 .swatch.s2 { background: var(--s2); }
 .swatch.s3 { background: var(--s3); }
+.swatch.wu { background: var(--wu); border-radius: 50%; }
 .cmp-when { margin-top: 12px; }
 .cmp-when .month-nav { flex: 1 1 200px; padding-bottom: 4px; }
 .cmp-date input { width: 100%; }
@@ -1875,3 +1878,19 @@ table.cw-table { width: 100%; border-collapse: collapse; font-size: 0.78rem; fon
 .radar-canvas { display: block; width: 100%; height: auto; border-radius: 6px; }
 .radar-canvas[hidden], .radar-player[hidden] { display: none; }
 .radar-player { position: sticky; bottom: 0; padding: 8px 2px; background: var(--card); }
+
+/* Neighbourhood weather (#weatherunion) */
+#wu-wrap { padding: 0 10px 4px; }
+.wu-rows { list-style: none; margin: 0; padding: 0; }
+.wu-row { display: grid; grid-template-columns: 1fr auto; column-gap: 8px; padding: 6px 4px; border-top: 1px solid var(--border); }
+.wu-row .wu-name { min-width: 0; }
+.wu-row .wu-t { font-weight: 700; text-align: right; }
+.wu-row .wu-m { grid-column: 1 / -1; font-size: 0.78rem; color: var(--muted); }
+.wu-row.wu-wet { border-left: 3px solid #1c7ed6; padding-left: 8px; }
+.pin.wu { border-radius: 5px; border: 2px solid var(--wu); box-shadow: 0 0 0 2px #fff, 0 1px 3px rgba(0, 0, 0, 0.4); }
+.map-legend .wu-key { border: 2px solid var(--wu); border-radius: 5px; padding: 0 5px; margin-left: 6px; }
+.wu-strip { border-left: 4px solid var(--wu); }
+.wu-tag { font-size: 0.7rem; font-weight: 700; color: var(--wu); text-transform: uppercase; letter-spacing: 0.04em; }
+.pws-find-list { list-style: none; margin: 0 0 8px; padding: 0; }
+.pws-find-row { display: grid; grid-template-columns: 1fr minmax(0, 9rem) auto; gap: 8px; align-items: center; padding: 6px 0; border-top: 1px solid var(--border); }
+.pws-find-row small { display: block; color: var(--muted); font-size: 0.75rem; }

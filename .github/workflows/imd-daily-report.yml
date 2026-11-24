@@ -144,7 +144,7 @@ jobs:
         run: |
           rm -rf .git-new && mkdir .git-new
           # Keep the cyclone workflow's folder too.
-          for d in daily-report cyclone; do
+          for d in daily-report cyclone weatherunion; do
             if [ -d "$d" ]; then cp -r "$d" .git-new/; fi
           done
           cat > .git-new/README.md <<'EOF'

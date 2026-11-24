@@ -6,6 +6,7 @@ import { DEFAULT_PWS, pwsUrl } from "./pws-stations.js";
 import { WEATHER_API_KEY } from "./config.js";
 import { routeParams, IN_APP } from "./route.js";
 import { when } from "./offline.js";
+import { initFind } from "./pwsfind.js";
 import { toTemp, tempUnit, toWind, windUnit } from "./prefs.js";
 
 const LIST_KEY = "myweather.pws.list";
@@ -75,6 +76,15 @@ function renderLists() {
     ...stations.map((s, i) => new Option(`${s.name} (${s.id})`, String(i)))
   );
   removePick.disabled = $("pws-remove-btn").disabled = !stations.length;
+
+  const rn = $("pws-rename-pick");
+  const keep = rn.value;
+  rn.replaceChildren(
+    new Option(stations.length ? "Choose a station…" : "No stations", ""),
+    ...stations.map((s, i) => new Option(`${s.name} (${s.id})`, String(i)))
+  );
+  rn.value = keep && stations[Number(keep)] ? keep : "";
+  rn.disabled = $("pws-rename-btn").disabled = !stations.length;
 }
 
 // ---- Dashboard ----
@@ -302,6 +312,36 @@ export function initWunderground() {
     nameInput.value = idInput.value = "";
     say(`Added ${name} (${id}).`);
     refreshDashboard();
+  });
+
+  $("pws-rename-pick").addEventListener("change", () => {
+    $("pws-rename-name").value = stations[Number($("pws-rename-pick").value)]?.name || "";
+  });
+  $("pws-rename-btn").addEventListener("click", () => {
+    const i = Number($("pws-rename-pick").value);
+    const name = $("pws-rename-name").value.trim();
+    if ($("pws-rename-pick").value === "" || !stations[i]) return say("Choose a station to rename.", true);
+    if (!name) return say("Enter a nickname.", true);
+    const old = stations[i].name;
+    stations[i] = { ...stations[i], name };
+    save();
+    renderLists();
+    renderTable();
+    $("pws-rename-name").value = "";
+    say(`${old} is now ${name}.`);
+  });
+
+  initFind({
+    key: apiKey,
+    has: (id) => stations.some((s) => s.id === id),
+    add(name, id) {
+      stations.push({ name, id });
+      save();
+      renderLists();
+      say(`Added ${name} (${id}).`);
+      refreshDashboard();
+    },
+    say,
   });
 
   $("pws-remove-btn").addEventListener("click", () => {

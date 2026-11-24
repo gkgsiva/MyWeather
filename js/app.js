@@ -34,6 +34,7 @@ const VIEWS = {
   rain: { title: "MyWeather · Rain history", load: () => import("./rain.js"), init: "initRain", show: "showRain", hide: "hideRain" },
   season: { title: "MyWeather · Rain season", load: () => import("./season.js"), init: "initSeason", show: "showSeason", hide: "hideSeason" },
   monthcard: { title: "MyWeather · Month card", load: () => import("./monthcard.js"), init: "initMonthCard", show: "showMonthCard" },
+  weatherunion: { title: "MyWeather · Neighbourhood weather", load: () => import("./weatherunion.js"), init: "initWeatherUnion", show: "showWeatherUnion" },
   seasoncard: { title: "MyWeather · Season card", load: () => import("./seasoncard.js"), init: "initSeasonCard", show: "showSeasonCard" },
   compare: { title: "MyWeather · Compare stations", load: () => import("./compare.js"), init: "initCompare", show: "showCompare", hide: "hideCompare" },
   map: { title: "MyWeather · Station map", load: () => import("./stationmap.js"), init: "initMap", show: "showMap" },

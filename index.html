@@ -53,6 +53,7 @@
           <a href="#wind" data-view="wind">Wind &amp; storms</a>
           <a href="#cyclonewatch" data-view="cyclonewatch">Cyclone watch</a>
           <a href="#cyclone" data-view="cyclone">Cyclones</a>
+          <a href="#weatherunion" data-view="weatherunion">Neighbourhood weather</a>
         </div>
       </div>
       <div class="menu-group">
@@ -155,6 +156,17 @@
           </div>
           <a id="home-strip-body" class="strip-body"></a>
           <small id="home-strip-status" class="strip-status" aria-live="polite"></small>
+        </div>
+        <div id="home-wu" class="strip wu-strip" hidden>
+          <div class="strip-head">
+            <label class="strip-pick">
+              <span class="visually-hidden">Weather Union area</span>
+              <select id="home-wu-area"></select>
+            </label>
+            <span class="wu-tag">Weather Union</span>
+          </div>
+          <a id="home-wu-body" class="strip-body" href="#weatherunion"></a>
+          <small id="home-wu-status" class="strip-status" aria-live="polite"></small>
         </div>
 
         <div id="home-nowcast" class="sky-card nowcast-card">
@@ -268,6 +280,12 @@
             <a class="card" href="#imdreport">
               <strong>IMD daily report</strong>
               <span>RMC Chennai's daily weather report as charts: station temperatures, rain, districts, forecast and maps</span>
+            </a>
+          </li>
+          <li>
+            <a class="card" href="#weatherunion">
+              <strong>Neighbourhood weather</strong>
+              <span>Temperature, humidity, wind and rain right now in 12 Chennai areas and 12 other Tamil Nadu cities, from Weather Union stations</span>
             </a>
           </li>
           <li>
@@ -1372,6 +1390,10 @@
         <h2>Compare stations</h2>
         <form class="controls" onsubmit="return false">
           <label>
+            Area
+            <select id="cmp-scope"></select>
+          </label>
+          <label>
             Station 1
             <select id="cmp-s1"></select>
           </label>
@@ -1382,6 +1404,10 @@
           <label>
             Station 3
             <select id="cmp-s3"></select>
+          </label>
+          <label>
+            Weather Union area (purple, dashed)
+            <select id="cmp-wu"><option value="">— none —</option></select>
           </label>
         </form>
         <form class="controls cmp-when" onsubmit="return false">
@@ -1430,7 +1456,9 @@
             <select id="map-show"></select>
           </label>
           <button id="map-refresh" type="button">Refresh</button>
-          <button id="map-fit" type="button" class="secondary">All stations</button>
+          <label>Area
+            <select id="map-scope"></select>
+          </label>
         </form>
         <p id="map-status" class="status" aria-live="polite"></p>
         <div class="share-map" data-share="Station map" data-share-from="map-show">
@@ -2075,7 +2103,20 @@
 
           <details class="manage">
             <summary>Manage stations</summary>
-            <h3>Add a station</h3>
+            <h3>Find stations near a place</h3>
+            <form id="pws-find" class="controls">
+              <label>
+                Place or pincode
+                <input id="pws-find-q" maxlength="60" placeholder="e.g. Coimbatore or 641001" autocomplete="off" enterkeyhint="search" />
+              </label>
+              <button type="submit">Search</button>
+            </form>
+            <p id="pws-find-note" class="note" aria-live="polite">
+              Finds Wunderground stations around any town in Tamil Nadu (or elsewhere). Uses your API key.
+            </p>
+            <ul id="pws-find-results" class="pws-find-list"></ul>
+
+            <h3>Add a station by ID</h3>
             <form id="pws-add" class="controls">
               <label>
                 Nickname
@@ -2092,6 +2133,19 @@
               The station ID is the code at the end of the Wunderground address,
               e.g. wunderground.com/dashboard/pws/<b>ICHENNAI1</b>.
             </p>
+
+            <h3>Change a nickname</h3>
+            <form id="pws-rename" class="controls" onsubmit="return false">
+              <label>
+                Station
+                <select id="pws-rename-pick"></select>
+              </label>
+              <label>
+                New nickname
+                <input id="pws-rename-name" maxlength="40" />
+              </label>
+              <button id="pws-rename-btn" type="button" class="secondary">Save</button>
+            </form>
 
             <h3>Remove a station</h3>
             <form id="pws-remove" class="controls" onsubmit="return false">
@@ -2366,6 +2420,51 @@
           same days. Normal is within 19% of normal, Excess 20 to 59% above, Deficient 20 to 59% below. TN-SMART
           publishes no normals, so its Chennai total is set against IMD's normal for Chennai district. Use Share (top
           right of the card) to send it as a picture; the name in the corner follows Settings → Shared pictures.
+        </p>
+      </section>
+
+      <section id="view-weatherunion" class="view" hidden>
+        <h2>Neighbourhood weather</h2>
+        <form class="controls" onsubmit="return false">
+          <label>Area
+            <select id="wu-scope"></select>
+          </label>
+          <label>Sort by
+            <select id="wu-sort">
+              <option value="temp">Hottest first</option>
+              <option value="rain">Most rain first</option>
+              <option value="name">Area name</option>
+            </select>
+          </label>
+          <button id="wu-refresh" type="button">Refresh</button>
+        </form>
+        <p id="wu-status" class="status" aria-live="polite"></p>
+        <div data-share="Neighbourhood weather" data-share-from="wu-sub">
+          <div class="sc-card">
+            <header class="sc-banner">
+              <p class="sc-title">Chennai · Neighbourhood weather</p>
+              <p id="wu-sub" class="sc-sub"></p>
+            </header>
+            <div id="wu-tiles" class="sc-tiles"></div>
+            <div id="wu-wrap" hidden>
+              <ul id="wu-rows" class="wu-rows"></ul>
+            </div>
+            <p class="sc-source">Data: Weather Union (weatherunion.com) automatic weather stations; each area shows the station nearest to it</p>
+          </div>
+        </div>
+        <div id="wu-trend-wrap" hidden>
+          <div class="chart-head">
+            <strong>Temperature, last 24 hours</strong>
+            <select id="wu-area" aria-label="Area"></select>
+          </div>
+          <svg id="wu-trend" class="chart" role="group" aria-label="Temperature over the last day"></svg>
+          <p id="wu-readout" class="readout" aria-live="polite"></p>
+        </div>
+        <p class="note">
+          Weather Union puts small automatic weather stations in city neighbourhoods. The app reads them every 30
+          minutes through GitHub (so the access key stays off your phone) and shows the station nearest each area, so
+          two areas can show the same station. Rain is the rate now (mm/h) and the total so far today. These are not
+          official IMD readings. Use Share (top right of the card) to send it as a picture.
         </p>
       </section>
 

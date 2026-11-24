@@ -115,7 +115,7 @@ jobs:
         working-directory: data
         run: |
           rm -rf .git-new && mkdir .git-new
-          for d in daily-report cyclone; do
+          for d in daily-report cyclone weatherunion; do
             if [ -d "$d" ]; then cp -r "$d" .git-new/; fi
           done
           cat > .git-new/README.md <<'MD'
