@@ -404,7 +404,8 @@ public class MainActivity extends Activity {
             }
             Uri uri = FileProvider.getUriForFile(this, getPackageName() + ".files", file);
             Intent send = new Intent(Intent.ACTION_SEND)
-                    .setType(type)
+                    // asFile: apps like WhatsApp shrink and recompress an image/* share as a photo but keep a file as it is.
+                    .setType(msg.optBoolean("asFile") && type.startsWith("image/") && !type.equals("image/gif") ? "application/octet-stream" : type)
                     .putExtra(Intent.EXTRA_STREAM, uri)
                     .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
             String text = msg.optString("text");

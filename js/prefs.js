@@ -148,7 +148,7 @@ export const cleanCaption = (s) => String(s ?? "").replace(/\s+/g, " ").trim().s
 /**
  * How shared pictures look: corner of the mark ("br" bottom right, "bl", "tr", "tl"), its size ("s", "m", "l") and
  * strength ("light", "normal", "strong"), whether the band over maps, tables and charts shows the date and time
- * (time) and the MyWeather name (brand), and text added to every share's message (caption, "" for none).
+ * (time) and the MyWeather name (brand), whether pictures go out as files at full size (full), and text added to every share's message (caption, "" for none).
  */
 export function shareLook() {
   const v = read(SHARE_KEY, {}) || {};
@@ -158,6 +158,7 @@ export function shareLook() {
     strength: STRENGTHS.includes(v.strength) ? v.strength : "normal",
     time: v.time !== false,
     brand: v.brand !== false,
+    full: v.full !== false,
     caption: cleanCaption(v.caption),
   };
 }

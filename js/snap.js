@@ -11,6 +11,10 @@
 import { shareImage, shareName } from "./share.js";
 import { shareLook } from "./prefs.js";
 
+// Apps that take a picture as a photo shrink its longest side to about 1600 px. A table
+// taller than this many times its width is split so each part keeps its detail there too.
+const PHOTO_ASPECT = 2.4;
+
 let lib = null;
 function loadLib() {
   if (window.htmlToImage) return Promise.resolve(window.htmlToImage);
@@ -134,9 +138,11 @@ export async function snapBlocks(block, title) {
   try {
     let { ratio, shot } = await shoot(h2i, block, bg);
     const rows = [...block.querySelectorAll("tbody tr")];
-    if (ratio < SHARP && rows.length > 20) {
+    const width = Math.max(1, block.scrollWidth);
+    const byShape = shareLook().full ? 1 : Math.ceil(block.scrollHeight / (width * PHOTO_ASPECT));
+    if ((ratio < SHARP || byShape > 1) && rows.length > 20) {
       // Too tall to keep sharp in one picture: show a share of the rows at a time.
-      const parts = Math.min(8, Math.ceil(SHARP / ratio));
+      const parts = Math.min(8, Math.max(byShape, Math.ceil(SHARP / ratio)));
       const per = Math.ceil(rows.length / parts);
       for (let i = 0; i < parts; i++) {
         rows.forEach((r, n) => {
