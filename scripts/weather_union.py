@@ -104,7 +104,7 @@ if verbose:
     for l in locs:
         by.setdefault(l["city"], []).append(l)
     for c, ls in by.items():
-        print(f"{c}: {len(ls)} localities ({sum(1 for l in ls if l['dev'] == 1)} weather stations, {sum(1 for l in ls if l['dev'] == 2)} rain gauges)")
+        print(f"{c}: {len(ls)} localities ({sum(1 for l in ls if l['dev'] == 1)} weather stations, {sum(1 for l in ls if l['dev'] == 2)} rain gauges)", file=sys.stderr)
 
 prev = jload("latest.json", {})
 prev_other = [r for r in prev.get("readings", []) if r.get("region") == "tn"]
@@ -127,7 +127,10 @@ def fetch(lid):
 
 
 def label(l):
-    return l["name"] if l["city"] == "Chennai" else f"{l['name']}, {l['city']}"
+    # Outside Chennai add the city, unless the locality's name already has it.
+    if l["city"] == "Chennai" or l["city"].lower() in l["name"].lower():
+        return l["name"]
+    return f"{l['name']}, {l['city']}"
 
 
 readings, errors = [], []
