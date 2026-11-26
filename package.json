@@ -1,0 +1,14 @@
+{
+  "name": "myweather-web",
+  "version": "1.23.0",
+  "private": true,
+  "description": "Web version of MyWeather: a small server that hosts the app (for Heroku) and proxies the few data sources that need a secret key or send no CORS header.",
+  "license": "UNLICENSED",
+  "scripts": {
+    "start": "node server.js",
+    "check": "node --check server.js"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

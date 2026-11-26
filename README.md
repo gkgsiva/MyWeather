@@ -296,6 +296,9 @@ secret and is skipped without it.
 
 The same list is on the app's **Info** screen (`js/info.js`); keep the two in step.
 
+### v1.23 (26 Nov 2026)
+- **Web version for Heroku** (`server.js`, `Procfile`, `js/webproxy.js`, `sw.js`, `manifest.webmanifest`): a dependency-free Node server hosts the app and proxies what a browser can't read (see *Web version (Heroku)* below). Works as an iPhone/Android home-screen app (manifest, icons, service worker). The Android app is unchanged.
+
 ### v1.22 (24 Nov 2026)
 - **Full-size shared pictures** (`js/share.js`, `MainActivity.shareImage`): the picture (lossless PNG, up to 3x) is sent as a plain file (`application/octet-stream`) so WhatsApp and similar apps no longer shrink it as a photo (about 1600 px on the longest side). Settings → Shared pictures → *Send pictures at full size* (on by default) turns it off; then very tall tables are also split into parts by shape (`js/snap.js`).
 
@@ -485,6 +488,31 @@ The same list is on the app's **Info** screen (`js/info.js`); keep the two in st
 - Current IMD Doppler radar image by city (36 stations, 7 products), straight from mausam.imd.gov.in, with the
   choice kept in the link.
 
+## Web version (Heroku)
+
+The same app can run in a phone's browser, mainly for iPhone (Safari → Share → **Add to Home Screen**). `server.js` (Node 20+, no dependencies) serves the files and does in the cloud what the Android app's `FrameProxy` does on the phone:
+
+| Path | What it does |
+| --- | --- |
+| `/p/<host>/<path>` | Same-origin copy of IMD (`mausam.imd.gov.in`, `reactjs.imd.gov.in`), Chennai Metro Water, `api.weather.com` and `api.waqi.info`, which send no CORS header or need a secret. Only these hosts (and, for IMD and Wunderground, only the paths the app uses) are allowed. |
+| `/frame?url=` | Wunderground, the Kea blog, Chennai Metro Water and CPCB pages for the app's frames, without the headers that forbid framing, ads hidden, run in a sandbox so they can't read the app's own data. Best effort: a big site may still not work, so the "Open on…" links stay. |
+| `/js/config.js` | Generated: tells the page the proxy exists, and that a Wunderground key is built in when `WEATHER_API_KEY` is set. |
+| `/sw.js`, `/manifest.webmanifest` | Offline shell and home-screen app. |
+
+`js/webproxy.js` (loaded first by `js/app.js`) sends the app's requests to those paths; it does nothing in the Android app or when `config.js` has no `WEB_PROXY`. Android-only parts are left out on the web (home-screen widgets, the APK update check); sharing uses the phone's share sheet (`navigator.share`) or a download.
+
+### Deploy
+
+```sh
+heroku create my-weather-app              # or use the repo's app.json: heroku button / "New → Import from GitHub"
+heroku config:set WEATHER_API_KEY=...     # optional: Wunderground key, kept on the server only
+heroku config:set WAQI_TOKEN=...          # optional: WAQI token (not used by a screen yet)
+git push heroku main                      # or connect the GitHub repo in the Heroku dashboard
+heroku open
+```
+
+The keys are Heroku config vars; they are never committed or sent to the page (the proxy adds them to the request). Without `WEATHER_API_KEY`, paste a key on the Wunderground screen as in the app. `WEATHER_UNION_KEY` is only used by the GitHub workflow that writes the data branch, so Heroku doesn't need it. On an iPhone open the Heroku address in Safari, tap Share → **Add to Home Screen**. A free dyno sleeps when idle, so the first open can take several seconds; use a Basic dyno to avoid that. Each deploy gets a new offline cache automatically.
+
 ## Run locally
 
 No build step. Serve the folder with any static server (ES modules need http, not `file://`):
@@ -494,7 +522,7 @@ python3 -m http.server 8000
 # open http://localhost:8000
 ```
 
-It can also be hosted as-is on GitHub Pages.
+`npm start` runs the web version instead (http://localhost:3000, with the IMD proxy; see above). Hosted as-is on GitHub Pages, the app has no proxy, so IMD data and framed sites are unavailable there.
 
 ## Adding a station
 
