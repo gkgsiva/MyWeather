@@ -1,0 +1,17 @@
+{
+  "name": "MyWeather",
+  "description": "MyWeather web version: Chennai and Tamil Nadu weather, as a home-screen web app.",
+  "repository": "https://github.com/gkgsiva/myweather",
+  "keywords": ["weather", "pwa"],
+  "stack": "heroku-24",
+  "env": {
+    "WEATHER_API_KEY": {
+      "description": "Wunderground (api.weather.com) key. Stays on the server; the page never sees it. Optional: without it, enter a key on the Wunderground screen.",
+      "required": false
+    },
+    "WAQI_TOKEN": {
+      "description": "WAQI token for api.waqi.info, kept on the server. Optional.",
+      "required": false
+    }
+  }
+}

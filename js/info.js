@@ -2,8 +2,22 @@
 // what each release added (newest first). Keep HISTORY in step with the
 // "Version history" section of README.md.
 import { APP_VERSION } from "./version.js";
+import { WEB_PROXY } from "./route.js";
 
 export const HISTORY = [
+  {
+    version: "1.23",
+    date: "26 Nov 2026",
+    groups: [
+      [
+        "Web version",
+        [
+          "**MyWeather as a web app.** The app can now be hosted on Heroku and opened in a phone's browser, mainly so it works on an iPhone: open the address in Safari, tap Share → **Add to Home Screen**, and it opens full screen like an app, with its own icon, and keeps working offline for the screens and data it has already loaded.",
+          "A small server does what the Android app does behind the scenes: it passes on IMD's radar, warnings and rainfall pages, the lake levels and Wunderground's readings, which a browser can't read on its own, and keeps the Wunderground key on the server instead of in the page. Android-only parts (widgets, update check) are left out; sharing uses the phone's share sheet. See the README for how to deploy it.",
+        ],
+      ],
+    ],
+  },
   {
     version: "1.22",
     date: "24 Nov 2026",
@@ -453,6 +467,8 @@ function rich(text) {
 export function initInfo() {
   const installed = APP_VERSION || "";
   const upd = document.getElementById("info-update");
+  // The web version is updated by the server; the APK check doesn't apply.
+  if (WEB_PROXY) upd.hidden = true;
   const updSay = document.getElementById("info-update-status");
   upd.addEventListener("click", async () => {
     upd.disabled = true;
@@ -480,7 +496,7 @@ export function initInfo() {
   });
   document.getElementById("info-version").textContent = installed
     ? `Version ${installed}`
-    : "Development copy (not built from a release)";
+    : WEB_PROXY ? "Web version" : "Development copy (not built from a release)";
   const list = document.getElementById("info-history");
   HISTORY.forEach((rel, n) => {
     const d = document.createElement("details");

@@ -13,7 +13,7 @@
 import { loadLeaflet, isDark } from "./stationmap.js";
 import { drawBars } from "./chart.js";
 import { getDays, missing, daysEnding, remember, weeklyNormals, imdDistrict, gaugeKey, niceDay as dayLabel } from "./gaugedays.js";
-import { IN_APP, routeParams } from "./route.js";
+import { CAN_READ_IMD, routeParams } from "./route.js";
 import { initCompare, refreshCompare, drawCompare } from "./gaugecompare.js";
 import { gaugeFlags, skipSuspects, setSkipSuspects } from "./health.js";
 
@@ -444,7 +444,7 @@ async function drawHistory() {
         `: this gauge is ${dep >= 0 ? `${dep}% above` : `${-dep}% below`} normal.`;
     }
   } catch {
-    if (!IN_APP) text += " (IMD's normal can only be read inside the app.)";
+    if (!CAN_READ_IMD) text += " (IMD's normal can only be read inside the app.)";
   }
   histNote.textContent = text;
 }

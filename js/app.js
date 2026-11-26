@@ -2,6 +2,7 @@
 // Each screen's code is loaded the first time it is opened (so the app starts
 // with only Home's code), its init runs once, show every time it is opened,
 // and hide when another screen is opened.
+import "./webproxy.js";
 import { initTheme } from "./theme.js";
 import { initPullToRefresh } from "./pull.js";
 import { initSnaps } from "./snap.js";
